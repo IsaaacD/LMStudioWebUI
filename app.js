@@ -1,30 +1,49 @@
  // Global variables
-    const chatContainer = document.getElementById('chat-container');
-    const userInput = document.getElementById('user-input');
-    const serverUrlInput = document.getElementById('server-url');
-    const connectButton = document.getElementById('connect-button');
-    const connectionStatus = document.getElementById('connection-status');
-    const sendButton = document.getElementById('send-button');
-    const newChatButton = document.getElementById('new-chat-button');
-    const toggleSidebarButton = document.getElementById('toggle-sidebar');
-    const chatSidebar = document.getElementById('chat-sidebar');
-    const chatList = document.getElementById('chat-list');
-    const contextMenu = document.getElementById('context-menu');
-    const modelSelect = document.getElementById('model-select');
-    const uploadButton = document.getElementById('upload-button');
-    const imageUpload = document.getElementById('image-upload');
-    const imagePreview = document.getElementById('image-preview');
-    
-    let isConnected = false;
-    let currentModel = '';
-    let pendingImage = null;
-    
-    // Chat management: each chat has an id, name, and messages array.
-    let chats = [];
-    let currentChat = null;
+ const chatContainer = document.getElementById('chat-container');
+ const userInput = document.getElementById('user-input');
+ const serverUrlInput = document.getElementById('server-url');
+ const connectButton = document.getElementById('connect-button');
+ const connectionStatus = document.getElementById('connection-status');
+ const sendButton = document.getElementById('send-button');
+ const newChatButton = document.getElementById('new-chat-button');
+ const toggleSidebarButton = document.getElementById('toggle-sidebar');
+ const chatSidebar = document.getElementById('chat-sidebar');
+ const chatList = document.getElementById('chat-list');
+ const contextMenu = document.getElementById('context-menu');
+ const modelSelect = document.getElementById('model-select');
+ const uploadButton = document.getElementById('upload-button');
+ const imageUpload = document.getElementById('image-upload');
+ const imagePreview = document.getElementById('image-preview');
+ 
+ let isConnected = false;
+ let currentModel = '';
+ let pendingImage = null;
+ 
+ // Chat management: each chat has an id, name, and messages array.
+ let chats = [];
+ let currentChat = null;
+ 
+ // Load saved chats on startup
+ async function loadSavedChats() {
+   try {
+     const savedChats = await window.indexedDBHelper.loadChatsFromIndexedDB();
+     if (savedChats && savedChats.length > 0) {
+       chats = savedChats;
+       currentChat = chats[0];
+       updateChatList();
+       loadChat(currentChat);
+     } else {
+       createNewChat();
+     }
+   } catch (error) {
+     console.error('Error loading saved chats:', error);
+     createNewChat();
+   }
+ }
     
     // Helper: Attach copy buttons to code blocks and assistant messages
     function attachCopyButtons(container) {
+      
       container.querySelectorAll('pre').forEach(pre => {
         if (!pre.querySelector('.copy-btn')) {
           pre.style.position = 'relative';
@@ -49,9 +68,10 @@
       });
       
       // Add copy button for assistant messages
-      const assistantMessages = container.querySelectorAll('.assistant-message');
+      const assistantMessages = container.parentElement.querySelectorAll('.assistant-message');
       assistantMessages.forEach(msg => {
         if (!msg.querySelector('.message-copy-btn')) {
+          msg.style.position = 'relative';
           const copyBtn = document.createElement('button');
           copyBtn.className = 'message-copy-btn';
           copyBtn.innerHTML = '📋';
@@ -111,38 +131,38 @@
     function addMessage(content, isUser, metrics = null, store = true) {
       const messageDiv = document.createElement('div');
       messageDiv.classList.add('message', isUser ? 'user-message' : 'assistant-message');
-    
+      
       const headerDiv = document.createElement('div');
       headerDiv.classList.add('message-header');
       headerDiv.textContent = isUser ? 'You' : 'Assistant';
       messageDiv.appendChild(headerDiv);
-    
+      
       if (!isUser && currentModel) {
         const modelDiv = document.createElement('div');
         modelDiv.classList.add('message-model');
         modelDiv.textContent = currentModel;
         messageDiv.appendChild(modelDiv);
       }
-    
+      
       const contentDiv = document.createElement('div');
       contentDiv.classList.add('message-content');
       contentDiv.innerHTML = marked.parse(content);
       messageDiv.appendChild(contentDiv);
-    
+      
       if (metrics) {
         const metricsDiv = document.createElement('div');
         metricsDiv.classList.add('message-metrics');
         metricsDiv.textContent = metrics;
         messageDiv.appendChild(metricsDiv);
       }
-    
+      
       chatContainer.appendChild(messageDiv);
       chatContainer.scrollTop = chatContainer.scrollHeight;
-    
+      
       messageDiv.querySelectorAll('pre code').forEach(block => {
         hljs.highlightElement(block);
       });
-    
+      
       if (typeof MathJax !== 'undefined') {
         MathJax.typesetPromise([messageDiv]).catch(err => console.error('MathJax typeset failed:', err));
       }
@@ -151,6 +171,7 @@
       
       if (store && currentChat) {
         currentChat.messages.push({ content, isUser, metrics, isImage: false });
+        window.indexedDBHelper.saveChatsToIndexedDB(chats);
       }
     }
     
@@ -163,6 +184,7 @@
       lastMsg.isImage = true;
       lastMsg.imageData = dataURL;
       lastMsg.text = promptText;
+      window.indexedDBHelper.saveChatsToIndexedDB(chats);
     }
     
     // Creates a new chat.
@@ -173,6 +195,7 @@
       currentChat = newChat;
       updateChatList();
       chatContainer.innerHTML = '';
+      window.indexedDBHelper.saveChatsToIndexedDB(chats);
     }
     
     // Renders the chat list in the sidebar.
@@ -226,6 +249,7 @@
         else loadChat(currentChat);
       }
       updateChatList();
+      window.indexedDBHelper.saveChatsToIndexedDB(chats);
     }
     
     // Ejects the currently loaded model.
@@ -437,6 +461,7 @@
         if (currentChat) {
           // Store the assistant message into the chat history
           currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false });
+          window.indexedDBHelper.saveChatsToIndexedDB(chats);
           if (currentChat.name.startsWith('Conversation')) {
             const snippet = accumulatedText.split(' ').slice(0, 7).join(' ');
             currentChat.name = snippet ? `Conversation: ${snippet}...` : currentChat.name;
@@ -489,4 +514,7 @@
     newChatButton.addEventListener('click', () => { createNewChat(); });
     toggleSidebarButton.addEventListener('click', () => { chatSidebar.classList.toggle('collapsed'); });
     
-    serverUrlInput.focus();
+    // Load saved chats when the page loads
+    loadSavedChats().then(() => {
+      serverUrlInput.focus();
+    });

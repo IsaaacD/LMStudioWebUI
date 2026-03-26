@@ -51,7 +51,7 @@
 <body>
   <div id="app">
     <div id="server-url-container">
-      <input type="text" id="server-url" placeholder="Enter LM Studio server address" />
+      <input type="text" id="server-url" value="http://192.168.50.28:1234" placeholder="Enter LM Studio server address" />
       <select id="model-select" disabled>
         <option value="">Select a model</option>
       </select>
@@ -83,6 +83,8 @@
   </div>
   <!-- Custom context menu for deleting chats -->
   <div id="context-menu">Delete Chat</div>
+    <script src="indexeddb.js"></script>
   <script src="app.js"></script>
+
 </body>
 </html>
