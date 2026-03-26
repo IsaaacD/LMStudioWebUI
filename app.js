@@ -40,6 +40,14 @@
      createNewChat();
    }
  }
+ 
+ // Save chats to IndexedDB, but only if they have messages
+ function saveChatsIfNotEmpty() {
+   const hasMessages = chats.some(chat => chat.messages.length > 0);
+   if (hasMessages) {
+     window.indexedDBHelper.saveChatsToIndexedDB(chats);
+   }
+ }
     
     // Helper: Attach copy buttons to code blocks and assistant messages
     function attachCopyButtons(container) {
@@ -171,7 +179,7 @@
       
       if (store && currentChat) {
         currentChat.messages.push({ content, isUser, metrics, isImage: false });
-        window.indexedDBHelper.saveChatsToIndexedDB(chats);
+        saveChatsIfNotEmpty();
       }
     }
     
@@ -184,7 +192,7 @@
       lastMsg.isImage = true;
       lastMsg.imageData = dataURL;
       lastMsg.text = promptText;
-      window.indexedDBHelper.saveChatsToIndexedDB(chats);
+      saveChatsIfNotEmpty();
     }
     
     // Creates a new chat.
@@ -195,7 +203,6 @@
       currentChat = newChat;
       updateChatList();
       chatContainer.innerHTML = '';
-      window.indexedDBHelper.saveChatsToIndexedDB(chats);
     }
     
     // Renders the chat list in the sidebar.
@@ -249,7 +256,7 @@
         else loadChat(currentChat);
       }
       updateChatList();
-      window.indexedDBHelper.saveChatsToIndexedDB(chats);
+      saveChatsIfNotEmpty();
     }
     
     // Ejects the currently loaded model.
@@ -440,6 +447,8 @@
                     if (typeof MathJax !== 'undefined') {
                       MathJax.typesetPromise([assistantMessageElement]).catch(err => console.error(err));
                     }
+                    // Scroll to bottom after each content update
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
                   }
                 } catch (err) {
                   console.error("Error parsing stream chunk", err);
@@ -461,7 +470,7 @@
         if (currentChat) {
           // Store the assistant message into the chat history
           currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false });
-          window.indexedDBHelper.saveChatsToIndexedDB(chats);
+          saveChatsIfNotEmpty();
           if (currentChat.name.startsWith('Conversation')) {
             const snippet = accumulatedText.split(' ').slice(0, 7).join(' ');
             currentChat.name = snippet ? `Conversation: ${snippet}...` : currentChat.name;
