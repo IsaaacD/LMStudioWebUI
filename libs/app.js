@@ -414,12 +414,15 @@ async function sendMessage() {
   userInput.value = '';
   userInput.disabled = true;
   sendButton.disabled = true;
+  sendButton.innerHTML = '<i class="fa-solid fa-stop"></i>';
+  sendButton.classList.add('stop-button');
 
   // const serverUrl = serverUrlInput.value.trim();
   const startTime = performance.now();
   let accumulatedText = '';
 
   try {
+    abortController = new AbortController();
     const response = await fetch(`${endPoint}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -429,7 +432,8 @@ async function sendMessage() {
         temperature: 0.7,
         max_tokens: -1,
         stream: true
-      })
+      }),
+      signal: abortController.signal
     });
     if (!response.ok) throw new Error('Server response was not ok');
 
@@ -497,6 +501,9 @@ async function sendMessage() {
   } finally {
     userInput.disabled = false;
     sendButton.disabled = false;
+    sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    sendButton.classList.remove('stop-button');
+    abortController = null;
     userInput.focus();
   }
 }
@@ -530,8 +537,20 @@ connectButton.addEventListener('click', () => {
   }
 });
 
+let abortController = null;
+
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-sendButton.addEventListener('click', sendMessage);
+sendButton.addEventListener('click', () => {
+  if (sendButton.classList.contains('stop-button')) {
+    // Stop the current response
+    if (abortController) {
+      abortController.abort();
+    }
+  } else {
+    // Send a new message
+    sendMessage();
+  }
+});
 newChatButton.addEventListener('click', () => { createNewChat(); });
 toggleSidebarButton.addEventListener('click', () => { chatSidebar.classList.toggle('collapsed'); });
 

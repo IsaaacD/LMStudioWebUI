@@ -401,6 +401,14 @@ html {
   background-color: var(--accent-color);
 }
 
+#send-button.stop-button {
+  background-color: #dc3545;
+}
+
+#send-button.stop-button:hover {
+  background-color: #c82333;
+}
+
 @media (max-width: 480px) {
   .message {
     max-width: 90%;
