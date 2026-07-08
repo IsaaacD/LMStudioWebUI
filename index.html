@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>LM Studio Chat</title>
   <link rel="stylesheet" type="text/css" href="styles.css" />
-  <script src="./libs/cabecera.js"></script>
+
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <!-- Font Awesome Icons -->
@@ -22,13 +22,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
   <!-- MathJax configuration for LaTeX support -->
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <script src="./libs/cabecera.js"></script>
 </head>
 
 <body>
   <div id="app">
     <div id="server-url-container">
-      <input type="text" id="server-url" value="192.168.68.67" placeholder="Enter LM Studio address:"
-        value="IA" />
+      <input type="text" id="server-url" value="192.168.68.67" placeholder="Enter LM Studio address:" value="IA" />
       <input type="text" id="server-port" value="1234" placeholder="Enter LM Studio port:" value="1234" />
       <select id="model-select" disabled>
         <option value="">Select model</option>
@@ -59,8 +59,8 @@
       </div>
     </div>
   </div>
-    <!-- Custom context menu for deleting chats -->
-    <div id="context-menu">Delete Chat</div>
+  <!-- Custom context menu for deleting chats -->
+  <div id="context-menu">Delete Chat</div>
   <!-- <script src="./libs/cuerpo.js"></script> -->
   <script src="./libs/indexeddb.js"></script>
   <script src="./libs/app.js"></script>

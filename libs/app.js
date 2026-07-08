@@ -174,7 +174,7 @@ function addMessage(content, isUser, metrics = null, store = true) {
     hljs.highlightElement(block);
   });
 
-  if (typeof MathJax !== 'undefined') {
+  if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
     MathJax.typesetPromise([messageDiv]).catch(err => console.error('MathJax typeset failed:', err));
   }
 
@@ -409,17 +409,21 @@ async function sendMessage() {
   assistantMessageElement.appendChild(assistantContentDiv);
 
   chatContainer.appendChild(assistantMessageElement);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
 
   userInput.value = '';
   userInput.disabled = true;
-  sendButton.disabled = true;
+  //sendButton.disabled = true;
   sendButton.innerHTML = '<i class="fa-solid fa-stop"></i>';
   sendButton.classList.add('stop-button');
 
   // const serverUrl = serverUrlInput.value.trim();
   const startTime = performance.now();
   let accumulatedText = '';
+
+  // Track if user has scrolled up during the response
+  let isUserScrolledUp = false;
+  let previousScrollTop = chatContainer.scrollTop;
+  let isAtBottom = true;
 
   try {
     abortController = new AbortController();
@@ -440,6 +444,18 @@ async function sendMessage() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let done = false;
+
+    // Add scroll event listener to track user scrolling
+    const handleScroll = () => {
+      if (chatContainer.scrollHeight - chatContainer.clientHeight < chatContainer.scrollTop + 100) {
+        isAtBottom = true;
+      } else {
+        isAtBottom = false;
+      }
+    };
+
+    chatContainer.addEventListener('scroll', handleScroll);
+
     while (!done) {
       const { value, done: doneReading } = await reader.read();
       done = doneReading;
@@ -460,11 +476,14 @@ async function sendMessage() {
                   hljs.highlightElement(block);
                 });
                 attachCopyButtons(assistantMessageElement);
-                if (typeof MathJax !== 'undefined') {
+                if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
                   MathJax.typesetPromise([assistantMessageElement]).catch(err => console.error(err));
                 }
-                // Scroll to bottom after each content update
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                // Only auto-scroll to bottom if user hasn't scrolled up
+                if (isAtBottom) {
+                  chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
               }
             } catch (err) {
               console.error("Error parsing stream chunk", err);
@@ -481,6 +500,9 @@ async function sendMessage() {
         }
       }
     }
+
+    // Remove scroll event listener when done
+    chatContainer.removeEventListener('scroll', handleScroll);
     const endTime = performance.now();
     const timeElapsed = ((endTime - startTime) / 1000).toFixed(2);
     if (currentChat) {
@@ -541,7 +563,9 @@ let abortController = null;
 
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 sendButton.addEventListener('click', () => {
-  if (sendButton.classList.contains('stop-button')) {
+  let isStop = sendButton.classList.contains('stop-button');
+  console.log("Is Stop", stop);
+  if (isStop) {
     // Stop the current response
     if (abortController) {
       abortController.abort();
