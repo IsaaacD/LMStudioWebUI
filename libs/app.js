@@ -316,15 +316,15 @@ async function connectToServer() {
   // const serverPort = serverPortInput.value.trim();
   // const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
   console.log('endpoint:', endPoint);
-    if (!serverUrl) {
-      updateConnectionStatus('Please enter a valid address', false);
-      return;
-    }
+  if (!serverUrl) {
+    updateConnectionStatus('Please enter a valid address', false);
+    return;
+  }
   console.log('endPoint:', endPoint, 'ok');
-    if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(endPoint)) {
-      updateConnectionStatus('Invalid address. Use http://host:port', false);
-      return;
-    }
+  if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(endPoint)) {
+    updateConnectionStatus('Invalid address. Use http://host:port', false);
+    return;
+  }
   try {
     updateConnectionStatus('Conectando...', false);
     const fetchUrl = `${endPoint}/v1/models`;
@@ -346,7 +346,7 @@ async function connectToServer() {
       modelSelect.disabled = false;
       currentModel = modelSelect.value;
       isConnected = true;
-      updateConnectionStatus('Conectado', true);
+      updateConnectionStatus('Connected', true);
       userInput.disabled = false;
       sendButton.disabled = false;
       if (!currentChat) createNewChat();
