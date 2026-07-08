@@ -302,12 +302,14 @@ function buildConversationHistory() {
 // Model selection change: eject old model if needed.
 modelSelect.addEventListener('change', async (e) => {
   const newModel = e.target.value;
+  const oldModel = currentModel;
   if (currentModel && currentModel !== newModel) {
     modelSelect.disabled = true;
     await ejectCurrentModel(currentModel);
   }
   currentModel = newModel;
   modelSelect.disabled = false;
+  addMessage(`Unloaded ${oldModel} and loading ${newModel}`, false, null, false);
 });
 
 // Connect to server and populate model dropdown.
@@ -357,7 +359,7 @@ async function connectToServer() {
     }
   } catch (error) {
     console.error('Error:', error);
-    updateConnectionStatus('Fallo al conectar', false);
+    updateConnectionStatus('Failed to connect', false);
     addMessage('Error: Unable to connect to LM Studio server. Check the address and try again.', false);
   }
 }
