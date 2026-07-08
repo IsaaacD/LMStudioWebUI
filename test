@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>LM Studio Chat</title>
+    <link rel="stylesheet" type="text/css" href="estilos.css" />
+    <script src="./libs/cabecera.js"></script>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Highlight.js CSS for code blocks -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" />
+    <!-- Markdown rendering library -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- MathJax configuration for LaTeX support -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+
+<body>
+    <div id="app">
+        <div id="server-url-container">
+            <input type="text" id="server-url" placeholder="Introduce la dirección de LM Studio:" value="IA" />
+            <input type="text" id="server-port" placeholder="Introduce el puerto de LM Studio:" value="1234" />
+            <select id="model-select" disabled>
+                <option value="">Selecciona modelo</option>
+            </select>
+            <button id="connect-button"><i class="fas fa-plug"></i> Conectar</button>
+        </div>
+        <div id="connection-status">Desconectado</div>
+        <div id="main-content">
+            <!-- Chat Sidebar -->
+            <div id="chat-sidebar">
+                <button id="toggle-sidebar"><i class="fas fa-bars"></i></button>
+                <div class="sidebar-content">
+                    <div id="chat-sidebar-header"><span>Chats</span></div>
+                    <button id="new-chat-button"><i class="fas fa-plus"></i>Nuevo Chat</button>
+                    <ul id="chat-list"></ul>
+                </div>
+            </div>
+            <!-- Chat Section -->
+            <div id="chat-section">
+                <div id="chat-container"></div>
+                <div id="input-container">
+                    <button id="upload-button"><i class="fas fa-image"></i></button>
+                    <input type="file" id="image-upload" accept="image/*" style="display:none;" />
+                    <div id="image-preview"></div>
+                    <input type="text" id="user-input" placeholder="Type a message..." disabled />
+                    <button id="send-button"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Custom context menu for deleting chats -->
+    <div id="context-menu">Eliminar Chat</div>
+    <script src="./libs/cuerpo.js"></script>
+    <script src="indexeddb.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
