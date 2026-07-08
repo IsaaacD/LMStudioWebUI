@@ -316,15 +316,15 @@ async function connectToServer() {
   // const serverPort = serverPortInput.value.trim();
   // const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
   console.log('endpoint:', endPoint);
-  if (!serverUrl) {
-    updateConnectionStatus('Por favor, introduce una dirección correcta', false);
-    return;
-  }
+    if (!serverUrl) {
+      updateConnectionStatus('Please enter a valid address', false);
+      return;
+    }
   console.log('endPoint:', endPoint, 'ok');
-  if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(endPoint)) {
-    updateConnectionStatus('Direccción incorrecta. Usa http://host:port', false);
-    return;
-  }
+    if (!/^http:\/\/[a-zA-Z0-9.-]+:[0-9]+$/.test(endPoint)) {
+      updateConnectionStatus('Invalid address. Use http://host:port', false);
+      return;
+    }
   try {
     updateConnectionStatus('Conectando...', false);
     const fetchUrl = `${endPoint}/v1/models`;
@@ -351,14 +351,14 @@ async function connectToServer() {
       sendButton.disabled = false;
       if (!currentChat) createNewChat();
       // Display connection message without storing it in the chat history
-      addMessage('Conectado a LM Studio server. Puedes empezar a chatear', false, null, false);
+      addMessage('Connected to LM Studio server. You can start chatting', false, null, false);
     } else {
-      throw new Error('Sin modelos disponibles');
+      throw new Error('No models available');
     }
   } catch (error) {
     console.error('Error:', error);
     updateConnectionStatus('Fallo al conectar', false);
-    addMessage('Error: Incapaz de conectar a LM Studio server. Comprueba la dirección e inténtalo de nuevo.', false);
+    addMessage('Error: Unable to connect to LM Studio server. Check the address and try again.', false);
   }
 }
 
@@ -522,7 +522,7 @@ connectButton.addEventListener('click', () => {
     updateConnectionStatus('Disconnected', false);
     userInput.disabled = true;
     sendButton.disabled = true;
-    addMessage('Disconnected from LM Studio server.', false);
+    addMessage('Disconnected from LM Studio server', false);
     currentModel = '';
     modelSelect.disabled = true;
   } else {

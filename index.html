@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
@@ -27,22 +27,22 @@
 <body>
   <div id="app">
     <div id="server-url-container">
-      <input type="text" id="server-url" value="192.168.68.67" placeholder="Introduce la dirección de LM Studio:"
+      <input type="text" id="server-url" value="192.168.68.67" placeholder="Enter LM Studio address:"
         value="IA" />
-      <input type="text" id="server-port" value="1234" placeholder="Introduce el puerto de LM Studio:" value="1234" />
+      <input type="text" id="server-port" value="1234" placeholder="Enter LM Studio port:" value="1234" />
       <select id="model-select" disabled>
-        <option value="">Selecciona modelo</option>
+        <option value="">Select model</option>
       </select>
-      <button id="connect-button"><i class="fas fa-plug"></i> Conectar</button>
+      <button id="connect-button"><i class="fas fa-plug"></i> Connect</button>
     </div>
-    <div id="connection-status">Desconectado</div>
+    <div id="connection-status">Disconnected</div>
     <div id="main-content">
       <!-- Chat Sidebar -->
       <div id="chat-sidebar">
         <button id="toggle-sidebar"><i class="fas fa-bars"></i></button>
         <div class="sidebar-content">
           <div id="chat-sidebar-header"><span>Chats</span></div>
-          <button id="new-chat-button"><i class="fas fa-plus"></i>Nuevo Chat</button>
+          <button id="new-chat-button"><i class="fas fa-plus"></i>New Chat</button>
           <ul id="chat-list"></ul>
         </div>
       </div>
@@ -59,8 +59,8 @@
       </div>
     </div>
   </div>
-  <!-- Custom context menu for deleting chats -->
-  <div id="context-menu">Eliminar Chat</div>
+    <!-- Custom context menu for deleting chats -->
+    <div id="context-menu">Delete Chat</div>
   <!-- <script src="./libs/cuerpo.js"></script> -->
   <script src="./libs/indexeddb.js"></script>
   <script src="./libs/app.js"></script>
