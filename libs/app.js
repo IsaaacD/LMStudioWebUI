@@ -206,7 +206,7 @@ function addImageMessage(dataURL, promptText) {
 // Creates a new chat.
 function createNewChat() {
   const chatId = Date.now();
-  const newChat = { id: chatId, name: `Conversation ${chats.length + 1}`, messages: [] };
+   const newChat = { id: chatId, name: `Chat ${chats.length + 1}`, messages: [] };
   chats.push(newChat);
   currentChat = newChat;
   updateChatList();
@@ -555,9 +555,9 @@ async function sendMessage() {
       // Store the assistant message into the chat history
       currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false, reasoning: accumulatedReasoning || null });
       saveChatsIfNotEmpty();
-      if (currentChat.name.startsWith('Conversation')) {
+      if (currentChat.name.startsWith('Chat')) {
         const snippet = accumulatedText.split(' ').slice(0, 7).join(' ');
-        currentChat.name = snippet ? `Conversation: ${snippet}...` : currentChat.name;
+        currentChat.name = snippet ? `${snippet}...` : currentChat.name;
         updateChatList();
       }
     }
