@@ -139,7 +139,7 @@ function attachCopyButtons(container) {
 
 // Adds a message to the DOM and (optionally) stores it.
 // If store is false, the message is only displayed and not added to currentChat.messages.
-function addMessage(content, isUser, metrics = null, store = true) {
+function addMessage(content, isUser, metrics = null, store = true, reasoning = null) {
   const messageDiv = document.createElement('div');
   messageDiv.classList.add('message', isUser ? 'user-message' : 'assistant-message');
 
@@ -157,7 +157,12 @@ function addMessage(content, isUser, metrics = null, store = true) {
 
   const contentDiv = document.createElement('div');
   contentDiv.classList.add('message-content');
-  contentDiv.innerHTML = marked.parse(content);
+  let html = '';
+  if (reasoning) {
+    html += `<details class="reasoning-details"><summary class="reasoning-toggle">Reasoning</summary><div class="reasoning-content">${marked.parse(reasoning)}</div></details>`;
+  }
+  html += marked.parse(content);
+  contentDiv.innerHTML = html;
   messageDiv.appendChild(contentDiv);
 
   if (metrics) {
@@ -181,7 +186,7 @@ function addMessage(content, isUser, metrics = null, store = true) {
   attachCopyButtons(messageDiv);
 
   if (store && currentChat) {
-    currentChat.messages.push({ content, isUser, metrics, isImage: false });
+    currentChat.messages.push({ content, isUser, metrics, isImage: false, reasoning });
     saveChatsIfNotEmpty();
   }
 }
@@ -235,7 +240,7 @@ function loadChat(chat) {
   chatContainer.innerHTML = '';
   chat.messages.forEach(message => {
     // When loading, we display messages without storing them again.
-    addMessage(message.content, message.isUser, message.metrics, false);
+    addMessage(message.content, message.isUser, message.metrics, false, message.reasoning || null);
   });
 }
 
@@ -463,7 +468,7 @@ async function sendMessage() {
     const renderAccumulated = () => {
       let html = '';
       if (accumulatedReasoning) {
-        html += `<div class="reasoning-content"> Reasoning: ${marked.parse(accumulatedReasoning)}</div>`;
+        html += `<details class="reasoning-details" open><summary class="reasoning-toggle">Reasoning</summary><div class="reasoning-content">${marked.parse(accumulatedReasoning)}</div></details>`;
       }
       if (accumulatedText) {
         html += `<div class="response-content">${marked.parse(accumulatedText)}</div>`;
@@ -534,7 +539,7 @@ async function sendMessage() {
     const timeElapsed = ((endTime - startTime) / 1000).toFixed(2);
     if (currentChat) {
       // Store the assistant message into the chat history
-      currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false });
+      currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false, reasoning: accumulatedReasoning || null });
       saveChatsIfNotEmpty();
       if (currentChat.name.startsWith('Conversation')) {
         const snippet = accumulatedText.split(' ').slice(0, 7).join(' ');
