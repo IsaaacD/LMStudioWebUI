@@ -464,3 +464,12 @@ html {
 .copy-btn:hover {
   opacity: 1;
 }
+
+.reasoning-content {
+  color: #888;
+  font-style: italic;
+}
+
+.reasoning-content:hover {
+  color: #aaa;
+}

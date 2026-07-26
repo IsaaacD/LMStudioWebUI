@@ -328,7 +328,7 @@ async function connectToServer() {
     return;
   }
   try {
-    updateConnectionStatus('Conectando...', false);
+    updateConnectionStatus('Connecting...', false);
     const fetchUrl = `${endPoint}/v1/models`;
     console.log('fetching:', fetchUrl);
     const response = await fetch(fetchUrl, {
@@ -420,6 +420,7 @@ async function sendMessage() {
 
   // const serverUrl = serverUrlInput.value.trim();
   const startTime = performance.now();
+  let accumulatedReasoning = '';
   let accumulatedText = '';
 
   // Track if user has scrolled up during the response
@@ -446,6 +447,7 @@ async function sendMessage() {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let done = false;
+    let renderPending = false;
 
     // Add scroll event listener to track user scrolling
     const handleScroll = () => {
@@ -457,6 +459,27 @@ async function sendMessage() {
     };
 
     chatContainer.addEventListener('scroll', handleScroll);
+
+    const renderAccumulated = () => {
+      let html = '';
+      if (accumulatedReasoning) {
+        html += `<div class="reasoning-content"> Reasoning: ${marked.parse(accumulatedReasoning)}</div>`;
+      }
+      if (accumulatedText) {
+        html += `<div class="response-content">${marked.parse(accumulatedText)}</div>`;
+      }
+      assistantContentDiv.innerHTML = html;
+      assistantMessageElement.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+      attachCopyButtons(assistantMessageElement);
+      if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
+        MathJax.typesetPromise([assistantMessageElement]).catch(err => console.error(err));
+      }
+      if (isAtBottom) {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+    };
 
     while (!done) {
       const { value, done: doneReading } = await reader.read();
@@ -470,23 +493,16 @@ async function sendMessage() {
             if (dataStr === "[DONE]") { done = true; break; }
             try {
               const parsed = JSON.parse(dataStr);
-              const delta = parsed.choices[0].delta;
+              const delta = parsed.choices[0]?.delta;
+              if (delta && delta.reasoning_content) {
+                accumulatedReasoning += delta.reasoning_content;
+                renderAccumulated();
+              }
               if (delta && delta.content) {
                 accumulatedText += delta.content;
-                assistantContentDiv.innerHTML = marked.parse(accumulatedText);
-                assistantMessageElement.querySelectorAll('pre code').forEach(block => {
-                  hljs.highlightElement(block);
-                });
-                attachCopyButtons(assistantMessageElement);
-                if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
-                  MathJax.typesetPromise([assistantMessageElement]).catch(err => console.error(err));
-                }
-
-                // Only auto-scroll to bottom if user hasn't scrolled up
-                if (isAtBottom) {
-                  chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
+                renderAccumulated();
               }
+
             } catch (err) {
               console.error("Error parsing stream chunk", err);
             }
@@ -502,6 +518,15 @@ async function sendMessage() {
         }
       }
     }
+
+    // Final render to ensure everything is up to date
+    // if (accumulatedText && !renderPending) {
+    //   assistantContentDiv.innerHTML = marked.parse(accumulatedText);
+    //   assistantMessageElement.querySelectorAll('pre code').forEach(block => {
+    //     hljs.highlightElement(block);
+    //   });
+    //   attachCopyButtons(assistantMessageElement);
+    // }
 
     // Remove scroll event listener when done
     chatContainer.removeEventListener('scroll', handleScroll);
@@ -519,6 +544,9 @@ async function sendMessage() {
     }
   } catch (error) {
     console.error('Error:', error);
+    if (assistantMessageElement.parentNode) {
+      assistantMessageElement.parentNode.removeChild(assistantMessageElement);
+    }
     addMessage('Error: Unable to get a response from the server. Please try again.', false);
     isConnected = false;
     updateConnectionStatus('Disconnected', false);
@@ -553,7 +581,7 @@ connectButton.addEventListener('click', () => {
     updateConnectionStatus('Disconnected', false);
     userInput.disabled = true;
     sendButton.disabled = true;
-    addMessage('Disconnected from LM Studio server', false);
+
     currentModel = '';
     modelSelect.disabled = true;
   } else {
@@ -566,7 +594,7 @@ let abortController = null;
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 sendButton.addEventListener('click', () => {
   let isStop = sendButton.classList.contains('stop-button');
-  console.log("Is Stop", stop);
+  console.log("Is Stop", isStop);
   if (isStop) {
     // Stop the current response
     if (abortController) {
