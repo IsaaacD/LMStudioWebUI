@@ -468,6 +468,8 @@ html {
 .reasoning-content {
   color: #888;
   font-style: italic;
+  border: 1px dashed;
+  padding: 0.5em;
 }
 
 .reasoning-content:hover {

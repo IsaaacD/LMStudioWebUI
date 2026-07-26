@@ -465,25 +465,36 @@ async function sendMessage() {
 
     chatContainer.addEventListener('scroll', handleScroll);
 
-    const renderAccumulated = () => {
-      let html = '';
-      if (accumulatedReasoning) {
-        html += `<details class="reasoning-details" open><summary class="reasoning-toggle">Reasoning</summary><div class="reasoning-content">${marked.parse(accumulatedReasoning)}</div></details>`;
-      }
-      if (accumulatedText) {
-        html += `<div class="response-content">${marked.parse(accumulatedText)}</div>`;
-      }
-      assistantContentDiv.innerHTML = html;
-      assistantMessageElement.querySelectorAll('pre code').forEach(block => {
+    // Create persistent container elements — only update the one that changed
+    const reasoningDetails = document.createElement('details');
+    reasoningDetails.className = 'reasoning-details';
+    reasoningDetails.setAttribute('open', '');
+    const reasoningSummary = document.createElement('summary');
+    reasoningSummary.className = 'reasoning-toggle';
+    reasoningSummary.textContent = 'Reasoning';
+    const reasoningContentDiv = document.createElement('div');
+    reasoningContentDiv.className = 'reasoning-content';
+    reasoningDetails.appendChild(reasoningSummary);
+    reasoningDetails.appendChild(reasoningContentDiv);
+    const responseContentDiv = document.createElement('div');
+    responseContentDiv.className = 'response-content';
+
+    const updateSection = (section, text) => {
+      section.innerHTML = marked.parse(text);
+      section.querySelectorAll('pre code').forEach(block => {
         hljs.highlightElement(block);
       });
       attachCopyButtons(assistantMessageElement);
-      if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
+    };
+
+    let mathJaxTimer = null;
+    const scheduleMathJax = () => {
+      if (typeof MathJax === 'undefined' || typeof MathJax.typesetPromise !== 'function') return;
+      if (mathJaxTimer) clearTimeout(mathJaxTimer);
+      mathJaxTimer = setTimeout(() => {
         MathJax.typesetPromise([assistantMessageElement]).catch(err => console.error(err));
-      }
-      if (isAtBottom) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
+        mathJaxTimer = null;
+      }, 300);
     };
 
     while (!done) {
@@ -501,11 +512,17 @@ async function sendMessage() {
               const delta = parsed.choices[0]?.delta;
               if (delta && delta.reasoning_content) {
                 accumulatedReasoning += delta.reasoning_content;
-                renderAccumulated();
+                if (!reasoningDetails.parentNode) assistantContentDiv.appendChild(reasoningDetails);
+                updateSection(reasoningContentDiv, accumulatedReasoning);
+                scheduleMathJax();
+                if (isAtBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
               }
               if (delta && delta.content) {
                 accumulatedText += delta.content;
-                renderAccumulated();
+                if (!responseContentDiv.parentNode) assistantContentDiv.appendChild(responseContentDiv);
+                updateSection(responseContentDiv, accumulatedText);
+                scheduleMathJax();
+                if (isAtBottom) chatContainer.scrollTop = chatContainer.scrollHeight;
               }
 
             } catch (err) {
@@ -524,14 +541,11 @@ async function sendMessage() {
       }
     }
 
-    // Final render to ensure everything is up to date
-    // if (accumulatedText && !renderPending) {
-    //   assistantContentDiv.innerHTML = marked.parse(accumulatedText);
-    //   assistantMessageElement.querySelectorAll('pre code').forEach(block => {
-    //     hljs.highlightElement(block);
-    //   });
-    //   attachCopyButtons(assistantMessageElement);
-    // }
+    // Final MathJax render after streaming ends
+    if (mathJaxTimer) clearTimeout(mathJaxTimer);
+    if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
+      MathJax.typesetPromise([assistantMessageElement]).catch(err => console.error(err));
+    }
 
     // Remove scroll event listener when done
     chatContainer.removeEventListener('scroll', handleScroll);
