@@ -20,8 +20,8 @@ const params = {
     paused: false,
     autoplay: true,
     autoplaySpeed: 0.6,
-    controlMode: 'Auto',
-    raveMode: false,
+    controlMode: 'Rave',
+    raveMode: true,
     switchMode: () => {
         if (params.controlMode === 'Auto') {
             params.autoplay = false;
@@ -549,20 +549,10 @@ function animate() {
     bloomPass.radius = params.raveMode ? raveCurrent.bloomRadius : params.bloomRadius;
     edgePass.uniforms['edgeStrength'].value = params.raveMode ? raveCurrent.edgeContrast : params.edgeContrast;
 
-    if (params.autoplay || params.raveMode) {
-        autoAngle += 0.005 * activeTS;
-        const autoR = 8 + Math.sin(autoAngle * 0.7) * 5;
-        const targetX = Math.sin(autoAngle) * autoR;
-        const targetY = Math.cos(autoAngle * 0.5) * 3 + 2;
-        const activeSpeed = params.raveMode ? raveCurrent.autoplaySpeed : params.autoplaySpeed;
-        const targetZ = camera.position.z - activeSpeed;
+    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e;
+    const useManual = !params.autoplay && !params.raveMode || (params.raveMode && isMoving);
 
-        camera.position.x += (targetX - camera.position.x) * 0.02;
-        camera.position.y += (targetY - camera.position.y) * 0.02;
-        camera.position.z += (targetZ - camera.position.z) * 0.05;
-
-        camera.lookAt(camera.position.x, camera.position.y, camera.position.z - 10);
-    } else {
+    if (useManual) {
         const moveSpeed = params.speed * 0.5;
         const dir = new THREE.Vector3();
         camera.getWorldDirection(dir);
@@ -576,6 +566,19 @@ function animate() {
         if (keys.e) camera.position.y += moveSpeed;
 
         camera.lookAt(camera.position.x + dir.x, camera.position.y + dir.y, camera.position.z + dir.z);
+    } else {
+        autoAngle += 0.005 * activeTS;
+        const autoR = 8 + Math.sin(autoAngle * 0.7) * 5;
+        const targetX = Math.sin(autoAngle) * autoR;
+        const targetY = Math.cos(autoAngle * 0.5) * 3 + 2;
+        const activeSpeed = params.raveMode ? raveCurrent.autoplaySpeed : params.autoplaySpeed;
+        const targetZ = camera.position.z - activeSpeed;
+
+        camera.position.x += (targetX - camera.position.x) * 0.02;
+        camera.position.y += (targetY - camera.position.y) * 0.02;
+        camera.position.z += (targetZ - camera.position.z) * 0.05;
+
+        camera.lookAt(camera.position.x, camera.position.y, camera.position.z - 10);
     }
 
     // Lazy-load floor and ceiling tiles
