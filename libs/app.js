@@ -206,7 +206,7 @@ function addImageMessage(dataURL, promptText) {
 // Creates a new chat.
 function createNewChat() {
   const chatId = Date.now();
-   const newChat = { id: chatId, name: `Chat ${chats.length + 1}`, messages: [] };
+  const newChat = { id: chatId, name: `Chat ${chats.length + 1}`, messages: [] };
   chats.push(newChat);
   currentChat = newChat;
   updateChatList();
@@ -380,6 +380,7 @@ function updateConnectionStatus(message, connected) {
 
 // Send message: if a pending image exists, include it.
 async function sendMessage() {
+  if (!isConnected) return;
   let message = userInput.value.trim();
   if (!message && !pendingImage) return;
 
