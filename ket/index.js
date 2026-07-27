@@ -331,7 +331,72 @@ const actFolder = gui.addFolder('Actions');
 const raCtrl = actFolder.add(params, 'randomize').name('🎲 Randomize');
 addInfoIcon(raCtrl.domElement, 'Randomize all visual and movement parameters for a new look');
 
-// ─── 7. ANIMATION LOOP ───────────────────────────────────
+// ─── 7. TOUCH CONTROLS ────────────────────────────────────
+const touchState = {
+    left: { active: false, id: null, startX: 0, startY: 0 },
+    right: { active: false, id: null, startX: 0, startY: 0 }
+};
+const TOUCH_THRESHOLD = 30;
+
+function handleTouchStart(e) {
+    if (params.paused || params.autoplay) return;
+    for (const touch of e.changedTouches) {
+        const midX = innerWidth / 2;
+        if (touch.clientX < midX && !touchState.left.active) {
+            touchState.left.active = true;
+            touchState.left.id = touch.identifier;
+            touchState.left.startX = touch.clientX;
+            touchState.left.startY = touch.clientY;
+        } else if (touch.clientX >= midX && !touchState.right.active) {
+            touchState.right.active = true;
+            touchState.right.id = touch.identifier;
+            touchState.right.startX = touch.clientX;
+            touchState.right.startY = touch.clientY;
+        }
+    }
+}
+
+function handleTouchMove(e) {
+    if (params.paused || params.autoplay) return;
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+        if (touchState.left.active && touch.identifier === touchState.left.id) {
+            const dx = touch.clientX - touchState.left.startX;
+            const dy = touch.clientY - touchState.left.startY;
+            keys.w = dy < -TOUCH_THRESHOLD;
+            keys.s = dy > TOUCH_THRESHOLD;
+            keys.a = dx < -TOUCH_THRESHOLD;
+            keys.d = dx > TOUCH_THRESHOLD;
+        }
+        if (touchState.right.active && touch.identifier === touchState.right.id) {
+            const dy = touch.clientY - touchState.right.startY;
+            keys.q = dy > TOUCH_THRESHOLD;
+            keys.e = dy < -TOUCH_THRESHOLD;
+        }
+    }
+}
+
+function handleTouchEnd(e) {
+    for (const touch of e.changedTouches) {
+        if (touchState.left.active && touch.identifier === touchState.left.id) {
+            touchState.left.active = false;
+            touchState.left.id = null;
+            keys.w = keys.s = keys.a = keys.d = false;
+        }
+        if (touchState.right.active && touch.identifier === touchState.right.id) {
+            touchState.right.active = false;
+            touchState.right.id = null;
+            keys.q = keys.e = false;
+        }
+    }
+}
+
+document.addEventListener('touchstart', handleTouchStart, { passive: false });
+document.addEventListener('touchmove', handleTouchMove, { passive: false });
+document.addEventListener('touchend', handleTouchEnd, { passive: false });
+document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+// ─── 8. ANIMATION LOOP ───────────────────────────────────
 const clock = new THREE.Clock();
 let mouseX = 0;
 let mouseY = 0;
