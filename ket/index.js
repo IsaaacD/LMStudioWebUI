@@ -14,7 +14,8 @@ const params = {
     bloomRadius: 0.4,
     foldIntensity: 1.0,
     veinSpeed: 1.0,
-    hueShift: 0.0,
+    colorA: 0xff0055,
+    colorB: 0x00ccff,
     edgeContrast: 0.5,
     paused: false,
     autoplay: true,
@@ -35,7 +36,8 @@ const params = {
     randomize: () => {
         params.speed = Math.random() * 2;
         params.foldIntensity = 0.5 + Math.random() * 2;
-        params.hueShift = Math.random();
+        params.colorA = Math.floor(Math.random() * 0xffffff);
+        params.colorB = Math.floor(Math.random() * 0xffffff);
         params.edgeContrast = Math.random();
         params.veinSpeed = Math.random() * 3;
         params.bloomRadius = Math.random();
@@ -43,7 +45,8 @@ const params = {
         params.timeScale = Math.random() * 3;
         speedCtrl.updateDisplay();
         foldCtrl.updateDisplay();
-        hueCtrl.updateDisplay();
+        colorACtrl.updateDisplay();
+        colorBCtrl.updateDisplay();
         edgeCtrl.updateDisplay();
         veinCtrl.updateDisplay();
         radiusCtrl.updateDisplay();
@@ -78,7 +81,6 @@ const cityMaterial = new THREE.ShaderMaterial({
         uColor2: { value: new THREE.Color(0x00ccff) },
         uColor3: { value: new THREE.Color(0x110022) },
         uFoldIntensity: { value: 1.0 },
-        uHueShift: { value: 0.0 },
         uTileOffset: { value: new THREE.Vector3(0, 0, 0) },
         uCameraPos: { value: new THREE.Vector3(0, 0, 0) }
     },
@@ -102,7 +104,6 @@ const wallMaterial = new THREE.ShaderMaterial({
         uColor2: { value: new THREE.Color(0x00ccff) },
         uColor3: { value: new THREE.Color(0x110022) },
         uFoldIntensity: { value: 1.0 },
-        uHueShift: { value: 0.0 },
         uTileOffset: { value: new THREE.Vector3(0, 0, 0) },
         uCameraPos: { value: new THREE.Vector3(0, 0, 0) }
     },
@@ -318,8 +319,10 @@ const foldCtrl = visFolder.add(params, 'foldIntensity', 0, 3).name('Fold Intensi
 addInfoIcon(foldCtrl.domElement, 'Strength of the terrain folding and distortion in shaders');
 const veinCtrl = visFolder.add(params, 'veinSpeed', 0, 3).name('Vein Flow');
 addInfoIcon(veinCtrl.domElement, 'Speed of the organic vein patterns flowing across surfaces');
-const hueCtrl = visFolder.add(params, 'hueShift', 0, 1).name('Color Shift');
-addInfoIcon(hueCtrl.domElement, 'Shifts the overall color palette across the hue spectrum');
+const colorACtrl = visFolder.addColor(params, 'colorA').name('Color A');
+addInfoIcon(colorACtrl.domElement, 'Primary accent color for terrain and walls');
+const colorBCtrl = visFolder.addColor(params, 'colorB').name('Color B');
+addInfoIcon(colorBCtrl.domElement, 'Secondary accent color for terrain and walls');
 const edgeCtrl = visFolder.add(params, 'edgeContrast', 0, 1).name('Outline Strength');
 addInfoIcon(edgeCtrl.domElement, 'Intensity of the edge-detection outline effect');
 
@@ -366,7 +369,8 @@ function animate() {
         if (!t.visible) continue;
         t.material.uniforms.uTime.value = effectiveTime;
         t.material.uniforms.uFoldIntensity.value = params.foldIntensity;
-        t.material.uniforms.uHueShift.value = params.hueShift;
+        t.material.uniforms.uColor1.value.set(params.colorA);
+        t.material.uniforms.uColor2.value.set(params.colorB);
         t.material.uniforms.uTileOffset.value.set(t._gx * TILE_SIZE, t._gz * TILE_SIZE, t._gy * TILE_HEIGHT);
         t.material.uniforms.uCameraPos.value.copy(camera.position);
     }
@@ -374,7 +378,8 @@ function animate() {
         if (!t.visible) continue;
         t.material.uniforms.uTime.value = effectiveTime;
         t.material.uniforms.uFoldIntensity.value = params.foldIntensity;
-        t.material.uniforms.uHueShift.value = params.hueShift;
+        t.material.uniforms.uColor1.value.set(params.colorA);
+        t.material.uniforms.uColor2.value.set(params.colorB);
         t.material.uniforms.uTileOffset.value.set(t._gx * TILE_SIZE, t._gz * TILE_SIZE, t._gy * TILE_HEIGHT);
         t.material.uniforms.uCameraPos.value.copy(camera.position);
     }
