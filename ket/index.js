@@ -21,17 +21,52 @@ const params = {
     autoplay: true,
     autoplaySpeed: 0.6,
     controlMode: 'Auto',
+    raveMode: false,
     switchMode: () => {
-        params.autoplay = !params.autoplay;
-        params.controlMode = params.autoplay ? 'Auto' : 'Manual (WASD)';
+        if (params.controlMode === 'Auto') {
+            params.autoplay = false;
+            params.raveMode = false;
+            params.controlMode = 'Manual';
+        } else if (params.controlMode === 'Manual') {
+            params.autoplay = false;
+            params.raveMode = true;
+            params.controlMode = 'Rave';
+            ravePickTargets();
+            raveNextTime = rawTimeNow + 1 + Math.random() * 2;
+        } else {
+            params.autoplay = true;
+            params.raveMode = false;
+            params.controlMode = 'Auto';
+        }
         modeCtrl.updateDisplay();
-        document.getElementById('status').innerText = params.autoplay ? "AUTOPILOT" : "MANUAL";
-        document.getElementById('status').style.color = params.autoplay ? "#00ccff" : "#2cfa98";
+        const statusEl = document.getElementById('status');
+        if (params.raveMode) {
+            statusEl.innerText = "RAVE";
+            statusEl.style.color = "#ff00ff";
+        } else if (params.autoplay) {
+            statusEl.innerText = "AUTOPILOT";
+            statusEl.style.color = "#00ccff";
+        } else {
+            statusEl.innerText = "MANUAL";
+            statusEl.style.color = "#2cfa98";
+        }
     },
     togglePause: () => {
         params.paused = !params.paused;
-        document.getElementById('status').innerText = params.paused ? "PAUSED" : (params.autoplay ? "AUTOPILOT" : "MANUAL");
-        document.getElementById('status').style.color = params.paused ? "#ff0055" : (params.autoplay ? "#00ccff" : "#2cfa98");
+        const statusEl = document.getElementById('status');
+        if (params.paused) {
+            statusEl.innerText = "PAUSED";
+            statusEl.style.color = "#ff0055";
+        } else if (params.raveMode) {
+            statusEl.innerText = "RAVE";
+            statusEl.style.color = "#ff00ff";
+        } else if (params.autoplay) {
+            statusEl.innerText = "AUTOPILOT";
+            statusEl.style.color = "#00ccff";
+        } else {
+            statusEl.innerText = "MANUAL";
+            statusEl.style.color = "#2cfa98";
+        }
     },
     randomize: () => {
         params.speed = Math.random() * 2;
@@ -297,9 +332,9 @@ function addInfoIcon(domEl, text) {
 // Movement Folder
 const movFolder = gui.addFolder('Movement');
 const modeCtrl = movFolder.add(params, 'controlMode').name('Mode').disable();
-addInfoIcon(modeCtrl.domElement, 'Current control mode: Auto (autopilot) or Manual (WASD)');
-const swCtrl = movFolder.add(params, 'switchMode').name('🔄 Switch Auto/Manual');
-addInfoIcon(swCtrl.domElement, 'Toggle between automatic flight and manual WASD controls');
+addInfoIcon(modeCtrl.domElement, 'Current control mode: Auto (autopilot), Manual (WASD), or Rave (auto-randomize)');
+const swCtrl = movFolder.add(params, 'switchMode').name('🔄 Switch Mode');
+addInfoIcon(swCtrl.domElement, 'Cycle between Auto, Manual WASD, and Rave modes');
 const speedCtrl = movFolder.add(params, 'speed', 0, 5).name('Flight Speed');
 addInfoIcon(speedCtrl.domElement, 'Movement speed in manual mode (WASD keys)');
 const autoSpeedCtrl = movFolder.add(params, 'autoplaySpeed', 0, 3).name('Auto Speed');
@@ -396,6 +431,54 @@ document.addEventListener('touchmove', handleTouchMove, { passive: false });
 document.addEventListener('touchend', handleTouchEnd, { passive: false });
 document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
+// ─── 7b. RAVE MODE ────────────────────────────────────────
+const raveTemp = new THREE.Color();
+const raveCurrent = {
+    bloomStrength: params.bloomStrength,
+    bloomRadius: params.bloomRadius,
+    foldIntensity: params.foldIntensity,
+    veinSpeed: params.veinSpeed,
+    edgeContrast: params.edgeContrast,
+    timeScale: params.timeScale,
+    autoplaySpeed: params.autoplaySpeed,
+    colorA: params.colorA,
+    colorB: params.colorB
+};
+const raveTarget = { ...raveCurrent };
+let raveNextTime = 0;
+let rawTimeNow = 0;
+
+function ravePickTargets() {
+    raveTarget.bloomStrength = 0.5 + Math.random() * 2.5;
+    raveTarget.bloomRadius = 0.1 + Math.random() * 0.9;
+    raveTarget.foldIntensity = 0.5 + Math.random() * 2.5;
+    raveTarget.veinSpeed = 0.5 + Math.random() * 3;
+    raveTarget.edgeContrast = 0.2 + Math.random() * 0.8;
+    raveTarget.timeScale = 0.5 + Math.random() * 3;
+    raveTarget.autoplaySpeed = 0.5 + Math.random() * 3;
+    raveTarget.colorA = Math.floor(Math.random() * 0xffffff);
+    raveTarget.colorB = Math.floor(Math.random() * 0xffffff);
+}
+
+function raveLerp(dt) {
+    const l = 1 - Math.pow(0.001, dt);
+    raveCurrent.bloomStrength += (raveTarget.bloomStrength - raveCurrent.bloomStrength) * l;
+    raveCurrent.bloomRadius += (raveTarget.bloomRadius - raveCurrent.bloomRadius) * l;
+    raveCurrent.foldIntensity += (raveTarget.foldIntensity - raveCurrent.foldIntensity) * l;
+    raveCurrent.veinSpeed += (raveTarget.veinSpeed - raveCurrent.veinSpeed) * l;
+    raveCurrent.edgeContrast += (raveTarget.edgeContrast - raveCurrent.edgeContrast) * l;
+    raveCurrent.timeScale += (raveTarget.timeScale - raveCurrent.timeScale) * l;
+    raveCurrent.autoplaySpeed += (raveTarget.autoplaySpeed - raveCurrent.autoplaySpeed) * l;
+
+    raveTemp.set(raveCurrent.colorA);
+    raveTemp.lerp(new THREE.Color(raveTarget.colorA), l);
+    raveCurrent.colorA = raveTemp.getHex();
+
+    raveTemp.set(raveCurrent.colorB);
+    raveTemp.lerp(new THREE.Color(raveTarget.colorB), l);
+    raveCurrent.colorB = raveTemp.getHex();
+}
+
 // ─── 8. ANIMATION LOOP ───────────────────────────────────
 const clock = new THREE.Clock();
 let mouseX = 0;
@@ -427,38 +510,52 @@ function animate() {
     }
 
     const rawTime = clock.getElapsedTime();
-    const effectiveTime = rawTime * params.timeScale;
+    rawTimeNow = rawTime;
+    const dt = clock.getDelta() || 0.016;
+
+    // Rave mode: lerp params toward targets, pick new targets on schedule
+    if (params.raveMode) {
+        if (rawTime >= raveNextTime) {
+            ravePickTargets();
+            raveNextTime = rawTime + 1 + Math.random() * 2;
+        }
+        raveLerp(dt);
+    }
+
+    const activeTS = params.raveMode ? raveCurrent.timeScale : params.timeScale;
+    const effectiveTime = rawTime * activeTS;
 
     // Update all visible tile uniforms
     for (const t of floorTiles.concat(ceilTiles)) {
         if (!t.visible) continue;
         t.material.uniforms.uTime.value = effectiveTime;
-        t.material.uniforms.uFoldIntensity.value = params.foldIntensity;
-        t.material.uniforms.uColor1.value.set(params.colorA);
-        t.material.uniforms.uColor2.value.set(params.colorB);
+        t.material.uniforms.uFoldIntensity.value = params.raveMode ? raveCurrent.foldIntensity : params.foldIntensity;
+        t.material.uniforms.uColor1.value.set(params.raveMode ? raveCurrent.colorA : params.colorA);
+        t.material.uniforms.uColor2.value.set(params.raveMode ? raveCurrent.colorB : params.colorB);
         t.material.uniforms.uTileOffset.value.set(t._gx * TILE_SIZE, t._gz * TILE_SIZE, t._gy * TILE_HEIGHT);
         t.material.uniforms.uCameraPos.value.copy(camera.position);
     }
     for (const t of wallTilesX.concat(wallTilesZ).concat(wallAngX).concat(wallAngZ)) {
         if (!t.visible) continue;
         t.material.uniforms.uTime.value = effectiveTime;
-        t.material.uniforms.uFoldIntensity.value = params.foldIntensity;
-        t.material.uniforms.uColor1.value.set(params.colorA);
-        t.material.uniforms.uColor2.value.set(params.colorB);
+        t.material.uniforms.uFoldIntensity.value = params.raveMode ? raveCurrent.foldIntensity : params.foldIntensity;
+        t.material.uniforms.uColor1.value.set(params.raveMode ? raveCurrent.colorA : params.colorA);
+        t.material.uniforms.uColor2.value.set(params.raveMode ? raveCurrent.colorB : params.colorB);
         t.material.uniforms.uTileOffset.value.set(t._gx * TILE_SIZE, t._gz * TILE_SIZE, t._gy * TILE_HEIGHT);
         t.material.uniforms.uCameraPos.value.copy(camera.position);
     }
 
-    bloomPass.strength = params.bloomStrength;
-    bloomPass.radius = params.bloomRadius;
-    edgePass.uniforms['edgeStrength'].value = params.edgeContrast;
+    bloomPass.strength = params.raveMode ? raveCurrent.bloomStrength : params.bloomStrength;
+    bloomPass.radius = params.raveMode ? raveCurrent.bloomRadius : params.bloomRadius;
+    edgePass.uniforms['edgeStrength'].value = params.raveMode ? raveCurrent.edgeContrast : params.edgeContrast;
 
-    if (params.autoplay) {
-        autoAngle += 0.005 * params.timeScale;
+    if (params.autoplay || params.raveMode) {
+        autoAngle += 0.005 * activeTS;
         const autoR = 8 + Math.sin(autoAngle * 0.7) * 5;
         const targetX = Math.sin(autoAngle) * autoR;
         const targetY = Math.cos(autoAngle * 0.5) * 3 + 2;
-        const targetZ = camera.position.z - params.autoplaySpeed;
+        const activeSpeed = params.raveMode ? raveCurrent.autoplaySpeed : params.autoplaySpeed;
+        const targetZ = camera.position.z - activeSpeed;
 
         camera.position.x += (targetX - camera.position.x) * 0.02;
         camera.position.y += (targetY - camera.position.y) * 0.02;
