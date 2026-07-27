@@ -23,6 +23,7 @@ const params = {
     switchMode: () => {
         params.autoplay = !params.autoplay;
         params.controlMode = params.autoplay ? 'Auto' : 'Manual (WASD)';
+        modeCtrl.updateDisplay();
         document.getElementById('status').innerText = params.autoplay ? "AUTOPILOT" : "MANUAL";
         document.getElementById('status').style.color = params.autoplay ? "#00ccff" : "#2cfa98";
     },
@@ -35,6 +36,19 @@ const params = {
         params.speed = Math.random() * 2;
         params.foldIntensity = 0.5 + Math.random() * 2;
         params.hueShift = Math.random();
+        params.edgeContrast = Math.random();
+        params.veinSpeed = Math.random() * 3;
+        params.bloomRadius = Math.random();
+        params.autoplaySpeed = Math.random() * 3;
+        params.timeScale = Math.random() * 3;
+        speedCtrl.updateDisplay();
+        foldCtrl.updateDisplay();
+        hueCtrl.updateDisplay();
+        edgeCtrl.updateDisplay();
+        veinCtrl.updateDisplay();
+        radiusCtrl.updateDisplay();
+        autoSpeedCtrl.updateDisplay();
+        timeCtrl.updateDisplay();
     }
 };
 
@@ -250,21 +264,21 @@ const gui = new GUI({ title: 'Trip Controls' });
 
 // Movement Folder
 const movFolder = gui.addFolder('Movement');
-movFolder.add(params, 'controlMode').name('Mode').disable();
+const modeCtrl = movFolder.add(params, 'controlMode').name('Mode').disable();
 movFolder.add(params, 'switchMode').name('🔄 Switch Auto/Manual');
-movFolder.add(params, 'speed', 0, 5).name('Flight Speed');
-movFolder.add(params, 'autoplaySpeed', 0, 3).name('Auto Speed');
-movFolder.add(params, 'timeScale', 0, 3).name('Time Dilation');
+const speedCtrl = movFolder.add(params, 'speed', 0, 5).name('Flight Speed');
+const autoSpeedCtrl = movFolder.add(params, 'autoplaySpeed', 0, 3).name('Auto Speed');
+const timeCtrl = movFolder.add(params, 'timeScale', 0, 3).name('Time Dilation');
 movFolder.add(params, 'togglePause').name('⏸ Pause / Resume');
 
 // Visuals Folder
 const visFolder = gui.addFolder('Visuals');
 visFolder.add(params, 'bloomStrength', 0, 3).name('Bloom Glow');
-visFolder.add(params, 'bloomRadius', 0, 1).name('Glow Radius');
-visFolder.add(params, 'foldIntensity', 0, 3).name('Fold Intensity');
-visFolder.add(params, 'veinSpeed', 0, 3).name('Vein Flow');
-visFolder.add(params, 'hueShift', 0, 1).name('Color Shift');
-visFolder.add(params, 'edgeContrast', 0, 1).name('Outline Strength');
+const radiusCtrl = visFolder.add(params, 'bloomRadius', 0, 1).name('Glow Radius');
+const foldCtrl = visFolder.add(params, 'foldIntensity', 0, 3).name('Fold Intensity');
+const veinCtrl = visFolder.add(params, 'veinSpeed', 0, 3).name('Vein Flow');
+const hueCtrl = visFolder.add(params, 'hueShift', 0, 1).name('Color Shift');
+const edgeCtrl = visFolder.add(params, 'edgeContrast', 0, 1).name('Outline Strength');
 
 // Actions Folder
 const actFolder = gui.addFolder('Actions');
