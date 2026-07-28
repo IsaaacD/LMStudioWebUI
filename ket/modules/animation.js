@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { joystickState, updateJoystickInputs } from './touchControls.js';
 
+const MAX_PITCH_ANGLE = Math.PI / 4;
+const MAX_YAW_INCREMENT = Math.PI / 4.5;
+
 export class AnimationLoop {
     constructor({ camera, composer, params, tileManager, primitiveManager, raveEngine, tileConstants }) {
         this.camera = camera;
@@ -181,6 +184,8 @@ export class AnimationLoop {
         this.mouseYawDelta = 0;
         this.mousePitchDelta = 0;
 
+        yawInput = Math.max(-MAX_YAW_INCREMENT, Math.min(MAX_YAW_INCREMENT, yawInput));
+
         this.camera.position.addScaledVector(dir, forwardInput * moveSpeed);
         this.camera.position.addScaledVector(right, strafeInput * moveSpeed);
         this.camera.position.y += verticalInput * moveSpeed;
@@ -190,7 +195,7 @@ export class AnimationLoop {
             euler.setFromQuaternion(this.camera.quaternion);
             euler.y -= yawInput;
             euler.x -= pitchInput;
-            euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+            euler.x = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, euler.x));
             this.camera.quaternion.setFromEuler(euler);
             this.camera.getWorldDirection(dir);
         }
@@ -206,7 +211,7 @@ export class AnimationLoop {
             const baseY = Math.cos(this.autoAngle * 0.5) * 3 + 2;
             this.autoOffsetX = this.camera.position.x - baseX;
             this.autoOffsetY = this.camera.position.y - baseY;
-            this.autoPitch = this.camera.rotation.x;
+            this.autoPitch = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, this.camera.rotation.x));
             this.wasUserMoving = false;
         }
 
@@ -231,6 +236,15 @@ export class AnimationLoop {
         const autoQuat = new THREE.Quaternion().setFromEuler(euler);
         const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
         const lookTarget = this.camera.position.clone().add(forward.multiplyScalar(10)).applyQuaternion(autoQuat);
-        this.camera.lookAt(lookTarget);
+
+        const targetDir = lookTarget.clone().sub(this.camera.position).normalize();
+        const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), targetDir);
+        const dot = Math.max(-1, Math.min(1, this.camera.quaternion.dot(targetQuat)));
+        const angle = Math.acos(dot) * 2;
+        if (angle > MAX_YAW_INCREMENT) {
+            this.camera.quaternion.slerp(targetQuat, MAX_YAW_INCREMENT / angle);
+        } else {
+            this.camera.quaternion.copy(targetQuat);
+        }
     }
 }

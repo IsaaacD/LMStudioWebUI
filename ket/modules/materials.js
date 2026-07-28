@@ -10,11 +10,13 @@ export async function createCityMaterial() {
             uColor3: { value: new THREE.Color(0x110022) },
             uFoldIntensity: { value: 1.0 },
             uTileOffset: { value: new THREE.Vector3(0, 0, 0) },
-            uCameraPos: { value: new THREE.Vector3(0, 0, 0) }
+            uCameraPos: { value: new THREE.Vector3(0, 0, 0) },
+            //uAlpha: { value: 0.8 }
         },
         vertexShader: await loadShader('./shaders/city.vert'),
         fragmentShader: await loadShader('./shaders/city.frag'),
         wireframe: false,
+        transparent: true,
         side: THREE.DoubleSide
     });
 }

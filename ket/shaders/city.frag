@@ -4,6 +4,7 @@ uniform vec3 uColor2;
 uniform vec3 uColor3;
 uniform vec3 uCameraPos;
 varying float vElevation;
+//uniform float uAlpha;
 varying vec2 vUv;
 varying vec3 vWorldPosition;
 
