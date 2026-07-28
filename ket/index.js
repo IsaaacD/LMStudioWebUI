@@ -6,6 +6,136 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import GUI from 'lil-gui';
 
+// ─── 0. AUDIO ────────────────────────────────────────────
+let audioCtx = null;
+let audioBuffer = null;
+let audioSource = null;
+let audioGain = null;
+let audioStarted = false;
+let rawAudioData = null;
+let entering = false;
+
+const SPLASH_DURATION = 1.8;
+
+// async function loadAndCacheAudio() {
+//     try {
+//         const response = await fetch('./lights.mp3', { cache: 'force-cache' });
+//         if (!response.ok) throw new Error(`Failed to fetch audio: ${response.statusText}`);
+//         rawAudioData = await response.arrayBuffer();
+//     } catch (e) {
+//         console.warn('Audio load failed:', e);
+//     }
+// }
+
+// async function startAudio() {
+//     if (audioStarted) return;
+//     if (!rawAudioData) return;
+//     try {
+//         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+//         audioBuffer = await audioCtx.decodeAudioData(rawAudioData.slice());
+//         audioSource = audioCtx.createBufferSource();
+//         audioGain = audioCtx.createGain();
+//         audioGain.gain.value = 0;
+//         audioSource.buffer = audioBuffer;
+//         audioSource.loop = true;
+//         audioSource.connect(audioGain);
+//         audioGain.connect(audioCtx.destination);
+//         audioSource.start(0);
+//         audioStarted = true;
+//         audioGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + SPLASH_DURATION);
+//     } catch (e) {
+//         console.warn('Audio start failed:', e);
+//     }
+// }
+
+// loadAndCacheAudio();
+
+const splashEl = document.getElementById('splash');
+splashEl.addEventListener('click', enterScene);
+splashEl.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    enterScene();
+});
+
+// ─── 0. SPLASH SCREEN + AUDIO BOOT ───────────────────────
+//const splashEl = document.getElementById('splash');
+const splashSub = document.getElementById('splash-sub');
+const audio = new Audio('lights.mp3');
+audio.loop = true;
+audio.volume = 0.7;
+let sceneStarted = false;
+
+// async function enterScene() {
+//     if (entering) return;
+//     entering = true;
+//     await startAudio();
+//     const splash = document.getElementById('splash');
+//     if (splash) {
+//         splash.classList.add('exit');
+//         setTimeout(() => splash.remove(), SPLASH_DURATION * 1000 + 200);
+//     }
+// }
+
+async function enterScene() {
+    if (sceneStarted) return;
+    sceneStarted = true;
+
+    // Show loading state
+    splashSub.textContent = 'LOADING...';
+    splashSub.style.animation = 'none';
+
+    // Attempt audio playback (requires user gesture for browser policy)
+    try {
+        attemptAutoplay(() => {
+            // Fade out splash screen
+            splashEl.classList.add('exit');
+            setTimeout(() => { splashEl.style.display = 'none'; }, 2000);
+            animate();
+        });
+    } catch (err) {
+        console.warn('Audio autoplay blocked:', err);
+    }
+
+
+}
+
+// Bind click/tap to splash screen
+splashEl.addEventListener('click', enterScene);
+splashEl.addEventListener('touchend', (e) => { e.preventDefault(); enterScene(); });
+
+// ─── 0. AUDIO ────────────────────────────────────────────
+const audioElement = new Audio('./lights.mp3');
+audioElement.loop = true;
+audioElement.volume = 0.5;
+let audioMuted = true;
+
+function attemptAutoplay(exitAfter) {
+    audioElement.play().then(() => {
+        audioMuted = false;
+        updateAudioButton();
+        exitAfter();
+    }).catch(() => {
+        audioMuted = true;
+        exitAfter();
+        document.addEventListener('click', () => {
+            if (audioMuted) {
+                audioElement.play().then(() => {
+                    audioMuted = false;
+                    updateAudioButton();
+                }).catch(() => { });
+            }
+        }, { once: true });
+    });
+}
+
+function updateAudioButton() {
+    if (audioBtnEl) {
+        audioBtnEl.innerText = audioMuted ? '🔇' : '🔊';
+    }
+}
+
+//attemptAutoplay();
+
 // ─── 1. CONFIGURATION STATE ──────────────────────────────
 const params = {
     speed: 0.8,
@@ -363,6 +493,30 @@ composer.addPass(edgePass);
 
 // ─── 6. UI CONTROLS ──────────────────────────────────────
 const gui = new GUI({ title: 'Trip Controls' });
+
+// Audio button in header
+const audioBtnEl = document.createElement('button');
+audioBtnEl.innerText = '🔇';
+Object.assign(audioBtnEl.style, {
+    background: 'transparent', border: 'none', color: '#fff', fontSize: '16px',
+    cursor: 'pointer', marginLeft: '8px', padding: '2px 6px', borderRadius: '4px',
+    top: 10, left: 10, position: 'absolute', zIndex: 999
+});
+audioBtnEl.addEventListener('click', () => {
+    if (audioMuted) {
+        audioElement.play().then(() => {
+            audioMuted = false;
+            updateAudioButton();
+        }).catch(() => { });
+    } else {
+        audioElement.pause();
+        audioMuted = true;
+        updateAudioButton();
+    }
+});
+
+document.body.appendChild(audioBtnEl);
+
 gui.close();
 // Tooltip system
 const tooltipEl = document.createElement('div');
@@ -973,4 +1127,5 @@ window.addEventListener('resize', () => {
     edgePass.uniforms['resolution'].value.set(innerWidth, innerHeight);
 });
 
-animate();
+// Scene starts only after splash screen click
+// animate();

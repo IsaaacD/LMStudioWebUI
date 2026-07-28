@@ -17,6 +17,155 @@
             touch-action: none;
         }
 
+        /* Splash Screen */
+        #splash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            cursor: pointer;
+            transition: opacity 1.8s ease, transform 1.8s ease, filter 1.8s ease;
+            opacity: 1;
+            transform: scale(1);
+            filter: blur(0px);
+        }
+
+        #splash.exit {
+            opacity: 0;
+            transform: scale(1.4);
+            filter: blur(30px);
+            pointer-events: none;
+        }
+
+        #splash-title {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(28px, 6vw, 72px);
+            color: #fff;
+            text-shadow:
+                0 0 10px #ff0055,
+                0 0 30px #ff0055,
+                0 0 60px #00ccff,
+                0 0 100px #00ccff;
+            letter-spacing: 0.3em;
+            animation: pulse 2.5s ease-in-out infinite;
+            user-select: none;
+        }
+
+        #splash-sub {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(11px, 2vw, 18px);
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 40px;
+            letter-spacing: 0.5em;
+            animation: breathe 3s ease-in-out infinite;
+            user-select: none;
+        }
+
+        #splash-progress-track {
+            width: clamp(180px, 40vw, 320px);
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            margin-top: 30px;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #splash-progress-track.visible {
+            opacity: 1;
+        }
+
+        #splash-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff0055, #00ccff);
+            border-radius: 2px;
+            transition: width 0.15s ease-out;
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.5), 0 0 16px rgba(0, 204, 255, 0.3);
+        }
+
+        #splash-progress-text {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 10px;
+            letter-spacing: 0.2em;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #splash-progress-text.visible {
+            opacity: 1;
+        }
+
+        #splash-ring {
+            width: clamp(80px, 15vw, 160px);
+            height: clamp(80px, 15vw, 160px);
+            border: 2px solid rgba(255, 0, 85, 0.3);
+            border-radius: 50%;
+            margin-bottom: 50px;
+            animation: spin 8s linear infinite, ringPulse 3s ease-in-out infinite;
+            box-shadow:
+                0 0 15px rgba(255, 0, 85, 0.2),
+                inset 0 0 15px rgba(0, 204, 255, 0.1);
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+                text-shadow: 0 0 10px #ff0055, 0 0 30px #ff0055, 0 0 60px #00ccff, 0 0 100px #00ccff;
+            }
+
+            50% {
+                opacity: 1;
+                text-shadow: 0 0 20px #ff0055, 0 0 50px #ff0055, 0 0 80px #00ccff, 0 0 130px #00ccff;
+            }
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes ringPulse {
+
+            0%,
+            100% {
+                border-color: rgba(255, 0, 85, 0.3);
+            }
+
+            50% {
+                border-color: rgba(0, 204, 255, 0.5);
+            }
+        }
+
         /* UI Overlay Styling */
         #overlay {
             position: fixed;
@@ -58,6 +207,11 @@
 </head>
 
 <body>
+    <div id="splash">
+        <div id="splash-ring"></div>
+        <div id="splash-title">KETAMINE DREAMS</div>
+        <div id="splash-sub">CLICK TO ENTER</div>
+    </div>
     <div id="overlay"></div>
     <div id="text">
         SYSTEM: KETAMINE DREAMS<br>
@@ -73,7 +227,7 @@
         }
     </script>
 
-    <script type="importmap">
+    <script type=" importmap">
             {
             "imports": {
             "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
