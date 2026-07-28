@@ -28,7 +28,7 @@ void main() {
     if (vElevation > 0.5) {
     float windowPulse = sin(vWorldPosition.x * 2.0 + uTime + vWorldPosition.z * 2.0);
     if (windowPulse > 0.8) {
-        finalColor = mix(finalColor, col2, 0.8);s
+        finalColor = mix(finalColor, col2, 0.8);
     } else {
         finalColor = mix(finalColor, col1, 0.3);
     }
