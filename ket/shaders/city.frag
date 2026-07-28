@@ -45,7 +45,7 @@ void main() {
 
     // Fog (camera-relative for infinite world)
     float dist = length(vWorldPosition.xz - uCameraPos.xz);
-    float fogFactor = smoothstep(0.0, 60.0, dist);
+    float fogFactor = smoothstep(40.0, 120.0, dist);
     finalColor = mix(finalColor, vec3(0.05, 0.0, 0.1), fogFactor);
 
     gl_FragColor = vec4(finalColor, 1.0);

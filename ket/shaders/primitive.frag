@@ -23,7 +23,7 @@ void main() {
     baseColor = mix(baseColor, uColor1, vein1 * 0.4);
 
     float dist = length(vWorldPosition - uCameraPos);
-    float fogFactor = smoothstep(0.0, 70.0, dist);
+    float fogFactor = smoothstep(80.0, 180.0, dist);
 
     float edge = smoothstep(0.0, 0.3, vDisplacement + 1.0) * smoothstep(1.0, 0.3, vDisplacement + 1.0);
     baseColor += edge * uColor2 * 0.3;
