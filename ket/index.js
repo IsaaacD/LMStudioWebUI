@@ -71,7 +71,7 @@ let sceneStarted = false;
 //     }
 // }
 
-async function enterScene() {
+function enterScene() {
     if (sceneStarted) return;
     sceneStarted = true;
 
@@ -218,7 +218,7 @@ const params = {
 
 // ─── 2. SETUP ────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x050011, 0.02);
+scene.fog = new THREE.FogExp2(0x050011, 0.001);
 
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 camera.position.z = 5;

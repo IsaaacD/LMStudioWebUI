@@ -203,6 +203,258 @@
             --string-color: #a29bfe;
             font-size: 13px;
         }
+
+        /* ─── Drone Control Overlays ─── */
+        #controls-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 0;
+            padding: 0 20px 24px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s;
+            pointer-events: none;
+            z-index: 100000;
+        }
+
+        #controls-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #splash.exit~#controls-panel,
+        #splash.exit+#controls-panel {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 18px;
+            background: rgba(5, 0, 20, 0.75);
+            border: 1px solid rgba(0, 204, 255, 0.15);
+            border-radius: 10px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow:
+                0 0 20px rgba(0, 204, 255, 0.08),
+                inset 0 0 20px rgba(0, 204, 255, 0.03);
+        }
+
+        .control-group.right-stick {
+            border-color: rgba(255, 0, 85, 0.15);
+            box-shadow:
+                0 0 20px rgba(255, 0, 85, 0.08),
+                inset 0 0 20px rgba(255, 0, 85, 0.03);
+        }
+
+        .control-label {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 2px;
+        }
+
+        .control-keys {
+            display: grid;
+            gap: 4px;
+        }
+
+        .control-keys.keyboard-grid {
+            grid-template-columns: repeat(3, 36px);
+            grid-template-rows: repeat(3, 36px);
+        }
+
+        .key-cap {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(0, 204, 255, 0.25);
+            border-radius: 6px;
+            text-shadow: 0 0 6px rgba(0, 204, 255, 0.4);
+            box-shadow: 0 0 8px rgba(0, 204, 255, 0.06);
+            transition: all 0.15s ease;
+        }
+
+        .key-cap.accent {
+            border-color: rgba(255, 0, 85, 0.3);
+            text-shadow: 0 0 6px rgba(255, 0, 85, 0.4);
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.06);
+        }
+
+        .key-cap.empty {
+            border: none;
+            background: none;
+            box-shadow: none;
+        }
+
+        .key-cap.arrow-label {
+            font-size: 10px;
+            letter-spacing: 0;
+            font-weight: normal;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Joystick visual for touch */
+        .joystick-hint {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 1.5px dashed rgba(0, 204, 255, 0.25);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .joystick-hint.right-style {
+            border-color: rgba(255, 0, 85, 0.25);
+        }
+
+        .joystick-hint-inner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 204, 255, 0.35), rgba(0, 204, 255, 0.1));
+            box-shadow: 0 0 12px rgba(0, 204, 255, 0.25);
+        }
+
+        .joystick-hint-inner.right-style {
+            background: radial-gradient(circle, rgba(255, 0, 85, 0.35), rgba(255, 0, 85, 0.1));
+            box-shadow: 0 0 12px rgba(255, 0, 85, 0.25);
+        }
+
+        .joystick-arrows {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .joystick-arrows span {
+            position: absolute;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
+            font-family: 'Courier New', monospace;
+        }
+
+        .joystick-arrows .j-up {
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .joystick-arrows .j-down {
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .joystick-arrows .j-left {
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .joystick-arrows .j-right {
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .joystick-sub-label {
+            font-family: 'Courier New', monospace;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 0.15em;
+            margin-top: 4px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Drone HUD badge */
+        .drone-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+
+        .drone-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.5;
+        }
+
+        .drone-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Divider line between groups */
+        .control-divider {
+            width: 1px;
+            height: 100%;
+            min-height: 80px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 204, 255, 0.12), transparent);
+            align-self: center;
+        }
+
+        /* Mouse hint */
+        .mouse-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mouse-icon {
+            width: 20px;
+            height: 32px;
+            border: 1.5px solid rgba(0, 204, 255, 0.25);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .mouse-icon::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 6px;
+            background: rgba(0, 204, 255, 0.3);
+            border-radius: 1px;
+        }
+
+        .mouse-icon::before {
+            content: '';
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 6px;
+            background: rgba(0, 204, 255, 0.15);
+            border-radius: 1px;
+        }
     </style>
 </head>
 
@@ -211,6 +463,82 @@
         <div id="splash-ring"></div>
         <div id="splash-title">KETAMINE DREAMS</div>
         <div id="splash-sub">CLICK TO ENTER</div>
+
+        <!-- Drone Control Overlays -->
+        <div id="controls-panel">
+            <!-- Keyboard: Movement pad -->
+            <div class="control-group" id="kb-move">
+                <div class="control-label">THRUST / STRAFE</div>
+                <div class="control-keys keyboard-grid">
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap arrow-label">W</div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap arrow-label">A</div>
+                    <div class="key-cap arrow-label">S</div>
+                    <div class="key-cap arrow-label">D</div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap empty"></div>
+                </div>
+            </div>
+
+            <!-- Keyboard: Altitude -->
+            <div class="control-group" id="kb-alt">
+                <div class="control-label">ALTITUDE</div>
+                <div class="control-keys keyboard-grid">
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap accent arrow-label">E</div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap empty"></div>
+                    <div class="key-cap accent arrow-label">Q</div>
+                    <div class="key-cap empty"></div>
+                </div>
+            </div>
+
+            <!-- Keyboard: Mouse look -->
+            <!-- <div class="control-group" id="kb-look">
+                <div class="control-label">GYRO AIM</div>
+                <div class="mouse-hint">
+                    <div class="mouse-icon"></div>
+                    <span
+                        style="font-family:'Courier New',monospace;font-size:8px;color:rgba(255,255,255,0.25);letter-spacing:0.15em;">MOVE</span>
+                </div>
+            </div> -->
+        </div>
+    </div>
+
+    <!-- Touch controls panel (hidden by default, shown for touch devices) -->
+    <div id="controls-panel-touch" style="display:none;">
+        <div class="control-group">
+            <div class="control-label">THRUST / STRAFE</div>
+            <div class="joystick-hint">
+                <div class="joystick-arrows">
+                    <span class="j-up">▲</span>
+                    <span class="j-down">▼</span>
+                    <span class="j-left">◀</span>
+                    <span class="j-right">▶</span>
+                </div>
+                <div class="joystick-hint-inner"></div>
+            </div>
+            <div class="joystick-sub-label ">FIRST TOUCH<br>DIRECTION</div>
+        </div>
+
+        <div class="control-group right-stick">
+            <div class="control-label">YAW / PITCH / ALT</div>
+            <div class="joystick-hint right-style">
+                <div class="joystick-arrows">
+                    <span class="j-up">UP</span>
+                    <span class="j-down">DN</span>
+                    <span class="j-left">◀</span>
+                    <span class="j-right">▶</span>
+                </div>
+                <div class="joystick-hint-inner right-style"></div>
+            </div>
+            <div class="joystick-sub-label">SECOND TOUCH<br>ORIENTATION</div>
+        </div>
     </div>
     <div id="overlay"></div>
     <div id="text">
@@ -225,6 +553,59 @@
             s.onload = () => eruda.init();
             document.head.appendChild(s);
         }
+
+        // Detect touch capability to show appropriate controls
+        (function () {
+            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const kbPanel = document.getElementById('controls-panel');
+            const touchPanel = document.getElementById('controls-panel-touch');
+
+            if (isTouchDevice) {
+                kbPanel.style.display = 'none';
+                touchPanel.style.display = 'flex';
+                // Move touch panel inside splash for proper stacking
+                document.getElementById('splash').appendChild(touchPanel);
+                // Apply same bottom positioning
+                Object.assign(touchPanel.style, {
+                    position: 'fixed',
+                    bottom: '0',
+                    left: '0',
+                    width: '100%',
+                    justifyContent: 'center',
+                    alignItems: 'flex-end',
+                    gap: '0',
+                    padding: '0 20px 24px',
+                    opacity: '0',
+                    transform: 'translateY(30px)',
+                    transition: 'opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s',
+                    pointerEvents: 'none',
+                    zIndex: '100000'
+                });
+            }
+
+            // Show controls after splash loads
+            setTimeout(() => {
+                if (isTouchDevice) {
+                    touchPanel.style.opacity = '1';
+                    touchPanel.style.transform = 'translateY(0)';
+                } else {
+                    kbPanel.classList.add('visible');
+                }
+            }, 800);
+
+            // Hide controls when splash exits
+            const splashEl = document.getElementById('splash');
+            splashEl.addEventListener('click', function hideControls() {
+                setTimeout(() => {
+                    if (isTouchDevice) {
+                        touchPanel.style.opacity = '0';
+                    } else {
+                        kbPanel.classList.remove('visible');
+                    }
+                }, 100);
+                splashEl.removeEventListener('click', hideControls);
+            });
+        })();
     </script>
 
     <script type="importmap">
