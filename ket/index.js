@@ -102,7 +102,7 @@ splashEl.addEventListener('touchend', (e) => { e.preventDefault(); enterScene();
 const audioElement = new Audio('./lights.mp3');
 audioElement.loop = true;
 audioElement.volume = 0.5;
-let audioMuted = true;
+let audioMuted = false;
 
 function attemptAutoplay(exitAfter) {
     audioElement.play().then(() => {
@@ -491,11 +491,12 @@ const gui = new GUI({ title: 'Trip Controls' });
 
 // Audio button in header
 const audioBtnEl = document.createElement('button');
-audioBtnEl.innerText = '🔇';
+audioBtnEl.innerText = '🔊';
+audioBtnEl.classList = 'gui';
 Object.assign(audioBtnEl.style, {
     background: 'transparent', border: 'none', color: '#fff', fontSize: '16px',
     cursor: 'pointer', marginLeft: '8px', padding: '2px 6px', borderRadius: '4px',
-    top: 10, left: 10, position: 'absolute', zIndex: 999
+    top: '10px', left: '10px', position: 'fixed', zIndex: '99999'
 });
 audioBtnEl.addEventListener('click', () => {
     if (audioMuted) {
