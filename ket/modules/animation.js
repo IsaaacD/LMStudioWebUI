@@ -11,9 +11,6 @@ export class AnimationLoop {
         this.raveEngine = raveEngine;
         this.TILE_SIZE = tileConstants.TILE_SIZE;
         this.TILE_HEIGHT = tileConstants.TILE_HEIGHT;
-
-        this.mouseX = 0;
-        this.mouseY = 0;
         this.keys = { w: false, a: false, s: false, d: false, q: false, e: false };
         this.autoAngle = 0;
         this.autoOffsetX = 0;
@@ -21,6 +18,9 @@ export class AnimationLoop {
         this.wasUserMoving = false;
         this.manualRotation = null;
         this.autoRotationBlend = 1;
+        this.mouseYawDelta = 0;
+        this.mousePitchDelta = 0;
+        this.pointerLocked = false;
 
         this.bindInput();
         this.running = false;
@@ -28,8 +28,22 @@ export class AnimationLoop {
 
     bindInput() {
         document.addEventListener('mousemove', (e) => {
-            this.mouseX = (e.clientX - innerWidth / 2) * 0.001;
-            this.mouseY = (e.clientY - innerHeight / 2) * 0.001;
+            if (this.pointerLocked) {
+                this.mouseYawDelta -= e.movementX * 0.002;
+                this.mousePitchDelta -= e.movementY * 0.002;
+            }
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && !this.pointerLocked) {
+                const el = e.target;
+                if (el.closest('#splash, .lil-gui, .gui, #gui, [class*="gui"]')) return;
+                document.body.requestPointerLock();
+            }
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            this.pointerLocked = document.pointerLockElement !== null;
         });
 
         document.addEventListener('keydown', (e) => {
@@ -109,7 +123,7 @@ export class AnimationLoop {
         updateJoystickInputs();
         const leftActive = joystickState.left.isActive;
         const rightActive = joystickState.right.isActive;
-        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.q || this.keys.e || leftActive || rightActive;
+        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.q || this.keys.e || leftActive || rightActive || this.pointerLocked;
         const useManual = !this.params.autoplay && !this.params.raveMode || (this.params.raveMode && isMoving);
 
         if (useManual) {
@@ -118,6 +132,8 @@ export class AnimationLoop {
         } else {
             this.handleAutoControl(activeParams, dt);
         }
+
+
 
         if (isMoving && this.params.raveMode) {
             this.wasUserMoving = true;
@@ -158,6 +174,11 @@ export class AnimationLoop {
             yawInput += joystickState.right.yaw;
             pitchInput += joystickState.right.pitch;
         }
+
+        yawInput -= this.mouseYawDelta;
+        pitchInput -= this.mousePitchDelta;
+        this.mouseYawDelta = 0;
+        this.mousePitchDelta = 0;
 
         this.camera.position.addScaledVector(dir, forwardInput * moveSpeed);
         this.camera.position.addScaledVector(right, strafeInput * moveSpeed);

@@ -1,4 +1,13 @@
 import * as THREE from 'three';
+import {
+    GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX,
+    GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
+    GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX,
+    GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
+    GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
+    GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
+    GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
+} from './utils.js';
 
 export class RaveEngine {
     constructor(params) {
@@ -19,13 +28,13 @@ export class RaveEngine {
     }
 
     pickTargets() {
-        this.raveTarget.bloomStrength = 0.5 + Math.random() * 2.5;
-        this.raveTarget.bloomRadius = 0.1 + Math.random() * 0.9;
-        this.raveTarget.foldIntensity = 0.5 + Math.random() * 2.5;
-        this.raveTarget.veinSpeed = 0.5 + Math.random() * 3;
-        this.raveTarget.edgeContrast = 0.1 + Math.random() * 0.45;
-        this.raveTarget.timeScale = 0.5 + Math.random() * 3;
-        this.raveTarget.autoplaySpeed = 0.5 + Math.random() * 3;
+        this.raveTarget.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
+        this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
+        this.raveTarget.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
+        this.raveTarget.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
+        this.raveTarget.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
+        this.raveTarget.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
+        this.raveTarget.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
         this.raveTarget.colorA = Math.floor(Math.random() * 0xffffff);
         this.raveTarget.colorB = Math.floor(Math.random() * 0xffffff);
     }

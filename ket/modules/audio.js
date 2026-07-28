@@ -1,3 +1,9 @@
+import {
+    TOOLTIP_Z_INDEX, AUDIO_BUTTON_FONT_SIZE, AUDIO_BUTTON_MARGIN_LEFT,
+    AUDIO_BUTTON_PADDING, AUDIO_BUTTON_BORDER_RADIUS, AUDIO_BUTTON_POSITION_OFFSET,
+    AUDIO_INITIAL_VOLUME, SPLASH_EXIT_DELAY_MS,
+} from './utils.js';
+
 let audioElement = null;
 let audioMuted = true;
 let audioStarted = false;
@@ -6,15 +12,16 @@ let audioBtnEl = null;
 export function initAudio(splashEl, splashSub) {
     audioElement = new Audio('./lights.mp3');
     audioElement.loop = true;
-    audioElement.volume = 0.5;
+    audioElement.volume = AUDIO_INITIAL_VOLUME;
 
     audioBtnEl = document.createElement('button');
     audioBtnEl.innerText = '🔇';
     audioBtnEl.classList = 'gui';
     Object.assign(audioBtnEl.style, {
-        background: 'transparent', border: 'none', color: '#fff', fontSize: '16px',
-        cursor: 'pointer', marginLeft: '8px', padding: '2px 6px', borderRadius: '4px',
-        top: '10px', left: '10px', position: 'fixed', zIndex: '99999'
+        background: 'transparent', border: 'none', color: '#fff', fontSize: AUDIO_BUTTON_FONT_SIZE,
+        cursor: 'pointer', marginLeft: AUDIO_BUTTON_MARGIN_LEFT, padding: AUDIO_BUTTON_PADDING,
+        borderRadius: AUDIO_BUTTON_BORDER_RADIUS, top: AUDIO_BUTTON_POSITION_OFFSET,
+        left: AUDIO_BUTTON_POSITION_OFFSET, position: 'fixed', zIndex: TOOLTIP_Z_INDEX
     });
     audioBtnEl.addEventListener('click', toggleAudio);
     document.body.appendChild(audioBtnEl);
@@ -31,7 +38,7 @@ function enterScene(splashEl, splashSub) {
 
     attemptAutoplay(() => {
         splashEl.classList.add('exit');
-        setTimeout(() => { splashEl.style.display = 'none'; }, 2000);
+        setTimeout(() => { splashEl.style.display = 'none'; }, SPLASH_EXIT_DELAY_MS);
         if (onSceneReady) onSceneReady();
     });
 }

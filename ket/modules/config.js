@@ -18,12 +18,12 @@ export const defaultParams = {
 };
 
 export function randomizeParams(params) {
-    params.speed = Math.random() * 2;
+    params.speed = 0.2 + Math.random() * 2;
     params.foldIntensity = 0.5 + Math.random() * 2;
-    params.edgeContrast = 0.1 + Math.random() * 0.45;
+    params.edgeContrast = 0.1 + Math.random() * 0.25;
     params.veinSpeed = Math.random() * 3;
     params.bloomRadius = Math.random();
-    params.autoplaySpeed = Math.random() * 3;
+    params.autoplaySpeed = 0.5 + Math.random() * 3;
     params.timeScale = Math.random() * 3;
     params.colorA = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
     params.colorB = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();

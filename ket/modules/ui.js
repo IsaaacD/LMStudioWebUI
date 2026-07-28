@@ -1,14 +1,29 @@
 import GUI from 'lil-gui';
+import {
+    TOOLTIP_Z_INDEX, TOOLTIP_MAX_WIDTH, TOOLTIP_BACKGROUND, TOOLTIP_TEXT_COLOR,
+    TOOLTIP_PADDING, TOOLTIP_BORDER_RADIUS, TOOLTIP_FONT_SIZE, TOOLTIP_LINE_HEIGHT,
+    TOOLTIP_BOX_SHADOW, TOOLTIP_BORDER, TOOLTIP_OFFSET_PX,
+    INFO_ICON_MARGIN_LEFT, INFO_ICON_FONT_SIZE, INFO_ICON_OPACITY, INFO_ICON_COLOR,
+    GUI_SPEED_MIN, GUI_SPEED_MAX,
+    GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
+    GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
+    GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX,
+    GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
+    GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX,
+    GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
+    GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
+} from './utils.js';
 
 export function initGUI(params, guiControllers) {
     const gui = new GUI({ title: 'Trip Controls' });
 
     const tooltipEl = document.createElement('div');
     Object.assign(tooltipEl.style, {
-        position: 'fixed', pointerEvents: 'none', background: 'rgba(10,10,20,0.92)',
-        color: '#ddd', padding: '6px 10px', borderRadius: '6px', fontSize: '12px',
-        lineHeight: '1.4', maxWidth: '240px', zIndex: '99999', display: 'none',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.08)'
+        position: 'fixed', pointerEvents: 'none', background: TOOLTIP_BACKGROUND,
+        color: TOOLTIP_TEXT_COLOR, padding: TOOLTIP_PADDING, borderRadius: TOOLTIP_BORDER_RADIUS,
+        fontSize: TOOLTIP_FONT_SIZE, lineHeight: TOOLTIP_LINE_HEIGHT, maxWidth: TOOLTIP_MAX_WIDTH,
+        zIndex: TOOLTIP_Z_INDEX, display: 'none', boxShadow: TOOLTIP_BOX_SHADOW,
+        border: TOOLTIP_BORDER
     });
     document.body.appendChild(tooltipEl);
 
@@ -16,19 +31,20 @@ export function initGUI(params, guiControllers) {
         const icon = document.createElement('span');
         icon.innerHTML = 'ⓘ&nbsp;';
         Object.assign(icon.style, {
-            marginLeft: '6px', cursor: 'help', fontSize: '11px', opacity: '0.5',
-            color: '#aaa', fontWeight: 'bold', userSelect: 'none'
+            marginLeft: INFO_ICON_MARGIN_LEFT, cursor: 'help', fontSize: INFO_ICON_FONT_SIZE,
+            opacity: INFO_ICON_OPACITY, color: INFO_ICON_COLOR, fontWeight: 'bold',
+            userSelect: 'none'
         });
         icon.addEventListener('mouseenter', (e) => {
             tooltipEl.textContent = text;
             tooltipEl.style.display = 'block';
-            tooltipEl.style.left = e.clientX + 14 + 'px';
-            tooltipEl.style.top = e.clientY + 14 + 'px';
+            tooltipEl.style.left = e.clientX + TOOLTIP_OFFSET_PX + 'px';
+            tooltipEl.style.top = e.clientY + TOOLTIP_OFFSET_PX + 'px';
         });
         icon.addEventListener('mouseleave', () => { tooltipEl.style.display = 'none'; });
         icon.addEventListener('mousemove', (e) => {
-            tooltipEl.style.left = e.clientX + 14 + 'px';
-            tooltipEl.style.top = e.clientY + 14 + 'px';
+            tooltipEl.style.left = e.clientX + TOOLTIP_OFFSET_PX + 'px';
+            tooltipEl.style.top = e.clientY + TOOLTIP_OFFSET_PX + 'px';
         });
         domEl.prepend(icon);
     }
@@ -38,30 +54,30 @@ export function initGUI(params, guiControllers) {
     addInfoIcon(modeCtrl.domElement, 'Current control mode: Auto (autopilot) or Manual (WASD)');
     const swCtrl = movFolder.add(params, 'switchMode').name('🔄 Switch Auto/Manual');
     addInfoIcon(swCtrl.domElement, 'Toggle between automatic flight and manual WASD controls');
-    const speedCtrl = movFolder.add(params, 'speed', 0, 5).name('Flight Speed');
+    const speedCtrl = movFolder.add(params, 'speed', GUI_SPEED_MIN, GUI_SPEED_MAX).name('Flight Speed');
     addInfoIcon(speedCtrl.domElement, 'Movement speed in manual mode (WASD keys)');
-    const autoSpeedCtrl = movFolder.add(params, 'autoplaySpeed', 0, 3).name('Auto Speed');
+    const autoSpeedCtrl = movFolder.add(params, 'autoplaySpeed', GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX).name('Auto Speed');
     addInfoIcon(autoSpeedCtrl.domElement, 'Forward speed of the camera in autopilot mode');
-    const timeCtrl = movFolder.add(params, 'timeScale', 0, 3).name('Time Dilation');
+    const timeCtrl = movFolder.add(params, 'timeScale', GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX).name('Time Dilation');
     addInfoIcon(timeCtrl.domElement, 'Global time multiplier — affects animation speed and shader effects');
     const paCtrl = movFolder.add(params, 'togglePause').name('⏸ Pause / Resume');
     addInfoIcon(paCtrl.domElement, 'Pause or resume the animation loop');
     movFolder.close();
 
     const visFolder = gui.addFolder('Visuals');
-    const blCtrl = visFolder.add(params, 'bloomStrength', 0, 3).name('Bloom Glow');
+    const blCtrl = visFolder.add(params, 'bloomStrength', GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX).name('Bloom Glow');
     addInfoIcon(blCtrl.domElement, 'Intensity of the bloom post-processing glow effect');
-    const radiusCtrl = visFolder.add(params, 'bloomRadius', 0, 1).name('Glow Radius');
+    const radiusCtrl = visFolder.add(params, 'bloomRadius', GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX).name('Glow Radius');
     addInfoIcon(radiusCtrl.domElement, 'Spread radius of the bloom glow');
-    const foldCtrl = visFolder.add(params, 'foldIntensity', 0, 3).name('Fold Intensity');
+    const foldCtrl = visFolder.add(params, 'foldIntensity', GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX).name('Fold Intensity');
     addInfoIcon(foldCtrl.domElement, 'Strength of the terrain folding and distortion in shaders');
-    const veinCtrl = visFolder.add(params, 'veinSpeed', 0, 3).name('Vein Flow');
+    const veinCtrl = visFolder.add(params, 'veinSpeed', GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX).name('Vein Flow');
     addInfoIcon(veinCtrl.domElement, 'Speed of the organic vein patterns flowing across surfaces');
     const colorACtrl = visFolder.addColor(params, 'colorA').name('Color A');
     addInfoIcon(colorACtrl.domElement, 'Primary accent color for terrain and walls');
     const colorBCtrl = visFolder.addColor(params, 'colorB').name('Color B');
     addInfoIcon(colorBCtrl.domElement, 'Secondary accent color for terrain and walls');
-    const edgeCtrl = visFolder.add(params, 'edgeContrast', 0, 0.45).name('Outline Strength');
+    const edgeCtrl = visFolder.add(params, 'edgeContrast', GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX).name('Outline Strength');
     addInfoIcon(edgeCtrl.domElement, 'Intensity of the edge-detection outline effect');
     visFolder.close();
 
