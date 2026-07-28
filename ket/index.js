@@ -360,7 +360,7 @@ const colorACtrl = visFolder.addColor(params, 'colorA').name('Color A');
 addInfoIcon(colorACtrl.domElement, 'Primary accent color for terrain and walls');
 const colorBCtrl = visFolder.addColor(params, 'colorB').name('Color B');
 addInfoIcon(colorBCtrl.domElement, 'Secondary accent color for terrain and walls');
-const edgeCtrl = visFolder.add(params, 'edgeContrast', 0, 1).name('Outline Strength');
+const edgeCtrl = visFolder.add(params, 'edgeContrast', 0, 0.45).name('Outline Strength');
 addInfoIcon(edgeCtrl.domElement, 'Intensity of the edge-detection outline effect');
 visFolder.close();
 
@@ -462,7 +462,7 @@ function ravePickTargets() {
     raveTarget.bloomRadius = 0.1 + Math.random() * 0.9;
     raveTarget.foldIntensity = 0.5 + Math.random() * 2.5;
     raveTarget.veinSpeed = 0.5 + Math.random() * 3;
-    raveTarget.edgeContrast = 0.2 + Math.random() * 0.8;
+    raveTarget.edgeContrast = Math.random() * 0.45;
     raveTarget.timeScale = 0.5 + Math.random() * 3;
     raveTarget.autoplaySpeed = 0.5 + Math.random() * 3;
     raveTarget.colorA = Math.floor(Math.random() * 0xffffff);
