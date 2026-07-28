@@ -102,11 +102,17 @@ splashEl.addEventListener('touchend', (e) => { e.preventDefault(); enterScene();
 const audioElement = new Audio('./lights.mp3');
 audioElement.loop = true;
 audioElement.volume = 0.5;
-let audioMuted = false;
+let audioMuted = true;
+// let audioStarted = false;
 
 function attemptAutoplay(exitAfter) {
     audioElement.play().then(() => {
-        audioMuted = false;
+
+        if (audioMuted) {
+            audioElement.pause();
+        }
+        //audioMuted = false;
+        audioStarted = true;
         updateAudioButton();
         exitAfter();
     }).catch(() => {
@@ -116,6 +122,7 @@ function attemptAutoplay(exitAfter) {
             if (audioMuted) {
                 audioElement.play().then(() => {
                     audioMuted = false;
+                    audioStarted = true;
                     updateAudioButton();
                 }).catch(() => { });
             }
@@ -125,7 +132,7 @@ function attemptAutoplay(exitAfter) {
 
 function updateAudioButton() {
     if (audioBtnEl) {
-        audioBtnEl.innerText = audioMuted ? '🔇' : '🔊';
+        audioBtnEl.innerText = audioStarted && !audioMuted ? '🔊' : '🔇';
     }
 }
 
@@ -491,7 +498,7 @@ const gui = new GUI({ title: 'Trip Controls' });
 
 // Audio button in header
 const audioBtnEl = document.createElement('button');
-audioBtnEl.innerText = '🔊';
+audioBtnEl.innerText = '🔇';
 audioBtnEl.classList = 'gui';
 Object.assign(audioBtnEl.style, {
     background: 'transparent', border: 'none', color: '#fff', fontSize: '16px',
@@ -499,9 +506,10 @@ Object.assign(audioBtnEl.style, {
     top: '10px', left: '10px', position: 'fixed', zIndex: '99999'
 });
 audioBtnEl.addEventListener('click', () => {
-    if (audioMuted) {
+    if (!audioStarted || audioMuted) {
         audioElement.play().then(() => {
             audioMuted = false;
+            audioStarted = true;
             updateAudioButton();
         }).catch(() => { });
     } else {
