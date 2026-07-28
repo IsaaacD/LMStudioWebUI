@@ -19,6 +19,8 @@ export class AnimationLoop {
         this.autoOffsetX = 0;
         this.autoOffsetY = 0;
         this.wasUserMoving = false;
+        this.manualRotation = null;
+        this.autoRotationBlend = 1;
 
         this.bindInput();
         this.running = false;
@@ -112,8 +114,9 @@ export class AnimationLoop {
 
         if (useManual) {
             this.handleManualControl(activeParams, dt, leftActive, rightActive);
+            this.autoRotationBlend = 0;
         } else {
-            this.handleAutoControl(activeParams);
+            this.handleAutoControl(activeParams, dt);
         }
 
         if (isMoving && this.params.raveMode) {
@@ -171,9 +174,10 @@ export class AnimationLoop {
         }
 
         this.camera.lookAt(this.camera.position.x + dir.x, this.camera.position.y + dir.y, this.camera.position.z + dir.z);
+        this.manualRotation = this.camera.quaternion.clone();
     }
 
-    handleAutoControl(activeParams) {
+    handleAutoControl(activeParams, dt) {
         if (this.wasUserMoving && this.params.raveMode) {
             this.autoAngle += 0.005 * activeParams.timeScale;
             const baseX = Math.sin(this.autoAngle) * (8 + Math.sin(this.autoAngle * 0.7) * 5);
@@ -193,6 +197,19 @@ export class AnimationLoop {
         this.camera.position.y += (targetY - this.camera.position.y) * 0.02;
         this.camera.position.z += (targetZ - this.camera.position.z) * 0.05;
 
-        this.camera.lookAt(this.camera.position.x, this.camera.position.y, this.camera.position.z - 10);
+        if (this.autoRotationBlend < 1 && this.manualRotation) {
+            this.autoRotationBlend = Math.min(1, this.autoRotationBlend + dt * 1.5);
+            const autoTarget = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 10);
+            const autoQuat = new THREE.Quaternion();
+            const lookMatrix = new THREE.Matrix4();
+            lookMatrix.lookAt(this.camera.position, autoTarget, this.camera.up);
+            autoQuat.setFromRotationMatrix(lookMatrix);
+            this.camera.quaternion.copy(this.manualRotation).slerp(autoQuat, this.autoRotationBlend);
+            if (this.autoRotationBlend >= 1) {
+                this.manualRotation = null;
+            }
+        } else {
+            this.camera.lookAt(this.camera.position.x, this.camera.position.y, this.camera.position.z - 10);
+        }
     }
 }
