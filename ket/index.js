@@ -50,15 +50,10 @@ const SPLASH_DURATION = 1.8;
 
 // loadAndCacheAudio();
 
-const splashEl = document.getElementById('splash');
-splashEl.addEventListener('click', enterScene);
-splashEl.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    enterScene();
-});
+
 
 // ─── 0. SPLASH SCREEN + AUDIO BOOT ───────────────────────
-//const splashEl = document.getElementById('splash');
+const splashEl = document.getElementById('splash');
 const splashSub = document.getElementById('splash-sub');
 const audio = new Audio('lights.mp3');
 audio.loop = true;
