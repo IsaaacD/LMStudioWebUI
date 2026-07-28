@@ -833,6 +833,9 @@ let mouseX = 0;
 let mouseY = 0;
 const keys = { w: false, a: false, s: false, d: false, q: false, e: false };
 let autoAngle = 0;
+let autoOffsetX = 0;
+let autoOffsetY = 0;
+let wasUserMoving = false;
 
 document.addEventListener('mousemove', (e) => {
     mouseX = (e.clientX - innerWidth / 2) * 0.001;
@@ -951,10 +954,19 @@ function animate() {
 
         camera.lookAt(camera.position.x + dir.x, camera.position.y + dir.y, camera.position.z + dir.z);
     } else {
+        if (wasUserMoving && params.raveMode) {
+            autoAngle += 0.005 * activeTS;
+            const baseX = Math.sin(autoAngle) * (8 + Math.sin(autoAngle * 0.7) * 5);
+            const baseY = Math.cos(autoAngle * 0.5) * 3 + 2;
+            autoOffsetX = camera.position.x - baseX;
+            autoOffsetY = camera.position.y - baseY;
+            wasUserMoving = false;
+        }
+
         autoAngle += 0.005 * activeTS;
         const autoR = 8 + Math.sin(autoAngle * 0.7) * 5;
-        const targetX = Math.sin(autoAngle) * autoR;
-        const targetY = Math.cos(autoAngle * 0.5) * 3 + 2;
+        const targetX = Math.sin(autoAngle) * autoR + autoOffsetX;
+        const targetY = Math.cos(autoAngle * 0.5) * 3 + 2 + autoOffsetY;
         const activeSpeed = params.raveMode ? raveCurrent.autoplaySpeed : params.autoplaySpeed;
         const targetZ = camera.position.z - activeSpeed;
 
@@ -963,6 +975,10 @@ function animate() {
         camera.position.z += (targetZ - camera.position.z) * 0.05;
 
         camera.lookAt(camera.position.x, camera.position.y, camera.position.z - 10);
+    }
+
+    if (isMoving && params.raveMode) {
+        wasUserMoving = true;
     }
 
     // Lazy-load floor and ceiling tiles
