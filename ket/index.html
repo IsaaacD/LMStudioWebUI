@@ -14,6 +14,7 @@
 
         canvas {
             display: block;
+            touch-action: none;
         }
 
         /* UI Overlay Styling */
@@ -62,6 +63,15 @@
         SYSTEM: KETAMINE DREAMS<br>
         STATUS: <span id="status" style="color:#ff00ff"">RAVE</span>
     </div>
+
+    <script>
+        if (location.search.includes('debug') || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            const s = document.createElement('script');
+            s.src = '//cdn.jsdelivr.net/npm/eruda';
+            s.onload = () => eruda.init();
+            document.head.appendChild(s);
+        }
+    </script>
 
     <script type=" importmap">
             {
