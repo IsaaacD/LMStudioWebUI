@@ -1,4 +1,13 @@
 import * as THREE from 'three';
+import {
+    GUI_SPEED_MIN, GUI_SPEED_MAX,
+    GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
+    GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
+    GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX,
+    GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
+    GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
+    GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
+} from './utils.js';
 
 export const defaultParams = {
     speed: 0.8,
@@ -18,13 +27,13 @@ export const defaultParams = {
 };
 
 export function randomizeParams(params) {
-    params.speed = 0.2 + Math.random() * 2;
-    params.foldIntensity = 0.5 + Math.random() * 2;
-    params.edgeContrast = 0.1 + Math.random() * 0.25;
-    params.veinSpeed = Math.random() * 3;
-    params.bloomRadius = Math.random();
-    params.autoplaySpeed = 0.5 + Math.random() * 3;
-    params.timeScale = Math.random() * 3;
+    params.speed = GUI_SPEED_MIN + Math.random() * (GUI_SPEED_MAX - GUI_SPEED_MIN);
+    params.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
+    params.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
+    params.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
+    params.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
+    params.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
+    params.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
     params.colorA = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
     params.colorB = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
 }

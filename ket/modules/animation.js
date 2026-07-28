@@ -15,9 +15,9 @@ export class AnimationLoop {
         this.autoAngle = 0;
         this.autoOffsetX = 0;
         this.autoOffsetY = 0;
+        this.autoPitch = 0;
         this.wasUserMoving = false;
         this.manualRotation = null;
-        this.autoRotationBlend = 1;
         this.mouseYawDelta = 0;
         this.mousePitchDelta = 0;
         this.pointerLocked = false;
@@ -128,7 +128,6 @@ export class AnimationLoop {
 
         if (useManual) {
             this.handleManualControl(activeParams, dt, leftActive, rightActive);
-            this.autoRotationBlend = 0;
         } else {
             this.handleAutoControl(activeParams, dt);
         }
@@ -205,6 +204,7 @@ export class AnimationLoop {
             const baseY = Math.cos(this.autoAngle * 0.5) * 3 + 2;
             this.autoOffsetX = this.camera.position.x - baseX;
             this.autoOffsetY = this.camera.position.y - baseY;
+            this.autoPitch = this.camera.rotation.x;
             this.wasUserMoving = false;
         }
 
@@ -218,19 +218,13 @@ export class AnimationLoop {
         this.camera.position.y += (targetY - this.camera.position.y) * 0.02;
         this.camera.position.z += (targetZ - this.camera.position.z) * 0.05;
 
-        if (this.autoRotationBlend < 1 && this.manualRotation) {
-            this.autoRotationBlend = Math.min(1, this.autoRotationBlend + dt * 1.5);
-            const autoTarget = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 10);
-            const autoQuat = new THREE.Quaternion();
-            const lookMatrix = new THREE.Matrix4();
-            lookMatrix.lookAt(this.camera.position, autoTarget, this.camera.up);
-            autoQuat.setFromRotationMatrix(lookMatrix);
-            this.camera.quaternion.copy(this.manualRotation).slerp(autoQuat, this.autoRotationBlend);
-            if (this.autoRotationBlend >= 1) {
-                this.manualRotation = null;
-            }
-        } else {
-            this.camera.lookAt(this.camera.position.x, this.camera.position.y, this.camera.position.z - 10);
-        }
+        this.autoPitch += Math.sin(this.autoAngle * 0.3) * 0.001 * activeParams.timeScale;
+        this.autoPitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.autoPitch));
+
+        const euler = new THREE.Euler(this.autoPitch, 0, 0, 'YXZ');
+        const autoQuat = new THREE.Quaternion().setFromEuler(euler);
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+        const lookTarget = this.camera.position.clone().add(forward.multiplyScalar(10)).applyQuaternion(autoQuat);
+        this.camera.lookAt(lookTarget);
     }
 }
