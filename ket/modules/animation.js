@@ -16,6 +16,8 @@ export class AnimationLoop {
         this.autoOffsetX = 0;
         this.autoOffsetY = 0;
         this.autoPitch = 0;
+        this.autoPitchTarget = 0;
+        this.autoPitchNextTime = 3 + Math.random() * 2;
         this.wasUserMoving = false;
         this.manualRotation = null;
         this.mouseYawDelta = 0;
@@ -218,8 +220,12 @@ export class AnimationLoop {
         this.camera.position.y += (targetY - this.camera.position.y) * 0.02;
         this.camera.position.z += (targetZ - this.camera.position.z) * 0.05;
 
-        this.autoPitch += Math.sin(this.autoAngle * 0.3) * 0.001 * activeParams.timeScale;
-        this.autoPitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.autoPitch));
+        this.autoPitchNextTime -= dt * activeParams.timeScale;
+        if (this.autoPitchNextTime <= 0) {
+            this.autoPitchTarget = (Math.random() * 2 - 1) * Math.PI / 8;
+            this.autoPitchNextTime = 1 + Math.random() * 2;
+        }
+        this.autoPitch += (this.autoPitchTarget - this.autoPitch) * Math.min(1, dt * 2);
 
         const euler = new THREE.Euler(this.autoPitch, 0, 0, 'YXZ');
         const autoQuat = new THREE.Quaternion().setFromEuler(euler);
