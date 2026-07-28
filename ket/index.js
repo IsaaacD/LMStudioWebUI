@@ -5,7 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import GUI from 'lil-gui';
-import { initTouchControls, joystickState, JOYSTICK_RADIUS, JOYSTICK_DEADZONE, applyJoystickDeadzone } from './touchControls.js';
+import { initTouchControls, joystickState, updateJoystickInputs } from './touchControls.js';
 
 // ─── 0. AUDIO ────────────────────────────────────────────
 let audioCtx = null;
@@ -718,9 +718,10 @@ function animate() {
     bloomPass.radius = params.raveMode ? raveCurrent.bloomRadius : params.bloomRadius;
     edgePass.uniforms['edgeStrength'].value = params.raveMode ? raveCurrent.edgeContrast : params.edgeContrast;
 
-    const leftJoystickActive = joystickState.left.active && (Math.abs(joystickState.left.dx) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS || Math.abs(joystickState.left.dy) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS);
-    const rightJoystickActive = joystickState.right.active && (Math.abs(joystickState.right.dx) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS || Math.abs(joystickState.right.dy) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS);
-    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e || leftJoystickActive || rightJoystickActive;
+    updateJoystickInputs();
+    const leftActive = joystickState.left.isActive;
+    const rightActive = joystickState.right.isActive;
+    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e || leftActive || rightActive;
     const useManual = !params.autoplay && !params.raveMode || (params.raveMode && isMoving);
 
     if (useManual) {
@@ -742,19 +743,15 @@ function animate() {
         if (keys.e) verticalInput += 1;
         if (keys.q) verticalInput -= 1;
 
-        if (leftJoystickActive) {
-            const leftDx = joystickState.left.dx / JOYSTICK_RADIUS;
-            const leftDy = joystickState.left.dy / JOYSTICK_RADIUS;
-            forwardInput += applyJoystickDeadzone(-leftDy);
-            strafeInput += applyJoystickDeadzone(leftDx);
+        if (leftActive) {
+            forwardInput += joystickState.left.forward;
+            strafeInput += joystickState.left.strafe;
         }
 
-        if (rightJoystickActive) {
-            const rightDx = joystickState.right.dx / JOYSTICK_RADIUS;
-            const rightDy = joystickState.right.dy / JOYSTICK_RADIUS;
-            verticalInput += applyJoystickDeadzone(-rightDy);
-            yawInput += applyJoystickDeadzone(rightDx) * 0.03;
-            pitchInput += applyJoystickDeadzone(rightDy) * 0.02;
+        if (rightActive) {
+            verticalInput += joystickState.right.vertical;
+            yawInput += joystickState.right.yaw;
+            pitchInput += joystickState.right.pitch;
         }
 
         camera.position.addScaledVector(dir, forwardInput * moveSpeed);

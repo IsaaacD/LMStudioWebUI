@@ -13,7 +13,10 @@ export const joystickState = {
         currentX: 0,
         currentY: 0,
         dx: 0,
-        dy: 0
+        dy: 0,
+        isActive: false,
+        forward: 0,
+        strafe: 0
     },
     right: {
         active: false,
@@ -23,7 +26,11 @@ export const joystickState = {
         currentX: 0,
         currentY: 0,
         dx: 0,
-        dy: 0
+        dy: 0,
+        isActive: false,
+        vertical: 0,
+        yaw: 0,
+        pitch: 0
     }
 };
 
@@ -100,6 +107,37 @@ function updateJoystickVisuals() {
 export function applyJoystickDeadzone(value) {
     if (Math.abs(value) < JOYSTICK_DEADZONE) return 0;
     return Math.max(-1, Math.min(1, value));
+}
+
+export function updateJoystickInputs() {
+    const l = joystickState.left;
+    const r = joystickState.right;
+
+    if (l.active) {
+        const rawDx = l.dx / JOYSTICK_RADIUS;
+        const rawDy = l.dy / JOYSTICK_RADIUS;
+        l.isActive = Math.abs(rawDx) > JOYSTICK_DEADZONE || Math.abs(rawDy) > JOYSTICK_DEADZONE;
+        l.forward = l.isActive ? applyJoystickDeadzone(-rawDy) : 0;
+        l.strafe = l.isActive ? applyJoystickDeadzone(rawDx) : 0;
+    } else {
+        l.isActive = false;
+        l.forward = 0;
+        l.strafe = 0;
+    }
+
+    if (r.active) {
+        const rawDx = r.dx / JOYSTICK_RADIUS;
+        const rawDy = r.dy / JOYSTICK_RADIUS;
+        r.isActive = Math.abs(rawDx) > JOYSTICK_DEADZONE || Math.abs(rawDy) > JOYSTICK_DEADZONE;
+        r.vertical = r.isActive ? applyJoystickDeadzone(-rawDy) : 0;
+        r.yaw = r.isActive ? applyJoystickDeadzone(rawDx) * 0.03 : 0;
+        r.pitch = r.isActive ? applyJoystickDeadzone(rawDy) * 0.02 : 0;
+    } else {
+        r.isActive = false;
+        r.vertical = 0;
+        r.yaw = 0;
+        r.pitch = 0;
+    }
 }
 
 function isTouchOnGui(touch) {
