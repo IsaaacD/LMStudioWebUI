@@ -1,16 +1,16 @@
 import * as THREE from 'three';
-import { initTouchControls } from './touchControls.js';
-import { loadShader } from './utils.js';
-import { defaultParams, randomizeParams, updateStatusText } from './config.js';
-import { initScene, getScene, getCamera, getRenderer, getClock, onResize } from './scene.js';
-import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './materials.js';
-import { initAudio, setSceneReadyCallback } from './audio.js';
-import { getTileConstants, TileManager } from './tiles.js';
-import { PrimitiveManager } from './primitives.js';
-import { PostProcessor } from './postprocessing.js';
-import { RaveEngine } from './raveMode.js';
-import { initGUI } from './ui.js';
-import { AnimationLoop } from './animation.js';
+import { initTouchControls } from './modules/touchControls.js';
+import { loadShader } from './modules/utils.js';
+import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
+import { initScene, getScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
+import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
+import { initAudio, setSceneReadyCallback } from './modules/audio.js';
+import { getTileConstants, TileManager } from './modules/tiles.js';
+import { PrimitiveManager } from './modules/primitives.js';
+import { PostProcessor } from './modules/postprocessing.js';
+import { RaveEngine } from './modules/raveMode.js';
+import { initGUI } from './modules/ui.js';
+import { AnimationLoop } from './modules/animation.js';
 
 let postProcessor = null;
 let animationLoop = null;
