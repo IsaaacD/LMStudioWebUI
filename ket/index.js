@@ -71,22 +71,23 @@ const params = {
     randomize: () => {
         params.speed = Math.random() * 2;
         params.foldIntensity = 0.5 + Math.random() * 2;
-        params.colorA = Math.floor(Math.random() * 0xffffff);
-        params.colorB = Math.floor(Math.random() * 0xffffff);
         params.edgeContrast = Math.random();
         params.veinSpeed = Math.random() * 3;
         params.bloomRadius = Math.random();
         params.autoplaySpeed = Math.random() * 3;
         params.timeScale = Math.random() * 3;
+        // Random HSL colors converted to hex
+        params.colorA = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
+        params.colorB = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
         speedCtrl.updateDisplay();
         foldCtrl.updateDisplay();
-        colorACtrl.updateDisplay();
-        colorBCtrl.updateDisplay();
         edgeCtrl.updateDisplay();
         veinCtrl.updateDisplay();
         radiusCtrl.updateDisplay();
         autoSpeedCtrl.updateDisplay();
         timeCtrl.updateDisplay();
+        colorACtrl.updateDisplay();
+        colorBCtrl.updateDisplay();
     }
 };
 
@@ -332,9 +333,9 @@ function addInfoIcon(domEl, text) {
 // Movement Folder
 const movFolder = gui.addFolder('Movement');
 const modeCtrl = movFolder.add(params, 'controlMode').name('Mode').disable();
-addInfoIcon(modeCtrl.domElement, 'Current control mode: Auto (autopilot), Manual (WASD), or Rave (auto-randomize)');
-const swCtrl = movFolder.add(params, 'switchMode').name('🔄 Switch Mode');
-addInfoIcon(swCtrl.domElement, 'Cycle between Auto, Manual WASD, and Rave modes');
+addInfoIcon(modeCtrl.domElement, 'Current control mode: Auto (autopilot) or Manual (WASD)');
+const swCtrl = movFolder.add(params, 'switchMode').name('🔄 Switch Auto/Manual');
+addInfoIcon(swCtrl.domElement, 'Toggle between automatic flight and manual WASD controls');
 const speedCtrl = movFolder.add(params, 'speed', 0, 5).name('Flight Speed');
 addInfoIcon(speedCtrl.domElement, 'Movement speed in manual mode (WASD keys)');
 const autoSpeedCtrl = movFolder.add(params, 'autoplaySpeed', 0, 3).name('Auto Speed');
@@ -343,6 +344,7 @@ const timeCtrl = movFolder.add(params, 'timeScale', 0, 3).name('Time Dilation');
 addInfoIcon(timeCtrl.domElement, 'Global time multiplier — affects animation speed and shader effects');
 const paCtrl = movFolder.add(params, 'togglePause').name('⏸ Pause / Resume');
 addInfoIcon(paCtrl.domElement, 'Pause or resume the animation loop');
+movFolder.close();
 
 // Visuals Folder
 const visFolder = gui.addFolder('Visuals');
@@ -360,11 +362,13 @@ const colorBCtrl = visFolder.addColor(params, 'colorB').name('Color B');
 addInfoIcon(colorBCtrl.domElement, 'Secondary accent color for terrain and walls');
 const edgeCtrl = visFolder.add(params, 'edgeContrast', 0, 1).name('Outline Strength');
 addInfoIcon(edgeCtrl.domElement, 'Intensity of the edge-detection outline effect');
+visFolder.close();
 
 // Actions Folder
 const actFolder = gui.addFolder('Actions');
 const raCtrl = actFolder.add(params, 'randomize').name('🎲 Randomize');
 addInfoIcon(raCtrl.domElement, 'Randomize all visual and movement parameters for a new look');
+actFolder.close();
 
 // ─── 7. TOUCH CONTROLS ────────────────────────────────────
 const touchState = {
