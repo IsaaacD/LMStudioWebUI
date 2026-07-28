@@ -173,7 +173,7 @@ const primitiveMaterial = new THREE.ShaderMaterial({
 const TILE_SIZE = 200;
 const TILE_SEGMENTS = 128;
 const RENDER_DIST = 140;
-const RECYCLE_DIST = 180;
+const RECYCLE_DIST = 200;
 const GRID = Math.ceil(RENDER_DIST / TILE_SIZE) * 2 + 1;
 const MAX_TILES = GRID * GRID;
 const TILE_HEIGHT = 30;
@@ -193,12 +193,13 @@ function makePool(count, isCeiling) {
     return pool;
 }
 
-const floorTiles = makePool(MAX_TILES * 6, false);
-const ceilTiles = makePool(MAX_TILES * 6, true);
+const floorTiles = makePool(MAX_TILES * 30, false);
+const ceilTiles = makePool(MAX_TILES * 30, true);
 
-// Vertical wall tile pools — two orientations for cross-intersection
-const wallGeo = new THREE.PlaneGeometry(TILE_SIZE, TILE_HEIGHT, TILE_SEGMENTS, Math.floor(TILE_SEGMENTS * TILE_HEIGHT / TILE_SIZE));
-const MAX_WALLS = MAX_TILES * 3;
+// Vertical wall tile pools — infinite strips along one axis, chunk loaded on the other
+const WALL_STRIP_LEN = RENDER_DIST * 2.5;
+const wallGeo = new THREE.PlaneGeometry(WALL_STRIP_LEN, TILE_HEIGHT, Math.floor(TILE_SEGMENTS * 3), 8);
+const WALLS_PER_POOL = 600;
 
 function makeWallPool(count, rotY) {
     const pool = [];
@@ -214,12 +215,12 @@ function makeWallPool(count, rotY) {
     return pool;
 }
 
-const wallTilesX = makeWallPool(MAX_WALLS, 0);
-const wallTilesZ = makeWallPool(MAX_WALLS, Math.PI / 2);
+const wallTilesX = makeWallPool(WALLS_PER_POOL, 0);
+const wallTilesZ = makeWallPool(WALLS_PER_POOL, Math.PI / 2);
 
 // Angled wall pools for diagonal depth
-const wallAngX = makeWallPool(MAX_WALLS, 0.3);
-const wallAngZ = makeWallPool(MAX_WALLS, Math.PI / 2 + 0.3);
+const wallAngX = makeWallPool(WALLS_PER_POOL, 0.3);
+const wallAngZ = makeWallPool(WALLS_PER_POOL, Math.PI / 2 + 0.3);
 const floorKeys = new Set();
 const ceilKeys = new Set();
 const wallKeysX = new Set();
@@ -228,8 +229,8 @@ const wallAngKeysX = new Set();
 const wallAngKeysZ = new Set();
 
 // ─── 4b. FLOATING PRIMITIVES ──────────────────────────────
-const PRIMITIVE_COUNT = 120;
-const PRIMITIVES_PER_GRID_CELL = 0.4;
+const PRIMITIVE_COUNT = 1500;
+const PRIMITIVES_PER_GRID_CELL = 0.7;
 const primitiveGeos = [
     new THREE.BoxGeometry(2, 2, 2, 8, 8, 8),
     new THREE.SphereGeometry(1.5, 16, 16),
@@ -268,7 +269,7 @@ function updateTiles(tiles, camX, camZ, poolKeys, yOffset, halfY) {
     const cx = Math.floor(camX / TILE_SIZE);
     const cz = Math.floor(camZ / TILE_SIZE);
     const cy = Math.floor(camera.position.y / TILE_HEIGHT);
-    const half = Math.ceil(RENDER_DIST / TILE_SIZE);
+    const half = Math.max(2, Math.ceil(RENDER_DIST / TILE_SIZE) + 1);
     const avail = [];
 
     for (let i = 0; i < tiles.length; i++) {
@@ -293,11 +294,26 @@ function updateTiles(tiles, camX, camZ, poolKeys, yOffset, halfY) {
                 const k = key(gx, gy, gz);
                 if (poolKeys.has(k)) continue;
                 if (avail.length === 0) {
-                    const far = tiles.find(t => t.visible && (Math.abs(t.position.x - camX) > RECYCLE_DIST - 20 || Math.abs(t.position.z - camZ) > RECYCLE_DIST - 20 || Math.abs(t.position.y - camera.position.y) > RECYCLE_DIST - 20));
-                    if (far) {
+                    // Recycle the farthest visible tile
+                    let farIdx = -1;
+                    let farDist = 0;
+                    for (let fi = 0; fi < tiles.length; fi++) {
+                        const ft = tiles[fi];
+                        if (!ft.visible) continue;
+                        const fdx = ft.position.x - camX;
+                        const fdz = ft.position.z - camZ;
+                        const fdy = ft.position.y - camera.position.y;
+                        const dist = fdx * fdx + fdz * fdz + fdy * fdy;
+                        if (dist > farDist) {
+                            farDist = dist;
+                            farIdx = fi;
+                        }
+                    }
+                    if (farIdx >= 0) {
+                        const far = tiles[farIdx];
                         far.visible = false;
                         poolKeys.delete(key(far._gx, far._gy, far._gz));
-                        avail.push(tiles.indexOf(far));
+                        avail.push(farIdx);
                     } else continue;
                 }
                 const t = tiles[avail.pop()];
@@ -642,56 +658,86 @@ function animate() {
     }
 
     // Lazy-load floor and ceiling tiles
-    updateTiles(floorTiles, camera.position.x, camera.position.z, floorKeys, 0, 2);
-    updateTiles(ceilTiles, camera.position.x, camera.position.z, ceilKeys, TILE_HEIGHT, 2);
+    updateTiles(floorTiles, camera.position.x, camera.position.z, floorKeys, 0, 4);
+    updateTiles(ceilTiles, camera.position.x, camera.position.z, ceilKeys, TILE_HEIGHT, 4);
 
-    // Wall tiling: recycle far tiles, then place in 3D grid
+    // Wall strips: infinite length along one axis, chunk loaded along perpendicular + vertical
     const cy = Math.floor(camera.position.y / TILE_HEIGHT);
-    const wallHalfY = 1;
+    const wallHalfY = 10;
     const cx = Math.floor(camera.position.x / TILE_SIZE);
     const cz = Math.floor(camera.position.z / TILE_SIZE);
-    const halfXZ = Math.ceil(RENDER_DIST / TILE_SIZE);
-    for (const wallPool of [wallTilesX, wallTilesZ, wallAngX, wallAngZ]) {
-        let wallPoolKeys;
-        if (wallPool === wallTilesX) wallPoolKeys = wallKeysX;
-        else if (wallPool === wallTilesZ) wallPoolKeys = wallKeysZ;
-        else if (wallPool === wallAngX) wallPoolKeys = wallAngKeysX;
-        else wallPoolKeys = wallAngKeysZ;
+    const halfXZ = Math.max(2, Math.ceil(RENDER_DIST / TILE_SIZE) + 1);
+    for (const wConfig of [
+        { pool: wallTilesX, keys: wallKeysX, type: 'x' },
+        { pool: wallTilesZ, keys: wallKeysZ, type: 'z' },
+        { pool: wallAngX, keys: wallAngKeysX, type: 'x' },
+        { pool: wallAngZ, keys: wallAngKeysZ, type: 'z' }
+    ]) {
+        const { pool, keys, type } = wConfig;
 
-        // Recycle tiles that are too far
-        for (let i = 0; i < wallPool.length; i++) {
-            const t = wallPool[i];
+        // Recycle walls too far on perpendicular or vertical axis
+        const avail = [];
+        for (let i = 0; i < pool.length; i++) {
+            const t = pool[i];
             if (t.visible) {
+                const perpDist = type === 'x'
+                    ? Math.abs(t.position.z - camera.position.z)
+                    : Math.abs(t.position.x - camera.position.x);
                 const dy = Math.abs(t.position.y - camera.position.y);
-                const dx = Math.abs(t.position.x - camera.position.x);
-                const dz = Math.abs(t.position.z - camera.position.z);
-                if (dy > RECYCLE_DIST || dx > RECYCLE_DIST || dz > RECYCLE_DIST) {
+                if (perpDist > RECYCLE_DIST || dy > RECYCLE_DIST) {
                     t.visible = false;
-                    wallPoolKeys.delete(key(t._gx, t._gy, t._gz));
+                    keys.delete(key(t._gx, t._gy, t._gz));
+                    avail.push(i);
                 }
+            } else {
+                avail.push(i);
             }
         }
 
-        // Place walls in 3D grid (sparse: skip many cells for open space)
+        // Place wall strips centered on camera along strip axis, spaced on perpendicular axis
         for (let gy = cy - wallHalfY; gy <= cy + wallHalfY; gy++) {
-            for (let gx = cx - halfXZ; gx <= cx + halfXZ; gx++) {
-                for (let gz = cz - halfXZ; gz <= cz + halfXZ; gz++) {
-                    const wHash = gx * 374761393 + gy * 668265263 + gz * 1274126177;
-                    if ((wHash & 0xff) > 60) continue; // ~24% wall density
-                    const k = key(gx, gy, gz);
-                    if (wallPoolKeys.has(k)) continue;
-                    const availIdx = wallPool.findIndex(t => !t.visible);
-                    if (availIdx === -1) continue;
-                    const t = wallPool[availIdx];
-                    t.position.x = gx * TILE_SIZE;
-                    t.position.z = gz * TILE_SIZE;
-                    t.position.y = gy * TILE_HEIGHT + TILE_HEIGHT / 2;
-                    t._gx = gx;
-                    t._gz = gz;
-                    t._gy = gy;
-                    t.visible = true;
-                    wallPoolKeys.add(k);
+            for (let gi = -halfXZ; gi <= halfXZ; gi++) {
+                const wHash = gi * 374761393 + gy * 668265263;
+                if ((wHash & 0xff) > 200) continue;
+                // Key uses the perpendicular grid coord + Y, plus camera's grid on strip axis
+                const stripGx = type === 'x' ? cx : (cx + gi);
+                const stripGz = type === 'z' ? cz : (cz + gi);
+                const k = key(stripGx, gy, stripGz);
+                if (keys.has(k)) continue;
+                if (avail.length === 0) {
+                    // Recycle farthest wall
+                    let farIdx = -1, farDist = 0;
+                    for (let fi = 0; fi < pool.length; fi++) {
+                        const ft = pool[fi];
+                        if (!ft.visible) continue;
+                        const pd = type === 'x' ? Math.abs(ft.position.z - camera.position.z) : Math.abs(ft.position.x - camera.position.x);
+                        const vd = Math.abs(ft.position.y - camera.position.y);
+                        const d = pd * pd + vd * vd;
+                        if (d > farDist) { farDist = d; farIdx = fi; }
+                    }
+                    if (farIdx >= 0) {
+                        const ft = pool[farIdx];
+                        ft.visible = false;
+                        keys.delete(key(ft._gx, ft._gy, ft._gz));
+                        avail.push(farIdx);
+                    } else continue;
                 }
+                const t = pool[avail.pop()];
+                if (type === 'x') {
+                    t.position.x = camera.position.x;
+                    t.position.z = cz * TILE_SIZE + gi * TILE_SIZE;
+                    t._gx = cx;
+                    t._gz = cz + gi;
+                } else {
+                    t.position.x = cx * TILE_SIZE + gi * TILE_SIZE;
+                    t.position.z = camera.position.z;
+                    t._gx = cx + gi;
+                    t._gz = cz;
+                }
+                t.position.y = gy * TILE_HEIGHT + TILE_HEIGHT / 2;
+                t._gy = gy;
+                t.visible = true;
+                keys.add(k);
             }
         }
     }
