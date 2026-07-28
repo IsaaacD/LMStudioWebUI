@@ -298,7 +298,7 @@ composer.addPass(edgePass);
 
 // ─── 6. UI CONTROLS ──────────────────────────────────────
 const gui = new GUI({ title: 'Trip Controls' });
-
+gui.close();
 // Tooltip system
 const tooltipEl = document.createElement('div');
 Object.assign(tooltipEl.style, {
@@ -373,9 +373,12 @@ actFolder.close();
 // ─── 7. TOUCH CONTROLS ────────────────────────────────────
 const touchState = {
     left: { active: false, id: null, startX: 0, startY: 0 },
-    right: { active: false, id: null, startX: 0, startY: 0 }
+    yMove: 'none', // 'up', 'down', or 'none'
+    lastTapY: 0,
+    lastTapTime: 0
 };
 const TOUCH_THRESHOLD = 30;
+const DOUBLE_TAP_INTERVAL = 300;
 
 function handleTouchStart(e) {
     if (params.paused || params.autoplay) return;
@@ -386,11 +389,23 @@ function handleTouchStart(e) {
             touchState.left.id = touch.identifier;
             touchState.left.startX = touch.clientX;
             touchState.left.startY = touch.clientY;
-        } else if (touch.clientX >= midX && !touchState.right.active) {
-            touchState.right.active = true;
-            touchState.right.id = touch.identifier;
-            touchState.right.startX = touch.clientX;
-            touchState.right.startY = touch.clientY;
+        } else if (touch.clientX >= midX) {
+            const now = performance.now();
+            const isTopHalf = touch.clientY < innerHeight / 2;
+            const prevIsTopHalf = touchState.lastTapY < innerHeight / 2;
+            const sameHalf = isTopHalf === prevIsTopHalf;
+
+            if (now - touchState.lastTapTime < DOUBLE_TAP_INTERVAL && sameHalf) {
+                if (touchState.yMove === 'none') {
+                    touchState.yMove = isTopHalf ? 'up' : 'down';
+                } else {
+                    touchState.yMove = 'none';
+                }
+                touchState.lastTapTime = 0;
+            } else {
+                touchState.lastTapY = touch.clientY;
+                touchState.lastTapTime = now;
+            }
         }
     }
 }
@@ -407,11 +422,6 @@ function handleTouchMove(e) {
             keys.a = dx < -TOUCH_THRESHOLD;
             keys.d = dx > TOUCH_THRESHOLD;
         }
-        if (touchState.right.active && touch.identifier === touchState.right.id) {
-            const dy = touch.clientY - touchState.right.startY;
-            keys.q = dy > TOUCH_THRESHOLD;
-            keys.e = dy < -TOUCH_THRESHOLD;
-        }
     }
 }
 
@@ -421,11 +431,6 @@ function handleTouchEnd(e) {
             touchState.left.active = false;
             touchState.left.id = null;
             keys.w = keys.s = keys.a = keys.d = false;
-        }
-        if (touchState.right.active && touch.identifier === touchState.right.id) {
-            touchState.right.active = false;
-            touchState.right.id = null;
-            keys.q = keys.e = false;
         }
     }
 }
@@ -553,7 +558,7 @@ function animate() {
     bloomPass.radius = params.raveMode ? raveCurrent.bloomRadius : params.bloomRadius;
     edgePass.uniforms['edgeStrength'].value = params.raveMode ? raveCurrent.edgeContrast : params.edgeContrast;
 
-    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e;
+    const isMoving = keys.w || keys.s || keys.a || keys.d || touchState.yMove !== 'none';
     const useManual = !params.autoplay && !params.raveMode || (params.raveMode && isMoving);
 
     if (useManual) {
@@ -566,8 +571,8 @@ function animate() {
         if (keys.s) camera.position.addScaledVector(dir, -moveSpeed);
         if (keys.a) camera.position.addScaledVector(right, -moveSpeed);
         if (keys.d) camera.position.addScaledVector(right, moveSpeed);
-        if (keys.q) camera.position.y -= moveSpeed;
-        if (keys.e) camera.position.y += moveSpeed;
+        if (touchState.yMove === 'down') camera.position.y -= moveSpeed;
+        if (touchState.yMove === 'up') camera.position.y += moveSpeed;
 
         camera.lookAt(camera.position.x + dir.x, camera.position.y + dir.y, camera.position.z + dir.z);
     } else {
