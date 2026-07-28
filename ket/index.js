@@ -435,69 +435,182 @@ const raCtrl = actFolder.add(params, 'randomize').name('🎲 Randomize');
 addInfoIcon(raCtrl.domElement, 'Randomize all visual and movement parameters for a new look');
 actFolder.close();
 
-// ─── 7. TOUCH CONTROLS ────────────────────────────────────
-const touchState = {
-    left: { active: false, id: null, startX: 0, startY: 0 },
-    yMove: 'none', // 'up', 'down', or 'none'
-    lastTapY: 0,
-    lastTapTime: 0
+// ─── 7. MULTI-TOUCH DUAL JOYSTICK CONTROLS ────────────────
+const JOYSTICK_RADIUS = 60;
+const JOYSTICK_DEADZONE = 0.15;
+const JOYSTICK_MAX_DRAG = 50;
+
+const joystickState = {
+    left: {
+        active: false,
+        id: null,
+        originX: 0,
+        originY: 0,
+        currentX: 0,
+        currentY: 0,
+        dx: 0,
+        dy: 0
+    },
+    right: {
+        active: false,
+        id: null,
+        originX: 0,
+        originY: 0,
+        currentX: 0,
+        currentY: 0,
+        dx: 0,
+        dy: 0
+    }
 };
-const TOUCH_THRESHOLD = 30;
-const DOUBLE_TAP_INTERVAL = 300;
+
+const joystickOverlay = document.createElement('div');
+Object.assign(joystickOverlay.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
+    zIndex: '9999'
+});
+document.body.appendChild(joystickOverlay);
+
+function createJoystickVisual(baseX, baseY, dx, dy, isLeft) {
+    const container = document.createElement('div');
+    Object.assign(container.style, {
+        position: 'absolute',
+        left: `${baseX - JOYSTICK_RADIUS}px`,
+        top: `${baseY - JOYSTICK_RADIUS}px`,
+        width: `${JOYSTICK_RADIUS * 2}px`,
+        height: `${JOYSTICK_RADIUS * 2}px`,
+        borderRadius: '50%',
+        border: `2px solid rgba(${isLeft ? '0, 204, 255' : '255, 0, 85'}, 0.4)`,
+        background: `radial-gradient(circle, rgba(${isLeft ? '0, 204, 255' : '255, 0, 85'}, 0.1) 0%, rgba(${isLeft ? '0, 204, 255' : '255, 0, 85'}, 0.05) 70%, transparent 100%)`,
+        transition: 'opacity 0.3s ease'
+    });
+
+    const knob = document.createElement('div');
+    const clampedDx = Math.max(-JOYSTICK_MAX_DRAG, Math.min(JOYSTICK_MAX_DRAG, dx));
+    const clampedDy = Math.max(-JOYSTICK_MAX_DRAG, Math.min(JOYSTICK_MAX_DRAG, dy));
+    Object.assign(knob.style, {
+        position: 'absolute',
+        left: `${JOYSTICK_RADIUS - 15 + clampedDx}px`,
+        top: `${JOYSTICK_RADIUS - 15 + clampedDy}px`,
+        width: '30px',
+        height: '30px',
+        borderRadius: '50%',
+        background: `radial-gradient(circle, rgba(${isLeft ? '0, 204, 255' : '255, 0, 85'}, 0.6) 0%, rgba(${isLeft ? '0, 204, 255' : '255, 0, 85'}, 0.3) 100%)`,
+        boxShadow: `0 0 10px rgba(${isLeft ? '0, 204, 255' : '255, 0, 85'}, 0.5)`
+    });
+
+    container.appendChild(knob);
+    return { container, knob };
+}
+
+function updateJoystickVisuals() {
+    joystickOverlay.innerHTML = '';
+
+    if (joystickState.left.active) {
+        const leftVisual = createJoystickVisual(
+            joystickState.left.originX,
+            joystickState.left.originY,
+            joystickState.left.dx,
+            joystickState.left.dy,
+            true
+        );
+        joystickOverlay.appendChild(leftVisual.container);
+    }
+
+    if (joystickState.right.active) {
+        const rightVisual = createJoystickVisual(
+            joystickState.right.originX,
+            joystickState.right.originY,
+            joystickState.right.dx,
+            joystickState.right.dy,
+            false
+        );
+        joystickOverlay.appendChild(rightVisual.container);
+    }
+}
+
+function applyJoystickDeadzone(value) {
+    if (Math.abs(value) < JOYSTICK_DEADZONE) return 0;
+    return Math.max(-1, Math.min(1, value));
+}
+
+function isTouchOnGui(touch) {
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return false;
+    return el.closest('.lil-gui, .gui, #gui, [class*="gui"]') !== null;
+}
 
 function handleTouchStart(e) {
     if (params.paused || params.autoplay) return;
-    for (const touch of e.changedTouches) {
-        const midX = innerWidth / 2;
-        if (touch.clientX < midX && !touchState.left.active) {
-            touchState.left.active = true;
-            touchState.left.id = touch.identifier;
-            touchState.left.startX = touch.clientX;
-            touchState.left.startY = touch.clientY;
-        } else if (touch.clientX >= midX) {
-            const now = performance.now();
-            const isTopHalf = touch.clientY < innerHeight / 2;
-            const prevIsTopHalf = touchState.lastTapY < innerHeight / 2;
-            const sameHalf = isTopHalf === prevIsTopHalf;
+    if (e.changedTouches.length > 0 && isTouchOnGui(e.changedTouches[0])) return;
+    e.preventDefault();
 
-            if (now - touchState.lastTapTime < DOUBLE_TAP_INTERVAL && sameHalf) {
-                if (touchState.yMove === 'none') {
-                    touchState.yMove = isTopHalf ? 'up' : 'down';
-                } else {
-                    touchState.yMove = 'none';
-                }
-                touchState.lastTapTime = 0;
-            } else {
-                touchState.lastTapY = touch.clientY;
-                touchState.lastTapTime = now;
-            }
+    for (const touch of e.changedTouches) {
+        if (!joystickState.left.active) {
+            joystickState.left.active = true;
+            joystickState.left.id = touch.identifier;
+            joystickState.left.originX = touch.clientX;
+            joystickState.left.originY = touch.clientY;
+            joystickState.left.currentX = touch.clientX;
+            joystickState.left.currentY = touch.clientY;
+            joystickState.left.dx = 0;
+            joystickState.left.dy = 0;
+        } else if (!joystickState.right.active) {
+            joystickState.right.active = true;
+            joystickState.right.id = touch.identifier;
+            joystickState.right.originX = touch.clientX;
+            joystickState.right.originY = touch.clientY;
+            joystickState.right.currentX = touch.clientX;
+            joystickState.right.currentY = touch.clientY;
+            joystickState.right.dx = 0;
+            joystickState.right.dy = 0;
         }
     }
+    updateJoystickVisuals();
 }
 
 function handleTouchMove(e) {
     if (params.paused || params.autoplay) return;
-    e.preventDefault();
     for (const touch of e.changedTouches) {
-        if (touchState.left.active && touch.identifier === touchState.left.id) {
-            const dx = touch.clientX - touchState.left.startX;
-            const dy = touch.clientY - touchState.left.startY;
-            keys.w = dy < -TOUCH_THRESHOLD;
-            keys.s = dy > TOUCH_THRESHOLD;
-            keys.a = dx < -TOUCH_THRESHOLD;
-            keys.d = dx > TOUCH_THRESHOLD;
+        if (isTouchOnGui(touch)) return;
+    }
+    e.preventDefault();
+
+    for (const touch of e.changedTouches) {
+        if (joystickState.left.active && touch.identifier === joystickState.left.id) {
+            joystickState.left.currentX = touch.clientX;
+            joystickState.left.currentY = touch.clientY;
+            joystickState.left.dx = touch.clientX - joystickState.left.originX;
+            joystickState.left.dy = touch.clientY - joystickState.left.originY;
+        } else if (joystickState.right.active && touch.identifier === joystickState.right.id) {
+            joystickState.right.currentX = touch.clientX;
+            joystickState.right.currentY = touch.clientY;
+            joystickState.right.dx = touch.clientX - joystickState.right.originX;
+            joystickState.right.dy = touch.clientY - joystickState.right.originY;
         }
     }
+    updateJoystickVisuals();
 }
 
 function handleTouchEnd(e) {
     for (const touch of e.changedTouches) {
-        if (touchState.left.active && touch.identifier === touchState.left.id) {
-            touchState.left.active = false;
-            touchState.left.id = null;
-            keys.w = keys.s = keys.a = keys.d = false;
+        if (joystickState.left.active && touch.identifier === joystickState.left.id) {
+            joystickState.left.active = false;
+            joystickState.left.id = null;
+            joystickState.left.dx = 0;
+            joystickState.left.dy = 0;
+        } else if (joystickState.right.active && touch.identifier === joystickState.right.id) {
+            joystickState.right.active = false;
+            joystickState.right.id = null;
+            joystickState.right.dx = 0;
+            joystickState.right.dy = 0;
         }
     }
+    updateJoystickVisuals();
 }
 
 document.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -623,7 +736,9 @@ function animate() {
     bloomPass.radius = params.raveMode ? raveCurrent.bloomRadius : params.bloomRadius;
     edgePass.uniforms['edgeStrength'].value = params.raveMode ? raveCurrent.edgeContrast : params.edgeContrast;
 
-    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e || touchState.yMove !== 'none';
+    const leftJoystickActive = joystickState.left.active && (Math.abs(joystickState.left.dx) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS || Math.abs(joystickState.left.dy) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS);
+    const rightJoystickActive = joystickState.right.active && (Math.abs(joystickState.right.dx) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS || Math.abs(joystickState.right.dy) > JOYSTICK_DEADZONE * JOYSTICK_RADIUS);
+    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e || leftJoystickActive || rightJoystickActive;
     const useManual = !params.autoplay && !params.raveMode || (params.raveMode && isMoving);
 
     if (useManual) {
@@ -632,14 +747,46 @@ function animate() {
         camera.getWorldDirection(dir);
         const right = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
 
-        if (keys.w) camera.position.addScaledVector(dir, moveSpeed);
-        if (keys.s) camera.position.addScaledVector(dir, -moveSpeed);
-        if (keys.a) camera.position.addScaledVector(right, -moveSpeed);
-        if (keys.d) camera.position.addScaledVector(right, moveSpeed);
-        if (keys.e) camera.position.y += moveSpeed;
-        if (keys.q) camera.position.y -= moveSpeed;
-        if (touchState.yMove === 'down') camera.position.y -= moveSpeed;
-        if (touchState.yMove === 'up') camera.position.y += moveSpeed;
+        let forwardInput = 0;
+        let strafeInput = 0;
+        let verticalInput = 0;
+        let yawInput = 0;
+        let pitchInput = 0;
+
+        if (keys.w) forwardInput += 1;
+        if (keys.s) forwardInput -= 1;
+        if (keys.a) strafeInput -= 1;
+        if (keys.d) strafeInput += 1;
+        if (keys.e) verticalInput += 1;
+        if (keys.q) verticalInput -= 1;
+
+        if (leftJoystickActive) {
+            const leftDx = joystickState.left.dx / JOYSTICK_RADIUS;
+            const leftDy = joystickState.left.dy / JOYSTICK_RADIUS;
+            forwardInput += applyJoystickDeadzone(-leftDy);
+            strafeInput += applyJoystickDeadzone(leftDx);
+        }
+
+        if (rightJoystickActive) {
+            const rightDx = joystickState.right.dx / JOYSTICK_RADIUS;
+            const rightDy = joystickState.right.dy / JOYSTICK_RADIUS;
+            verticalInput += applyJoystickDeadzone(-rightDy);
+            yawInput += applyJoystickDeadzone(rightDx) * 0.03;
+            pitchInput += applyJoystickDeadzone(rightDy) * 0.02;
+        }
+
+        camera.position.addScaledVector(dir, forwardInput * moveSpeed);
+        camera.position.addScaledVector(right, strafeInput * moveSpeed);
+        camera.position.y += verticalInput * moveSpeed;
+
+        if (yawInput !== 0 || pitchInput !== 0) {
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            euler.setFromQuaternion(camera.quaternion);
+            euler.y -= yawInput;
+            euler.x -= pitchInput;
+            euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+            camera.quaternion.setFromEuler(euler);
+        }
 
         camera.lookAt(camera.position.x + dir.x, camera.position.y + dir.y, camera.position.z + dir.z);
     } else {
