@@ -151,10 +151,24 @@ const wallMaterial = new THREE.ShaderMaterial({
     side: THREE.DoubleSide
 });
 
-// const wallProgram = wallMaterial.program;
-// if (gl.getShaderParameter(wallProgram.vertexShader, gl.COMPILE_STATUS) === false) {
-//     console.error('Vertex Shader Error:', gl.getShaderInfoLog(wallProgram.vertexShader));
-// }
+// ─── 3c. PRIMITIVE SHADER MATERIAL ────────────────────────
+const primitiveMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+        uTime: { value: 0 },
+        uColor1: { value: new THREE.Color(0xff0055) },
+        uColor2: { value: new THREE.Color(0x00ccff) },
+        uCameraPos: { value: new THREE.Vector3(0, 0, 0) },
+        uAlpha: { value: 0.8 },
+        uWaveAmp: { value: 0.4 }
+    },
+    vertexShader: await loadShader('./shaders/primitive.vert'),
+    fragmentShader: await loadShader('./shaders/primitive.frag'),
+    transparent: true,
+    depthWrite: false,
+    wireframe: false,
+    side: THREE.DoubleSide
+});
+
 // ─── 4. INFINITE TILE SYSTEM ──────────────────────────────
 const TILE_SIZE = 200;
 const TILE_SEGMENTS = 128;
@@ -212,6 +226,41 @@ const wallKeysX = new Set();
 const wallKeysZ = new Set();
 const wallAngKeysX = new Set();
 const wallAngKeysZ = new Set();
+
+// ─── 4b. FLOATING PRIMITIVES ──────────────────────────────
+const PRIMITIVE_COUNT = 120;
+const PRIMITIVES_PER_GRID_CELL = 0.4;
+const primitiveGeos = [
+    new THREE.BoxGeometry(2, 2, 2, 8, 8, 8),
+    new THREE.SphereGeometry(1.5, 16, 16),
+    new THREE.CylinderGeometry(1.2, 1.2, 3, 16, 8)
+];
+const primitivePool = [];
+const primitiveKeys = new Set();
+
+for (let i = 0; i < PRIMITIVE_COUNT; i++) {
+    const geoIdx = Math.floor(Math.random() * primitiveGeos.length);
+    const mat = primitiveMaterial.clone();
+    const mesh = new THREE.Mesh(primitiveGeos[geoIdx], mat);
+    mesh.visible = false;
+    mesh.userData = {
+        alphaBase: 0.3 + Math.random() * 0.6,
+        alphaSpeed: 0.5 + Math.random() * 2,
+        alphaPhase: Math.random() * Math.PI * 2,
+        waveAmp: 0.2 + Math.random() * 0.5,
+        rotSpeed: new THREE.Vector3(
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 2
+        ),
+        scaleBase: 0.5 + Math.random() * 1.5,
+        bobSpeed: 0.3 + Math.random() * 1,
+        bobPhase: Math.random() * Math.PI * 2,
+        bobAmp: 0.5 + Math.random() * 2
+    };
+    scene.add(mesh);
+    primitivePool.push(mesh);
+}
 
 function key(ax, ay, az) { return `${ax},${ay},${az}`; }
 
@@ -558,7 +607,7 @@ function animate() {
     bloomPass.radius = params.raveMode ? raveCurrent.bloomRadius : params.bloomRadius;
     edgePass.uniforms['edgeStrength'].value = params.raveMode ? raveCurrent.edgeContrast : params.edgeContrast;
 
-    const isMoving = keys.w || keys.s || keys.a || keys.d || touchState.yMove !== 'none';
+    const isMoving = keys.w || keys.s || keys.a || keys.d || keys.q || keys.e || touchState.yMove !== 'none';
     const useManual = !params.autoplay && !params.raveMode || (params.raveMode && isMoving);
 
     if (useManual) {
@@ -571,6 +620,8 @@ function animate() {
         if (keys.s) camera.position.addScaledVector(dir, -moveSpeed);
         if (keys.a) camera.position.addScaledVector(right, -moveSpeed);
         if (keys.d) camera.position.addScaledVector(right, moveSpeed);
+        if (keys.e) camera.position.y += moveSpeed;
+        if (keys.q) camera.position.y -= moveSpeed;
         if (touchState.yMove === 'down') camera.position.y -= moveSpeed;
         if (touchState.yMove === 'up') camera.position.y += moveSpeed;
 
@@ -621,10 +672,12 @@ function animate() {
             }
         }
 
-        // Place walls in 3D grid
+        // Place walls in 3D grid (sparse: skip many cells for open space)
         for (let gy = cy - wallHalfY; gy <= cy + wallHalfY; gy++) {
             for (let gx = cx - halfXZ; gx <= cx + halfXZ; gx++) {
                 for (let gz = cz - halfXZ; gz <= cz + halfXZ; gz++) {
+                    const wHash = gx * 374761393 + gy * 668265263 + gz * 1274126177;
+                    if ((wHash & 0xff) > 60) continue; // ~24% wall density
                     const k = key(gx, gy, gz);
                     if (wallPoolKeys.has(k)) continue;
                     const availIdx = wallPool.findIndex(t => !t.visible);
@@ -641,6 +694,76 @@ function animate() {
                 }
             }
         }
+    }
+
+    // ─── Update floating primitives ────────────────────────
+    const pCx = Math.floor(camera.position.x / TILE_SIZE);
+    const pCz = Math.floor(camera.position.z / TILE_SIZE);
+    const pCy = Math.floor(camera.position.y / TILE_HEIGHT);
+    const pHalf = Math.ceil(RENDER_DIST / TILE_SIZE);
+
+    for (let i = 0; i < primitivePool.length; i++) {
+        const p = primitivePool[i];
+        if (p.visible) {
+            const dx = Math.abs(p.position.x - camera.position.x);
+            const dz = Math.abs(p.position.z - camera.position.z);
+            const dy = Math.abs(p.position.y - camera.position.y);
+            if (dx > RECYCLE_DIST || dz > RECYCLE_DIST || dy > RECYCLE_DIST) {
+                p.visible = false;
+                primitiveKeys.delete(key(p._gx, p._gy, p._gz));
+            }
+        }
+    }
+
+    function cellHash(x, y, z) {
+        let h = x * 374761393 + y * 668265263 + z * 1274126177;
+        h = (h ^ (h >> 13)) * 1103515245;
+        return (h ^ (h >> 16)) & 0x7fffffff;
+    }
+
+    for (let gy = pCy - 2; gy <= pCy + 2; gy++) {
+        for (let gx = pCx - pHalf; gx <= pCx + pHalf; gx++) {
+            for (let gz = pCz - pHalf; gz <= pCz + pHalf; gz++) {
+                const hash = cellHash(gx, gy, gz);
+                if ((hash % 100) / 100 > PRIMITIVES_PER_GRID_CELL) continue;
+                const k = key(gx, gy, gz);
+                if (primitiveKeys.has(k)) continue;
+                const availIdx = primitivePool.findIndex(p => !p.visible);
+                if (availIdx === -1) continue;
+                const p = primitivePool[availIdx];
+                const offsetX = ((hash >> 8) % 1000) / 1000;
+                const offsetZ = ((hash >> 16) % 1000) / 1000;
+                const offsetY = ((hash >> 24) % 1000) / 1000;
+                p.position.x = gx * TILE_SIZE + (offsetX - 0.5) * TILE_SIZE * 0.6;
+                p.position.z = gz * TILE_SIZE + (offsetZ - 0.5) * TILE_SIZE * 0.6;
+                p.position.y = gy * TILE_HEIGHT + TILE_HEIGHT * 0.3 + offsetY * TILE_HEIGHT * 0.4;
+                p._gx = gx;
+                p._gz = gz;
+                p._gy = gy;
+                p.visible = true;
+                p.scale.setScalar(p.userData.scaleBase);
+                primitiveKeys.add(k);
+            }
+        }
+    }
+
+    for (const p of primitivePool) {
+        if (!p.visible) continue;
+        const ud = p.userData;
+        const alpha = ud.alphaBase * (0.5 + 0.5 * Math.sin(effectiveTime * ud.alphaSpeed + ud.alphaPhase));
+        p.material.uniforms.uTime.value = effectiveTime;
+        p.material.uniforms.uAlpha.value = alpha;
+        p.material.uniforms.uWaveAmp.value = ud.waveAmp;
+        p.material.uniforms.uColor1.value.set(params.raveMode ? raveCurrent.colorA : params.colorA);
+        p.material.uniforms.uColor2.value.set(params.raveMode ? raveCurrent.colorB : params.colorB);
+        p.material.uniforms.uCameraPos.value.copy(camera.position);
+
+        p.rotation.x += ud.rotSpeed.x * dt * 0.5;
+        p.rotation.y += ud.rotSpeed.y * dt * 0.5;
+        p.rotation.z += ud.rotSpeed.z * dt * 0.5;
+
+        const bobOffset = Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
+        p.position.y = p._gy * TILE_HEIGHT + TILE_HEIGHT * 0.3 + bobOffset;
     }
 
     composer.render();
