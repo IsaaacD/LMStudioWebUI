@@ -167,6 +167,7 @@ export class AnimationLoop {
             euler.x -= pitchInput;
             euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
             this.camera.quaternion.setFromEuler(euler);
+            this.camera.getWorldDirection(dir);
         }
 
         this.camera.lookAt(this.camera.position.x + dir.x, this.camera.position.y + dir.y, this.camera.position.z + dir.z);

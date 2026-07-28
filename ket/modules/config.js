@@ -20,7 +20,7 @@ export const defaultParams = {
 export function randomizeParams(params) {
     params.speed = Math.random() * 2;
     params.foldIntensity = 0.5 + Math.random() * 2;
-    params.edgeContrast = Math.random() * 0.45;
+    params.edgeContrast = 0.1 + Math.random() * 0.45;
     params.veinSpeed = Math.random() * 3;
     params.bloomRadius = Math.random();
     params.autoplaySpeed = Math.random() * 3;

@@ -42,7 +42,7 @@ void main() {
     finalColor += col2 * gridLine * 0.4;
 
     float dist = length(vWorldPosition.xz - uCameraPos.xz);
-    float fogFactor = smoothstep(60.0, 160.0, dist);
+    float fogFactor = smoothstep(0.0, 80.0, dist);
     finalColor = mix(finalColor, vec3(0.05, 0.0, 0.1), fogFactor);
 
     gl_FragColor = vec4(finalColor, 0.55);

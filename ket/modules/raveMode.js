@@ -23,7 +23,7 @@ export class RaveEngine {
         this.raveTarget.bloomRadius = 0.1 + Math.random() * 0.9;
         this.raveTarget.foldIntensity = 0.5 + Math.random() * 2.5;
         this.raveTarget.veinSpeed = 0.5 + Math.random() * 3;
-        this.raveTarget.edgeContrast = Math.random() * 0.45;
+        this.raveTarget.edgeContrast = 0.1 + Math.random() * 0.45;
         this.raveTarget.timeScale = 0.5 + Math.random() * 3;
         this.raveTarget.autoplaySpeed = 0.5 + Math.random() * 3;
         this.raveTarget.colorA = Math.floor(Math.random() * 0xffffff);
