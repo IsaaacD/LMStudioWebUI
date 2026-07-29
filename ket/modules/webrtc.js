@@ -59,9 +59,8 @@ export class WebRTCManager {
         this.orbGroup = null;
         this.activeScene = null;
         this.sceneManager = null;
-        this.orientSpeed = 0;
-        this.prevBearing = null;
-        this.frameDt = 0.016;
+        this.params = null;
+
         this.isDestroying = false;
     }
 
@@ -76,6 +75,10 @@ export class WebRTCManager {
 
     setSceneManager(sm) {
         this.sceneManager = sm;
+    }
+
+    setParams(p) {
+        this.params = p;
     }
 
     refreshOrbParent() {
@@ -108,6 +111,7 @@ export class WebRTCManager {
         const savedName = loadUsername();
 
         const overlay = document.createElement('div');
+        overlay.classList = 'gui';
         overlay.id = 'online-splash';
         overlay.style.cssText = `
             position: fixed;
@@ -123,6 +127,7 @@ export class WebRTCManager {
         `;
 
         const title = document.createElement('div');
+
         title.textContent = 'ONLINE MODE';
         title.style.cssText = `
             font-family: 'Courier New', monospace;
@@ -435,7 +440,7 @@ export class WebRTCManager {
         }
         const osEl = this.el.querySelector('#webrtc-orient-speed');
         if (osEl) {
-            osEl.textContent = `ORIENT: ${this.orientSpeed.toFixed(3)} rad/s`;
+            osEl.textContent = `SPEED: ${this.params ? this.params.speed.toFixed(1) : '0.0'}`;
         }
     }
 
@@ -470,27 +475,11 @@ export class WebRTCManager {
             y: pos.y,
             z: pos.z,
             bearing: Math.atan2(dir.x, dir.z),
-            orientSpeed: this.orientSpeed
+            speed: this.params ? this.params.speed : 0
         };
     }
 
-    computeOrientationSpeed(dt) {
-        if (!this.camera) {
-            this.orientSpeed = 0;
-            return;
-        }
-        this.frameDt = dt || this.frameDt;
-        const dir = new THREE.Vector3();
-        this.camera.getWorldDirection(dir);
-        const currentBearing = Math.atan2(dir.x, dir.z);
-        if (this.prevBearing !== null) {
-            let delta = currentBearing - this.prevBearing;
-            if (delta > Math.PI) delta -= 2 * Math.PI;
-            if (delta < -Math.PI) delta += 2 * Math.PI;
-            this.orientSpeed = Math.abs(delta) / this.frameDt;
-        }
-        this.prevBearing = currentBearing;
-    }
+
 
     buildPeerSnapshot() {
         const snapshot = {};
@@ -603,7 +592,7 @@ export class WebRTCManager {
                 username: data.username,
                 color: data.color,
                 position: data.position,
-                orientSpeed: data.position ? data.position.orientSpeed : 0
+                speed: data.position ? data.position.speed : 0
             });
             this.updateOrbs();
             this.updateTeleportButton();
@@ -627,7 +616,6 @@ export class WebRTCManager {
     startGossipTimer() {
         if (this.gossipTimer) clearInterval(this.gossipTimer);
         this.gossipTimer = setInterval(() => {
-            this.computeOrientationSpeed(this.frameDt);
             this.refreshOrbParent();
             this.updatePosDisplay();
             this.broadcastPeerList();
@@ -749,7 +737,6 @@ export class WebRTCManager {
 
     animateOrbs(dt) {
         if (!this.orbGroup || !isOnlineMode) return;
-        this.computeOrientationSpeed(dt);
         const speed = 15;
         for (const orb of this.orbGroup.children) {
             const target = orb.userData.targetPosition;

@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import { initTouchControls } from './modules/touchControls.js';
 import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
-import { FEATURES } from './modules/utils.js';
+import { FEATURES, setGlobalSeed, getGlobalSeed } from './modules/utils.js';
+
+// Seed from URL param `?seed=123` so all clients stay in sync
+const urlSeed = new URLSearchParams(window.location.search).get('seed');
+if (urlSeed !== null) {
+    setGlobalSeed(parseInt(urlSeed, 10));
+    console.log('[seed] Math.random seeded with', getGlobalSeed());
+}
 import { initScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
 import { createHeartMaterial } from './modules/heartSpawner.js';
@@ -23,6 +30,9 @@ let animationLoop = null;
 let params = null;
 let fpsCounter = null;
 let webrtcManager = null;
+
+// Expose seed for cross-client sync
+window.__globalSeed = getGlobalSeed();
 
 if (new URLSearchParams(window.location.search).has('fps')) {
     fpsCounter = new FPSCounter();
@@ -121,6 +131,7 @@ async function bootstrap() {
         webrtcManager = new WebRTCManager();
         webrtcManager.setCamera(camera);
         webrtcManager.setSceneManager(sceneManager);
+        webrtcManager.setParams(params);
         webrtcManager.initActiveScene(cityScene.threeScene);
         webrtcManager.init();
     }

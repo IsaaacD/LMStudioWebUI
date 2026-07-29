@@ -50,6 +50,41 @@ export const FEATURES = {
     onlineMode: new URLSearchParams(window.location.search).has('online')
 };
 
+/* ── Seeded PRNG (mulberry32) ── */
+let _seed = 42;
+
+export function setGlobalSeed(value) {
+    _seed = value | 0;
+}
+
+export function getGlobalSeed() {
+    return _seed;
+}
+
+function mulberry32(a) {
+    return function () {
+        a |= 0;
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+const _seededRandom = mulberry32(_seed);
+
+export function seededRandom() {
+    return _seededRandom();
+}
+
+// Monkey-patch Math.random with our seeded PRNG
+const _originalRandom = Math.random;
+Math.random = _seededRandom;
+
+export function restoreOriginalRandom() {
+    Math.random = _originalRandom;
+}
+
 const _shaderCache = new Map();
 
 export function preloadShader(path, content) {
