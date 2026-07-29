@@ -59,17 +59,21 @@ void main() {
     // World-space coordinates for seamless infinite tiling
     vec2 worldXZ = position.xz + uTileOffset.xy;
 
-    // FOLDING LOGIC with Intensity Control (Y offset seeds vertical variation)
+    // FOLDING LOGIC with Intensity Control
     float noiseVal = snoise(vec3(worldXZ.x * 0.1, worldXZ.y * 0.1, uTileOffset.z * 0.1 + uTime * 0.15));
     float elevation = sin(worldXZ.x * 0.5 + uTileOffset.z * 0.3 + uTime) * 2.0 + noiseVal * 5.0;
 
     // Apply Fold Intensity Multiplier
     elevation *= uFoldIntensity;
 
-    // City Grid Snapping
-    float gridX = floor(worldXZ.x * 0.5);
-    float gridZ = floor(worldXZ.y * 0.5);
-    float buildingHeight = step(0.2, fract(gridX)) * step(0.2, fract(gridZ)) * elevation;
+    // Clamp to positive only (negative elevation pushes geometry down, canceling extrusion)
+    elevation = max(0.0, elevation);
+
+    // City Grid Snapping (anti-aliased, ~75% coverage matching original intent)
+    float gridX = fract(worldXZ.x * 0.5);
+    float gridZ = fract(worldXZ.y * 0.5);
+    float buildingMask = smoothstep(0.15, 0.28, gridX) * smoothstep(0.15, 0.28, gridZ);
+    float buildingHeight = buildingMask * elevation;
 
     vec3 newPos = position;
     newPos.y += buildingHeight;

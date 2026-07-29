@@ -133,8 +133,8 @@ export class AnimationLoop {
         updateJoystickInputs();
         const leftActive = joystickState.left.isActive;
         const rightActive = joystickState.right.isActive;
-        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.q || this.keys.e || leftActive || rightActive || this.pointerLocked;
-        const useManual = !this.params.autoplay && !this.params.raveMode || (this.params.raveMode && isMoving);
+        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.q || this.keys.e || leftActive || rightActive;
+        const useManual = (!this.params.autoplay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.pointerLocked));
 
         if (useManual) {
             this.handleManualControl(activeParams, dt, leftActive, rightActive);

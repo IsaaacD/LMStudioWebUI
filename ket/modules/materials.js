@@ -16,7 +16,7 @@ export async function createCityMaterial() {
         vertexShader: await loadShader('./shaders/city.vert'),
         fragmentShader: await loadShader('./shaders/city.frag'),
         wireframe: false,
-        transparent: true,
+        //transparent: true,
         side: THREE.DoubleSide
     });
 }
