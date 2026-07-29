@@ -46,7 +46,8 @@ export const GUI_EDGE_CONTRAST_MAX = 0.25;
 
 /* ── Feature Flags ── */
 export const FEATURES = {
-    webrtc: false
+    webrtc: true,
+    onlineMode: new URLSearchParams(window.location.search).has('online')
 };
 
 const _shaderCache = new Map();

@@ -5,7 +5,7 @@ const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
 
 export class AnimationLoop {
-    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine, fpsCounter }) {
+    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine, fpsCounter, webrtcManager }) {
         this.camera = camera;
         this.composer = composer;
         this.params = params;
@@ -13,6 +13,7 @@ export class AnimationLoop {
         this.transitionEffect = transitionEffect;
         this.raveEngine = raveEngine;
         this.fpsCounter = fpsCounter;
+        this.webrtcManager = webrtcManager;
         this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
         this.autoAngle = 0;
         this.autoOffsetX = 0;
@@ -148,6 +149,8 @@ export class AnimationLoop {
         if (isMoving && this.params.raveMode) {
             this.wasUserMoving = true;
         }
+
+        if (this.webrtcManager) this.webrtcManager.animateOrbs(dt);
 
         if (activeScene) {
             this.composer.render(activeScene.threeScene);

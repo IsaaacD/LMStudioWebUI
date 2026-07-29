@@ -22,6 +22,7 @@ let postProcessor = null;
 let animationLoop = null;
 let params = null;
 let fpsCounter = null;
+let webrtcManager = null;
 
 if (new URLSearchParams(window.location.search).has('fps')) {
     fpsCounter = new FPSCounter();
@@ -116,6 +117,14 @@ async function bootstrap() {
 
     initTouchControls(params);
 
+    if (FEATURES.webrtc && FEATURES.onlineMode) {
+        webrtcManager = new WebRTCManager();
+        webrtcManager.setCamera(camera);
+        webrtcManager.setSceneManager(sceneManager);
+        webrtcManager.initActiveScene(cityScene.threeScene);
+        webrtcManager.init();
+    }
+
     animationLoop = new AnimationLoop({
         camera,
         composer: postProcessor,
@@ -123,18 +132,14 @@ async function bootstrap() {
         sceneManager,
         transitionEffect,
         raveEngine,
-        fpsCounter
+        fpsCounter,
+        webrtcManager
     });
 
     window.addEventListener('resize', () => {
         onResize();
         postProcessor.resize(innerWidth, innerHeight);
     });
-
-    if (FEATURES.webrtc) {
-        const webrtcManager = new WebRTCManager();
-        webrtcManager.init();
-    }
 
     setSceneReadyCallback(() => {
         animationLoop.start(clock);

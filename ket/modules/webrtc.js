@@ -1,50 +1,207 @@
+import * as THREE from 'three';
+
 const STORAGE_KEY_ID = 'webrtc-user-id';
 const STORAGE_KEY_PEERS = 'webrtc-peer-list';
+const STORAGE_KEY_USERNAME = 'webrtc-username';
 
 function saveUserId(id) {
-    try {
-        localStorage.setItem(STORAGE_KEY_ID, id);
-    } catch { }
+    try { localStorage.setItem(STORAGE_KEY_ID, id); } catch { }
 }
 
 function loadUserId() {
-    try {
-        return localStorage.getItem(STORAGE_KEY_ID);
-    } catch {
-        return null;
-    }
+    try { return localStorage.getItem(STORAGE_KEY_ID); } catch { return null; }
 }
 
 function savePeerList(ids) {
-    try {
-        localStorage.setItem(STORAGE_KEY_PEERS, JSON.stringify(ids));
-    } catch { }
+    try { localStorage.setItem(STORAGE_KEY_PEERS, JSON.stringify(ids)); } catch { }
 }
 
 function loadPeerList() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY_PEERS);
         return raw ? JSON.parse(raw) : [];
-    } catch {
-        return [];
-    }
+    } catch { return []; }
 }
+
+function saveUsername(name) {
+    try { localStorage.setItem(STORAGE_KEY_USERNAME, name); } catch { }
+}
+
+function loadUsername() {
+    try { return localStorage.getItem(STORAGE_KEY_USERNAME); } catch { return null; }
+}
+
+const isOnlineMode = new URLSearchParams(window.location.search).has('online');
 
 export class WebRTCManager {
     constructor() {
         this.peers = new Map();
+        this.peerData = new Map();
         this.userId = null;
+        this.username = 'anon';
+        this.userColor = '#00ccff';
         this.el = null;
         this.peer = null;
         this.inputEl = null;
         this.savedPeerIds = loadPeerList();
         this.gossipTimer = null;
-        this.GOSSIP_INTERVAL = 5000;
+        this.GOSSIP_INTERVAL = 500;
+        this.camera = null;
+        this.orbGroup = null;
+        this.activeScene = null;
+        this.sceneManager = null;
+    }
+
+    setCamera(cam) {
+        this.camera = cam;
+    }
+
+    initActiveScene(scene) {
+        this.activeScene = scene;
+        this.initOrbGroup(scene);
+    }
+
+    setSceneManager(sm) {
+        this.sceneManager = sm;
+    }
+
+    refreshOrbParent() {
+        if (!this.orbGroup || !this.sceneManager) return;
+        const activeScene = this.sceneManager.getActiveScene();
+        if (!activeScene || !activeScene.threeScene) return;
+        const targetScene = activeScene.threeScene;
+        if (this.orbGroup.parent !== targetScene) {
+            if (this.orbGroup.parent) {
+                this.orbGroup.parent.remove(this.orbGroup);
+            }
+            targetScene.add(this.orbGroup);
+        }
     }
 
     init() {
-        this.el = this.createUI();
-        this.connectPeerJS();
+        if (isOnlineMode) {
+            this.showOnlineSplash();
+        } else {
+            this.el = this.createUI();
+            this.connectPeerJS();
+        }
+    }
+
+    showOnlineSplash() {
+        const savedName = loadUsername();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'online-splash';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100001;
+            transition: opacity 1s ease;
+        `;
+
+        const title = document.createElement('div');
+        title.textContent = 'ONLINE MODE';
+        title.style.cssText = `
+            font-family: 'Courier New', monospace;
+            font-size: clamp(18px, 4vw, 36px);
+            color: #fff;
+            text-shadow: 0 0 10px #ff0055, 0 0 30px #ff0055, 0 0 60px #00ccff;
+            letter-spacing: 0.3em;
+            margin-bottom: 40px;
+        `;
+        overlay.appendChild(title);
+
+        const form = document.createElement('div');
+        form.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        `;
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'username';
+        nameInput.value = savedName || '';
+        nameInput.maxLength = 16;
+        nameInput.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            border-radius: 6px;
+            padding: 10px 16px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+            width: 240px;
+        `;
+        form.appendChild(nameInput);
+
+        const colorLabel = document.createElement('div');
+        colorLabel.textContent = 'YOUR COLOR';
+        colorLabel.style.cssText = `
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.2em;
+        `;
+        form.appendChild(colorLabel);
+
+        const colorPicker = document.createElement('input');
+        colorPicker.type = 'color';
+        colorPicker.value = '#00ccff';
+        colorPicker.style.cssText = `
+            width: 60px;
+            height: 30px;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+        `;
+        form.appendChild(colorPicker);
+
+        const joinBtn = document.createElement('button');
+        joinBtn.textContent = 'JOIN';
+        joinBtn.style.cssText = `
+            margin-top: 12px;
+            background: rgba(0, 204, 255, 0.15);
+            border: 1px solid rgba(0, 204, 255, 0.4);
+            border-radius: 6px;
+            padding: 10px 32px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            letter-spacing: 0.2em;
+            cursor: pointer;
+        `;
+        form.appendChild(joinBtn);
+
+        overlay.appendChild(form);
+        document.body.appendChild(overlay);
+
+        const closeSplash = () => {
+            this.username = nameInput.value.trim() || 'anon';
+            this.userColor = colorPicker.value;
+            saveUsername(this.username);
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 1000);
+            this.el = this.createUI();
+            this.connectPeerJS();
+        };
+
+        joinBtn.addEventListener('click', closeSplash);
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') closeSplash();
+        });
+        nameInput.focus();
     }
 
     createUI() {
@@ -75,6 +232,29 @@ export class WebRTCManager {
         countEl.id = 'webrtc-count';
         countEl.innerHTML = `ONLINE: <span style="color: #00ccff; font-weight: bold;">1</span>`;
         container.appendChild(countEl);
+
+        if (isOnlineMode) {
+            const nameEl = document.createElement('div');
+            nameEl.id = 'webrtc-name';
+            nameEl.style.cssText = `
+                margin-top: 4px;
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.5);
+            `;
+            nameEl.innerHTML = `<span style="color: ${this.userColor};">${this.username}</span>`;
+            container.appendChild(nameEl);
+
+            const posEl = document.createElement('div');
+            posEl.id = 'webrtc-pos';
+            posEl.style.cssText = `
+                margin-top: 4px;
+                font-size: 10px;
+                color: rgba(255, 255, 255, 0.3);
+                letter-spacing: 0.1em;
+            `;
+            posEl.textContent = 'POS: 0, 0, 0';
+            container.appendChild(posEl);
+        }
 
         const idRow = document.createElement('div');
         idRow.style.cssText = `
@@ -172,6 +352,28 @@ export class WebRTCManager {
         inputRow.appendChild(connectBtn);
         container.appendChild(inputRow);
 
+        if (isOnlineMode) {
+            const teleportBtn = document.createElement('button');
+            teleportBtn.textContent = 'TELEPORT';
+            teleportBtn.style.cssText = `
+                margin-top: 10px;
+                width: 100%;
+                background: rgba(255, 0, 85, 0.15);
+                border: 1px solid rgba(255, 0, 85, 0.3);
+                border-radius: 4px;
+                padding: 6px 10px;
+                color: rgba(255, 255, 255, 0.7);
+                font-family: 'Courier New', monospace;
+                font-size: 10px;
+                letter-spacing: 0.15em;
+                cursor: pointer;
+            `;
+            teleportBtn.addEventListener('click', () => {
+                this.teleportToRandomPeer();
+            });
+            container.appendChild(teleportBtn);
+        }
+
         document.body.appendChild(container);
         return container;
     }
@@ -192,6 +394,15 @@ export class WebRTCManager {
         }
     }
 
+    updatePosDisplay() {
+        if (!this.el || !isOnlineMode || !this.camera) return;
+        const posEl = this.el.querySelector('#webrtc-pos');
+        if (posEl) {
+            const p = this.camera.position;
+            posEl.textContent = `POS: ${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`;
+        }
+    }
+
     get connectedCount() {
         let count = 1;
         for (const [, entry] of this.peers) {
@@ -199,6 +410,7 @@ export class WebRTCManager {
         }
         return count;
     }
+
     getMyPeerList() {
         const ids = [];
         for (const peerId of this.peers.keys()) {
@@ -212,9 +424,46 @@ export class WebRTCManager {
         savePeerList(this.getMyPeerList());
     }
 
+    getMyPosition() {
+        if (!this.camera) return null;
+        const pos = this.camera.position;
+        const dir = new THREE.Vector3();
+        this.camera.getWorldDirection(dir);
+        return {
+            x: pos.x,
+            y: pos.y,
+            z: pos.z,
+            bearing: Math.atan2(dir.x, dir.z)
+        };
+    }
+
+    buildPeerSnapshot() {
+        const snapshot = {};
+        snapshot[this.userId] = {
+            username: this.username,
+            color: this.userColor,
+            position: this.getMyPosition()
+        };
+        for (const [peerId, data] of this.peerData) {
+            if (data.position) {
+                snapshot[peerId] = data;
+            }
+        }
+        return snapshot;
+    }
+
     broadcastPeerList() {
         const list = this.getMyPeerList();
-        const msg = { type: 'peer-list', peers: list };
+        const snapshot = this.buildPeerSnapshot();
+        const msg = {
+            type: 'peer-list',
+            peers: list,
+            myId: this.userId,
+            username: this.username,
+            color: this.userColor,
+            position: this.getMyPosition(),
+            snapshot: snapshot
+        };
         for (const [, entry] of this.peers) {
             if (entry.connected && entry.conn) {
                 try {
@@ -224,9 +473,11 @@ export class WebRTCManager {
         }
     }
 
-    handlePeerList(msgPeers) {
+    handlePeerList(data) {
+        const msgPeers = data.peers;
         const myKnown = new Set(this.peers.keys());
         let changed = false;
+
         for (const peerId of msgPeers) {
             if (peerId === this.userId) continue;
             if (!myKnown.has(peerId)) {
@@ -234,14 +485,38 @@ export class WebRTCManager {
                 changed = true;
             }
         }
+
+        if (isOnlineMode && data.snapshot) {
+            for (const [peerId, peerInfo] of Object.entries(data.snapshot)) {
+                if (peerId === this.userId) continue;
+                if (peerInfo.position) {
+                    this.peerData.set(peerId, peerInfo);
+                }
+            }
+            this.updateOrbs();
+        }
+
         if (changed) {
             this.broadcastPeerList();
+        }
+    }
+
+    handlePositionUpdate(data) {
+        if (data.myId && isOnlineMode) {
+            this.peerData.set(data.myId, {
+                username: data.username,
+                color: data.color,
+                position: data.position
+            });
+            this.updateOrbs();
         }
     }
 
     startGossipTimer() {
         if (this.gossipTimer) clearInterval(this.gossipTimer);
         this.gossipTimer = setInterval(() => {
+            this.refreshOrbParent();
+            this.updatePosDisplay();
             this.broadcastPeerList();
         }, this.GOSSIP_INTERVAL);
     }
@@ -250,6 +525,130 @@ export class WebRTCManager {
         if (this.gossipTimer) {
             clearInterval(this.gossipTimer);
             this.gossipTimer = null;
+        }
+    }
+
+    initOrbGroup(scene) {
+        this.orbGroup = new THREE.Group();
+        this.orbGroup.name = 'webrtc-orbs';
+        if (scene) {
+            scene.add(this.orbGroup);
+        }
+    }
+
+    updateOrbs() {
+        if (!this.orbGroup || !isOnlineMode) return;
+
+        const existingIds = new Set();
+        for (const child of this.orbGroup.children) {
+            existingIds.add(child.userData.peerId);
+        }
+
+        const dataIds = new Set();
+        for (const [peerId, data] of this.peerData) {
+            if (!data.position) continue;
+            dataIds.add(peerId);
+            this.updateOrb(peerId, data);
+        }
+
+        for (const id of existingIds) {
+            if (!dataIds.has(id)) {
+                const toRemove = this.orbGroup.children.find(c => c.userData.peerId === id);
+                if (toRemove) {
+                    this.orbGroup.remove(toRemove);
+                    if (toRemove.material) toRemove.material.dispose();
+                }
+            }
+        }
+    }
+
+    createTextSprite(text, color) {
+        const canvas = document.createElement('canvas');
+        const size = 1024;
+        canvas.width = size;
+        canvas.height = size / 4;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'Bold 250px Courier New, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color || '#00ccff';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.minFilter = THREE.LinearFilter;
+        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(2, 0.5, 1);
+        return sprite;
+    }
+
+    updateOrb(peerId, data) {
+        let orb = this.orbGroup.children.find(c => c.userData.peerId === peerId);
+
+        if (!orb) {
+            const geometry = new THREE.SphereGeometry(3, 16, 16);
+            const color = new THREE.Color(data.color || '#00ccff');
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.9,
+                fog: false
+            });
+            orb = new THREE.Mesh(geometry, material);
+            orb.userData.peerId = peerId;
+            orb.userData.targetPosition = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
+
+            const glowGeo = new THREE.SphereGeometry(8, 16, 16);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.15,
+                side: THREE.BackSide,
+                fog: false
+            });
+            const glow = new THREE.Mesh(glowGeo, glowMat);
+            orb.add(glow);
+
+            const glow2Geo = new THREE.SphereGeometry(15, 16, 16);
+            const glow2Mat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.06,
+                side: THREE.BackSide,
+                fog: false
+            });
+            const glow2 = new THREE.Mesh(glow2Geo, glow2Mat);
+            orb.add(glow2);
+
+            const light = new THREE.PointLight(color, 3, 50);
+            orb.add(light);
+
+            const label = this.createTextSprite(data.username || 'anon', data.color || '#00ccff');
+            label.position.y = 4;
+            orb.add(label);
+
+            this.orbGroup.add(orb);
+        }
+
+        orb.userData.targetPosition.set(data.position.x, data.position.y, data.position.z);
+    }
+
+    animateOrbs(dt) {
+        if (!this.orbGroup || !isOnlineMode) return;
+        const speed = 15;
+        for (const orb of this.orbGroup.children) {
+            const target = orb.userData.targetPosition;
+            if (!target) continue;
+            const dx = target.x - orb.position.x;
+            const dy = target.y - orb.position.y;
+            const dz = target.z - orb.position.z;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (dist < 0.01) continue;
+            const move = Math.min(speed * dt, dist);
+            orb.position.x += (dx / dist) * move;
+            orb.position.y += (dy / dist) * move;
+            orb.position.z += (dz / dist) * move;
         }
     }
 
@@ -312,29 +711,40 @@ export class WebRTCManager {
             this.broadcastPeerList();
         });
 
-        conn.on('data', (data) => {
-            if (data.type === 'ping') {
-                conn.send({ type: 'pong' });
-            }
-            if (data.type === 'peer-list') {
-                this.handlePeerList(data.peers);
-            }
-        });
+        this.attachDataHandler(conn, entry);
 
         conn.on('close', () => {
             entry.connected = false;
             this.peers.delete(conn.peer);
+            this.peerData.delete(conn.peer);
             this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
+            if (isOnlineMode) this.updateOrbs();
         });
 
         conn.on('error', () => {
             entry.connected = false;
             this.peers.delete(conn.peer);
+            this.peerData.delete(conn.peer);
             this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
+            if (isOnlineMode) this.updateOrbs();
+        });
+    }
+
+    attachDataHandler(conn, entry) {
+        conn.on('data', (data) => {
+            if (data.type === 'ping') {
+                conn.send({ type: 'pong' });
+            }
+            if (data.type === 'peer-list') {
+                this.handlePeerList(data);
+            }
+            if (data.type === 'position-update') {
+                this.handlePositionUpdate(data);
+            }
         });
     }
 
@@ -355,21 +765,46 @@ export class WebRTCManager {
             this.broadcastPeerList();
         });
 
+        this.attachDataHandler(conn, entry);
+
         conn.on('close', () => {
             entry.connected = false;
             this.peers.delete(remoteId);
+            this.peerData.delete(remoteId);
             this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
+            if (isOnlineMode) this.updateOrbs();
         });
 
         conn.on('error', () => {
             entry.connected = false;
             this.peers.delete(remoteId);
+            this.peerData.delete(remoteId);
             this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
+            if (isOnlineMode) this.updateOrbs();
         });
+    }
+
+    teleportToRandomPeer() {
+        if (!this.camera || !isOnlineMode) return;
+        const peerEntries = Array.from(this.peerData.entries());
+        if (peerEntries.length === 0) {
+            console.log("peerEntries.length is 0");
+            return;
+        }
+        let peerIdx = Math.floor(Math.random() * peerEntries.length);
+        const [, data] = peerEntries[peerIdx];
+        if (!data.position) {
+            console.log("no position for peer", peerIdx,);
+            return;
+        }
+        const pos = data.position;
+        const offset = 8;
+        this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
+        this.camera.lookAt(pos.x, pos.y, pos.z);
     }
 
     destroy() {
@@ -378,6 +813,14 @@ export class WebRTCManager {
             if (entry.conn) entry.conn.close();
         }
         this.peers.clear();
+        this.peerData.clear();
+        if (this.orbGroup) {
+            for (const child of this.orbGroup.children) {
+                if (child.material) child.material.dispose();
+                if (child.geometry) child.geometry.dispose();
+            }
+            this.orbGroup.clear();
+        }
         if (this.peer) this.peer.destroy();
         if (this.el) this.el.remove();
     }
