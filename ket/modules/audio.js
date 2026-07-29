@@ -3,6 +3,7 @@ import {
     AUDIO_BUTTON_PADDING, AUDIO_BUTTON_BORDER_RADIUS, AUDIO_BUTTON_POSITION_OFFSET,
     AUDIO_INITIAL_VOLUME, SPLASH_EXIT_DELAY_MS,
 } from './utils.js';
+import { isAllLoaded } from './loader.js';
 
 let audioElement = null;
 let audioMuted = true;
@@ -32,6 +33,7 @@ export function initAudio(splashEl, splashSub) {
 
 function enterScene(splashEl, splashSub) {
     if (audioStarted) return;
+    if (!isAllLoaded()) return;
 
     splashSub.textContent = 'LOADING...';
     splashSub.style.animation = 'none';

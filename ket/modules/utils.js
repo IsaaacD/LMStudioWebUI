@@ -44,7 +44,14 @@ export const GUI_VEIN_SPEED_MAX = 3;
 export const GUI_EDGE_CONTRAST_MIN = 0.1;
 export const GUI_EDGE_CONTRAST_MAX = 0.25;
 
+const _shaderCache = new Map();
+
+export function preloadShader(path, content) {
+    _shaderCache.set(path, content);
+}
+
 export async function loadShader(path) {
+    if (_shaderCache.has(path)) return _shaderCache.get(path);
     const response = await fetch(path);
     if (!response.ok) throw new Error(`Failed to load ${path}: ${response.statusText}`);
     return await response.text();

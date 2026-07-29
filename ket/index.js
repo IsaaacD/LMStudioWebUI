@@ -13,17 +13,40 @@ import { SceneManager } from './modules/sceneManager.js';
 import { TransitionEffect } from './modules/transition.js';
 import { createCityScene } from './scenes/cityScene.js';
 import { createTestScene } from './scenes/testScene.js';
+import { loadAllAssets, setProgressCallback } from './modules/loader.js';
 
 let postProcessor = null;
 let animationLoop = null;
 let params = null;
 
 async function bootstrap() {
-    initScene();
-
     const splashEl = document.getElementById('splash');
     const splashSub = document.getElementById('splash-sub');
+    const progressTrack = document.getElementById('splash-progress-track');
+    const progressBar = document.getElementById('splash-progress-bar');
+    const progressText = document.getElementById('splash-progress-text');
+
     initAudio(splashEl, splashSub);
+
+    progressTrack.classList.add('visible');
+    progressText.classList.add('visible');
+    splashSub.textContent = 'INITIALIZING...';
+    splashSub.style.animation = 'none';
+
+    setProgressCallback((loaded, total) => {
+        const pct = Math.round((loaded / total) * 100);
+        progressBar.style.width = pct + '%';
+        progressText.textContent = `LOADING ${pct}%`;
+    });
+
+    await loadAllAssets();
+
+    splashSub.textContent = 'CLICK TO ENTER';
+    splashSub.style.animation = 'breathe 3s ease-in-out infinite';
+    splashEl.classList.add('ready');
+    progressText.textContent = 'ALL ASSETS LOADED';
+
+    await initScene();
 
     const cityMaterial = await createCityMaterial();
     const wallMaterial = await createWallMaterial();
@@ -78,8 +101,6 @@ async function bootstrap() {
     };
 
     const raveEngine = new RaveEngine(params);
-
-
 
     const guiControllers = {};
     initGUI(params, guiControllers, sceneManager);

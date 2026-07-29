@@ -30,11 +30,15 @@
             align-items: center;
             justify-content: center;
             z-index: 99999;
-            cursor: pointer;
+            cursor: not-allowed;
             transition: opacity 1.8s ease, transform 1.8s ease, filter 1.8s ease;
             opacity: 1;
             transform: scale(1);
             filter: blur(0px);
+        }
+
+        #splash.ready {
+            cursor: pointer;
         }
 
         #splash.exit {
@@ -462,7 +466,11 @@
     <div id="splash">
         <div id="splash-ring"></div>
         <div id="splash-title">KETAMINE DREAMS</div>
-        <div id="splash-sub">CLICK TO ENTER</div>
+        <div id="splash-sub">Loading...</div>
+        <div id="splash-progress-track">
+            <div id="splash-progress-bar"></div>
+        </div>
+        <div id="splash-progress-text">LOADING 0%</div>
 
         <!-- Drone Control Overlays -->
         <div id="controls-panel">
