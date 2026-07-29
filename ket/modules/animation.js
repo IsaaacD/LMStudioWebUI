@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { joystickState, updateJoystickInputs } from './touchControls.js';
 
-const MAX_PITCH_ANGLE = Math.PI / 4;
-const MAX_YAW_INCREMENT = Math.PI / 4.5;
+const MAX_PITCH_ANGLE = Math.PI / 6;
+const MAX_YAW_INCREMENT = Math.PI / 6;
 
 export class AnimationLoop {
     constructor({ camera, composer, params, tileManager, primitiveManager, raveEngine, tileConstants }) {
@@ -21,6 +21,11 @@ export class AnimationLoop {
         this.autoPitch = 0;
         this.autoPitchTarget = 0;
         this.autoPitchNextTime = 3 + Math.random() * 2;
+        this.autoYaw = 0;
+        this.autoYawTarget = 0;
+        this.autoYawNextTime = 3 + Math.random() * 2;
+        this.autoPitchTransitionDuration = 0;
+        this.autoYawTransitionDuration = 0;
         this.wasUserMoving = false;
         this.manualRotation = null;
         this.mouseYawDelta = 0;
@@ -211,7 +216,14 @@ export class AnimationLoop {
             const baseY = Math.cos(this.autoAngle * 0.5) * 3 + 2;
             this.autoOffsetX = this.camera.position.x - baseX;
             this.autoOffsetY = this.camera.position.y - baseY;
-            this.autoPitch = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, this.camera.rotation.x));
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(this.camera.quaternion);
+            const clampedPitch = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, euler.x));
+            this.autoPitch = clampedPitch;
+            this.autoPitchTarget = clampedPitch;
+            this.autoYaw = euler.y;
+            this.autoYawTarget = euler.y;
+            this.autoPitchTransitionDuration = 0;
+            this.autoYawTransitionDuration = 0;
             this.wasUserMoving = false;
         }
 
@@ -227,24 +239,33 @@ export class AnimationLoop {
 
         this.autoPitchNextTime -= dt * activeParams.timeScale;
         if (this.autoPitchNextTime <= 0) {
-            this.autoPitchTarget = (Math.random() * 2 - 1) * Math.PI / 8;
+            const randomOffset = (Math.random() * 2 - 1) * MAX_PITCH_ANGLE;
+            this.autoPitchTarget = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, this.autoPitchTarget + randomOffset));
             this.autoPitchNextTime = 1 + Math.random() * 2;
+            this.autoPitchTransitionDuration = 2 + Math.random() * 3;
         }
-        this.autoPitch += (this.autoPitchTarget - this.autoPitch) * Math.min(1, dt * 2);
 
-        const euler = new THREE.Euler(this.autoPitch, 0, 0, 'YXZ');
-        const autoQuat = new THREE.Quaternion().setFromEuler(euler);
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
-        const lookTarget = this.camera.position.clone().add(forward.multiplyScalar(10)).applyQuaternion(autoQuat);
-
-        const targetDir = lookTarget.clone().sub(this.camera.position).normalize();
-        const targetQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), targetDir);
-        const dot = Math.max(-1, Math.min(1, this.camera.quaternion.dot(targetQuat)));
-        const angle = Math.acos(dot) * 2;
-        if (angle > MAX_YAW_INCREMENT) {
-            this.camera.quaternion.slerp(targetQuat, MAX_YAW_INCREMENT / angle);
-        } else {
-            this.camera.quaternion.copy(targetQuat);
+        this.autoYawNextTime -= dt * activeParams.timeScale;
+        if (this.autoYawNextTime <= 0) {
+            const randomOffset = (Math.random() * 2 - 1) * MAX_YAW_INCREMENT;
+            this.autoYawTarget += randomOffset;
+            this.autoYawNextTime = 1 + Math.random() * 2;
+            this.autoYawTransitionDuration = 2 + Math.random() * 3;
         }
+
+        if (this.autoPitchTransitionDuration > 0) {
+            const t = Math.min(1, dt / this.autoPitchTransitionDuration);
+            this.autoPitch += (this.autoPitchTarget - this.autoPitch) * t;
+            this.autoPitchTransitionDuration -= dt;
+        }
+
+        if (this.autoYawTransitionDuration > 0) {
+            const t = Math.min(1, dt / this.autoYawTransitionDuration);
+            this.autoYaw += (this.autoYawTarget - this.autoYaw) * t;
+            this.autoYawTransitionDuration -= dt;
+        }
+
+        const euler = new THREE.Euler(this.autoPitch, this.autoYaw, 0, 'YXZ');
+        this.camera.quaternion.setFromEuler(euler);
     }
 }
