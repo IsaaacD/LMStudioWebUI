@@ -40,7 +40,9 @@ function loadUserColor() {
     try { return localStorage.getItem(STORAGE_KEY_COLOR); } catch { return null; }
 }
 
-const isOnlineMode = new URLSearchParams(window.location.search).has('online');
+const urlParams = new URLSearchParams(window.location.search);
+const isOnlineMode = urlParams.has('online');
+const autoJoinId = urlParams.get('joinId') || null;
 
 export class WebRTCManager {
     constructor() {
@@ -62,6 +64,7 @@ export class WebRTCManager {
         this.params = null;
 
         this.isDestroying = false;
+        this.pendingJoinId = null;
     }
 
     setCamera(cam) {
@@ -214,6 +217,7 @@ export class WebRTCManager {
             this.userColor = colorPicker.value;
             saveUsername(this.username);
             saveUserColor(this.userColor);
+            this.pendingJoinId = autoJoinId;
             overlay.style.opacity = '0';
             setTimeout(() => overlay.remove(), 1000);
             this.el = this.createUI();
@@ -333,6 +337,32 @@ export class WebRTCManager {
             }
         });
         idRow.appendChild(copyBtn);
+
+        const shareBtn = document.createElement('button');
+        shareBtn.textContent = 'SHARE';
+        shareBtn.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 204, 255, 0.2);
+            border-radius: 4px;
+            padding: 2px 8px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        `;
+        shareBtn.addEventListener('click', () => {
+            if (this.userId) {
+                const base = window.location.origin + window.location.pathname;
+                const shareUrl = `${base}?online=true&joinId=${this.userId}`;
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    shareBtn.textContent = 'COPIED';
+                    setTimeout(() => { shareBtn.textContent = 'SHARE'; }, 1500);
+                });
+            }
+        });
+        idRow.appendChild(shareBtn);
         container.appendChild(idRow);
 
         const inputRow = document.createElement('div');
@@ -768,6 +798,12 @@ export class WebRTCManager {
             this.updateIdDisplay();
             this.updateDisplay();
             this.startGossipTimer();
+
+            if (this.pendingJoinId && this.pendingJoinId !== this.userId) {
+                console.log(`[webrtc] auto-joining session ${this.pendingJoinId}`);
+                this.connectToPeer(this.pendingJoinId);
+                this.pendingJoinId = null;
+            }
 
             if (savedId && this.savedPeerIds.length > 0) {
                 console.log(`[webrtc] attempting to reconnect to ${this.savedPeerIds.length} saved peer(s)`);
