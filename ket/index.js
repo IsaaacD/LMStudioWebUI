@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { initTouchControls } from './modules/touchControls.js';
 import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
+import { FEATURES } from './modules/utils.js';
 import { initScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
 import { createHeartMaterial } from './modules/heartSpawner.js';
@@ -12,6 +13,7 @@ import { AnimationLoop } from './modules/animation.js';
 import { SceneManager } from './modules/sceneManager.js';
 import { TransitionEffect } from './modules/transition.js';
 import { FPSCounter } from './modules/fpsCounter.js';
+import { WebRTCManager } from './modules/webrtc.js';
 import { createCityScene } from './scenes/cityScene.js';
 import { createTestScene } from './scenes/testScene.js';
 import { loadAllAssets, setProgressCallback } from './modules/loader.js';
@@ -128,6 +130,11 @@ async function bootstrap() {
         onResize();
         postProcessor.resize(innerWidth, innerHeight);
     });
+
+    if (FEATURES.webrtc) {
+        const webrtcManager = new WebRTCManager();
+        webrtcManager.init();
+    }
 
     setSceneReadyCallback(() => {
         animationLoop.start(clock);

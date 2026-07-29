@@ -44,6 +44,11 @@ export const GUI_VEIN_SPEED_MAX = 3;
 export const GUI_EDGE_CONTRAST_MIN = 0.1;
 export const GUI_EDGE_CONTRAST_MAX = 0.25;
 
+/* ── Feature Flags ── */
+export const FEATURES = {
+    webrtc: false
+};
+
 const _shaderCache = new Map();
 
 export function preloadShader(path, content) {
