@@ -733,11 +733,11 @@ export class WebRTCManager {
         }
 
         orb.userData.targetPosition.set(data.position.x, data.position.y, data.position.z);
+        orb.userData.speed = data.position ? data.position.speed : 3;
     }
 
     animateOrbs(dt) {
         if (!this.orbGroup || !isOnlineMode) return;
-        const speed = 15;
         for (const orb of this.orbGroup.children) {
             const target = orb.userData.targetPosition;
             if (!target) continue;
@@ -746,7 +746,9 @@ export class WebRTCManager {
             const dz = target.z - orb.position.z;
             const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (dist < 0.01) continue;
-            const move = Math.min(speed * dt, dist);
+            const peerSpeed = orb.userData.speed || 3;
+            const lerpSpeed = Math.max(peerSpeed * 2, 8);
+            const move = Math.min(lerpSpeed * dt * 60, dist);
             orb.position.x += (dx / dist) * move;
             orb.position.y += (dy / dist) * move;
             orb.position.z += (dz / dist) * move;
