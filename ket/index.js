@@ -4,6 +4,7 @@ import { loadShader } from './modules/utils.js';
 import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
 import { initScene, getScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
+import { createHeartMaterial, HeartSpawner } from './modules/heartSpawner.js';
 import { initAudio, setSceneReadyCallback } from './modules/audio.js';
 import { getTileConstants, TileManager } from './modules/tiles.js';
 import { PrimitiveManager } from './modules/primitives.js';
@@ -27,6 +28,7 @@ async function bootstrap() {
     const cityMaterial = await createCityMaterial();
     const wallMaterial = await createWallMaterial();
     const primitiveMaterial = await createPrimitiveMaterial();
+    const heartMaterial = await createHeartMaterial();
 
     const scene = getScene();
     const camera = getCamera();
@@ -74,6 +76,7 @@ async function bootstrap() {
     const tileManager = new TileManager(scene, cityMaterial, wallMaterial);
     const primitiveManager = new PrimitiveManager(scene, primitiveMaterial, tileConstants.TILE_SIZE, tileConstants.TILE_HEIGHT, tileConstants.RECYCLE_DIST, tileConstants.RENDER_DIST);
     const imageSpawner = new ImageSpawner(scene, 'images/ralph.png');
+    const heartSpawner = new HeartSpawner(scene, heartMaterial);
 
     const guiControllers = {};
     initGUI(params, guiControllers);
@@ -87,6 +90,7 @@ async function bootstrap() {
         tileManager,
         primitiveManager,
         imageSpawner,
+        heartSpawner,
         raveEngine,
         tileConstants
     });
