@@ -9,10 +9,11 @@ const MAX_TILES = GRID * GRID;
 const TILE_HEIGHT = 25;
 
 const WALL_STRIP_LEN = RENDER_DIST * 2.5;
+const WALL_STRIP_HEIGHT = TILE_HEIGHT * 2.5;
 const WALLS_PER_POOL = 1200;
 
 export function getTileConstants() {
-    return { TILE_SIZE, TILE_SEGMENTS, RENDER_DIST, RECYCLE_DIST, GRID, MAX_TILES, TILE_HEIGHT, WALL_STRIP_LEN, WALLS_PER_POOL };
+    return { TILE_SIZE, TILE_SEGMENTS, RENDER_DIST, RECYCLE_DIST, GRID, MAX_TILES, TILE_HEIGHT, WALL_STRIP_LEN, WALL_STRIP_HEIGHT, WALLS_PER_POOL };
 }
 
 function key(ax, ay, az) { return `${ax},${ay},${az}`; }
@@ -113,7 +114,7 @@ function updateTiles(tiles, camX, camZ, camera, poolKeys, yOffset, halfY, recycl
 export class TileManager {
     constructor(scene, cityMaterial, wallMaterial) {
         const geo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE, TILE_SEGMENTS, TILE_SEGMENTS);
-        const wallGeo = new THREE.PlaneGeometry(WALL_STRIP_LEN, TILE_HEIGHT, Math.floor(TILE_SEGMENTS * 3), 8);
+        const wallGeo = new THREE.PlaneGeometry(WALL_STRIP_LEN, WALL_STRIP_HEIGHT, Math.floor(TILE_SEGMENTS * 3), 8);
 
         this.floorTiles = makePool(MAX_TILES * 30, geo, cityMaterial, scene, false);
         this.ceilTiles = makePool(MAX_TILES * 30, geo, cityMaterial, scene, true);
@@ -140,6 +141,7 @@ export class TileManager {
         const cx = Math.floor(camera.position.x / TILE_SIZE);
         const cz = Math.floor(camera.position.z / TILE_SIZE);
         const halfXZ = Math.max(2, Math.ceil(RENDER_DIST / TILE_SIZE) + 1);
+        const wallRecycleY = wallHalfY * 2 * TILE_HEIGHT + TILE_HEIGHT;
 
         for (const wConfig of [
             { pool: this.wallTilesX, keys: this.wallKeysX, type: 'x' },
@@ -157,10 +159,27 @@ export class TileManager {
                         ? Math.abs(t.position.z - camera.position.z)
                         : Math.abs(t.position.x - camera.position.x);
                     const dy = Math.abs(t.position.y - camera.position.y);
-                    if (perpDist > RECYCLE_DIST || dy > RECYCLE_DIST) {
+                    if (perpDist > RECYCLE_DIST || dy > wallRecycleY) {
                         t.visible = false;
                         keys.delete(key(t._gx, t._gy, t._gz));
                         avail.push(i);
+                    } else {
+                        // Update tracked grid coords for walls that follow the camera
+                        if (type === 'x') {
+                            const newGx = Math.floor(t.position.x / TILE_SIZE);
+                            if (newGx !== t._gx) {
+                                keys.delete(key(t._gx, t._gy, t._gz));
+                                t._gx = newGx;
+                                keys.add(key(t._gx, t._gy, t._gz));
+                            }
+                        } else {
+                            const newGz = Math.floor(t.position.z / TILE_SIZE);
+                            if (newGz !== t._gz) {
+                                keys.delete(key(t._gx, t._gy, t._gz));
+                                t._gz = newGz;
+                                keys.add(key(t._gx, t._gy, t._gz));
+                            }
+                        }
                     }
                 } else {
                     avail.push(i);
@@ -169,7 +188,7 @@ export class TileManager {
 
             // Build sorted grid positions: nearest to camera first
             const positions = [];
-            for (let gy = cy - wallHalfY; gy <= cy + wallHalfY; gy++) {
+            for (let gy = cy - wallHalfY; gy <= cy + wallHalfY; gy += 2) {
                 for (let gi = -halfXZ; gi <= halfXZ; gi++) {
                     positions.push({ gi, gy, dist2: gi * gi + (gy - cy) * (gy - cy) });
                 }
@@ -179,8 +198,8 @@ export class TileManager {
             for (const pos of positions) {
                 const { gi, gy } = pos;
                 const wHash = gi * 374761393 + gy * 668265263;
-                const normDist = Math.sqrt(pos.dist2) / halfXZ;
-                const threshold = 180 - normDist * 120;
+                const normDist = Math.sqrt(pos.dist2) / (halfXZ + wallHalfY);
+                const threshold = 255 - normDist * 155;
                 if ((wHash & 0xff) > threshold) continue;
                 const stripGx = type === 'x' ? cx : (cx + gi);
                 const stripGz = type === 'z' ? cz : (cz + gi);
