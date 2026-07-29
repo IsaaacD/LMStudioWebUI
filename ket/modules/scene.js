@@ -1,14 +1,10 @@
 import * as THREE from 'three';
 
-let scene = null;
 let camera = null;
 let renderer = null;
 let clock = null;
 
 export function initScene() {
-    scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050011, 0.0003);
-
     camera = new THREE.PerspectiveCamera(120, innerWidth / innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
@@ -28,7 +24,6 @@ export function onResize() {
     renderer.setSize(innerWidth, innerHeight);
 }
 
-export function getScene() { return scene; }
 export function getCamera() { return camera; }
 export function getRenderer() { return renderer; }
 export function getClock() { return clock; }

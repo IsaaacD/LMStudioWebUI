@@ -1,18 +1,18 @@
 import * as THREE from 'three';
 import { initTouchControls } from './modules/touchControls.js';
-import { loadShader } from './modules/utils.js';
 import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
-import { initScene, getScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
+import { initScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
-import { createHeartMaterial, HeartSpawner } from './modules/heartSpawner.js';
+import { createHeartMaterial } from './modules/heartSpawner.js';
 import { initAudio, setSceneReadyCallback } from './modules/audio.js';
-import { getTileConstants, TileManager } from './modules/tiles.js';
-import { PrimitiveManager } from './modules/primitives.js';
-import { ImageSpawner } from './modules/imageSpawner.js';
 import { PostProcessor } from './modules/postprocessing.js';
 import { RaveEngine } from './modules/raveMode.js';
 import { initGUI } from './modules/ui.js';
 import { AnimationLoop } from './modules/animation.js';
+import { SceneManager } from './modules/sceneManager.js';
+import { TransitionEffect } from './modules/transition.js';
+import { createCityScene } from './scenes/cityScene.js';
+import { createTestScene } from './scenes/testScene.js';
 
 let postProcessor = null;
 let animationLoop = null;
@@ -29,14 +29,21 @@ async function bootstrap() {
     const wallMaterial = await createWallMaterial();
     const primitiveMaterial = await createPrimitiveMaterial();
     const heartMaterial = await createHeartMaterial();
+    const sceneManager = new SceneManager();
+    const cityScene = await createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial);
+    const testScene = await createTestScene();
+    sceneManager.registerScene(cityScene);
+    sceneManager.registerScene(testScene);
 
-    const scene = getScene();
     const camera = getCamera();
     const renderer = getRenderer();
     const clock = getClock();
 
-    postProcessor = new PostProcessor(renderer, scene, camera);
+    postProcessor = new PostProcessor(renderer, cityScene.threeScene, camera);
     await postProcessor.initEdgePass();
+    await postProcessor.initPixelationPass();
+
+    const transitionEffect = new TransitionEffect();
 
     params = { ...defaultParams };
 
@@ -72,14 +79,10 @@ async function bootstrap() {
 
     const raveEngine = new RaveEngine(params);
 
-    const tileConstants = getTileConstants();
-    const tileManager = new TileManager(scene, cityMaterial, wallMaterial);
-    const primitiveManager = new PrimitiveManager(scene, primitiveMaterial, tileConstants.TILE_SIZE, tileConstants.TILE_HEIGHT, tileConstants.RECYCLE_DIST, tileConstants.RENDER_DIST);
-    const imageSpawner = new ImageSpawner(scene, 'images/ralph.png');
-    const heartSpawner = new HeartSpawner(scene, heartMaterial);
+
 
     const guiControllers = {};
-    initGUI(params, guiControllers);
+    initGUI(params, guiControllers, sceneManager);
 
     initTouchControls(params);
 
@@ -87,12 +90,9 @@ async function bootstrap() {
         camera,
         composer: postProcessor,
         params,
-        tileManager,
-        primitiveManager,
-        imageSpawner,
-        heartSpawner,
-        raveEngine,
-        tileConstants
+        sceneManager,
+        transitionEffect,
+        raveEngine
     });
 
     window.addEventListener('resize', () => {

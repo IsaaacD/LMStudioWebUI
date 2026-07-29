@@ -23,7 +23,10 @@ export const defaultParams = {
     autoplay: true,
     autoplaySpeed: 0.6,
     controlMode: 'Rave',
-    raveMode: true
+    raveMode: true,
+    sceneDurationCity: 45,
+    sceneDurationTest: 10,
+    forceNextScene: false
 };
 
 export function randomizeParams(params) {

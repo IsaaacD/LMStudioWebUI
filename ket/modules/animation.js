@@ -5,17 +5,13 @@ const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
 
 export class AnimationLoop {
-    constructor({ camera, composer, params, tileManager, primitiveManager, imageSpawner, heartSpawner, raveEngine, tileConstants }) {
+    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine }) {
         this.camera = camera;
         this.composer = composer;
         this.params = params;
-        this.tileManager = tileManager;
-        this.primitiveManager = primitiveManager;
-        this.imageSpawner = imageSpawner;
-        this.heartSpawner = heartSpawner;
+        this.sceneManager = sceneManager;
+        this.transitionEffect = transitionEffect;
         this.raveEngine = raveEngine;
-        this.TILE_SIZE = tileConstants.TILE_SIZE;
-        this.TILE_HEIGHT = tileConstants.TILE_HEIGHT;
         this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
         this.autoAngle = 0;
         this.autoOffsetX = 0;
@@ -50,8 +46,6 @@ export class AnimationLoop {
             if (e.button === 0 && !this.pointerLocked) {
                 const el = e.target;
                 if (el.closest('#splash, .lil-gui, .gui, #gui, [class*="gui"]')) return;
-                // if (document.body.requestPointerLock)
-                //     document.body.requestPointerLock();
             }
         });
 
@@ -112,24 +106,27 @@ export class AnimationLoop {
 
         const effectiveTime = rawTime * activeParams.timeScale;
 
-        for (const t of this.tileManager.getFloorCeilTiles()) {
-            if (!t.visible) continue;
-            t.material.uniforms.uTime.value = effectiveTime;
-            t.material.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
-            t.material.uniforms.uColor1.value.set(activeParams.colorA);
-            t.material.uniforms.uColor2.value.set(activeParams.colorB);
-            t.material.uniforms.uTileOffset.value.set(t._gx * this.TILE_SIZE, t._gz * this.TILE_SIZE, t._gy * this.TILE_HEIGHT);
-            t.material.uniforms.uCameraPos.value.copy(this.camera.position);
+        if (this.transitionEffect.isIdle()) {
+            if (this.sceneManager.update(dt) || this.params.forceNextScene) {
+                this.params.forceNextScene = false;
+                this.transitionEffect.start();
+            }
+        } else {
+            this.transitionEffect.update(dt);
         }
-        for (const t of this.tileManager.getWallTiles()) {
-            if (!t.visible) continue;
-            t.material.uniforms.uTime.value = effectiveTime;
-            t.material.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
-            t.material.uniforms.uColor1.value.set(activeParams.colorA);
-            t.material.uniforms.uColor2.value.set(activeParams.colorB);
-            t.material.uniforms.uTileOffset.value.set(t._gx * this.TILE_SIZE, t._gz * this.TILE_SIZE, t._gy * this.TILE_HEIGHT);
-            t.material.uniforms.uCameraPos.value.copy(this.camera.position);
+
+        if (this.transitionEffect.consumeSwap()) {
+            this.sceneManager.switchToNext();
         }
+
+        const activeScene = this.sceneManager.getActiveScene();
+
+        if (activeScene && activeScene.onUpdate) {
+            activeScene.onUpdate(this.camera, effectiveTime, dt, activeParams);
+        }
+
+        this.composer.setPixelationSharpness(this.transitionEffect.getPixelationSharpness());
+        this.composer.setFadeOverlayAlpha(this.transitionEffect.getOverlayAlpha());
 
         this.composer.update(activeParams);
 
@@ -145,18 +142,13 @@ export class AnimationLoop {
             this.handleAutoControl(activeParams, dt);
         }
 
-
-
         if (isMoving && this.params.raveMode) {
             this.wasUserMoving = true;
         }
 
-        this.tileManager.update(this.camera);
-        this.primitiveManager.update(this.camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);
-        this.imageSpawner.update(this.camera, effectiveTime, dt);
-        this.heartSpawner.update(this.camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);
-
-        this.composer.render();
+        if (activeScene) {
+            this.composer.render(activeScene.threeScene);
+        }
     }
 
     handleManualControl(activeParams, dt, leftActive, rightActive) {

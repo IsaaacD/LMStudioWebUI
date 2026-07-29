@@ -14,7 +14,7 @@ import {
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
 } from './utils.js';
 
-export function initGUI(params, guiControllers) {
+export function initGUI(params, guiControllers, sceneManager) {
     const gui = new GUI({ title: 'Trip Controls' });
 
     const tooltipEl = document.createElement('div');
@@ -85,6 +85,46 @@ export function initGUI(params, guiControllers) {
     const raCtrl = actFolder.add(params, 'randomize').name('🎲 Randomize');
     addInfoIcon(raCtrl.domElement, 'Randomize all visual and movement parameters for a new look');
     actFolder.close();
+
+    if (sceneManager) {
+        const sceneFolder = gui.addFolder('Scenes');
+
+        const sceneInfo = { name: 'loading...' };
+        sceneFolder.add(sceneInfo, 'name').name('Current Scene').disable();
+
+        const cityDuration = { value: sceneManager.getDuration('city') || 45 };
+        const cityDurCtrl = sceneFolder.add(cityDuration, 'value', 5, 120, 1).name('City Duration (s)');
+        addInfoIcon(cityDurCtrl.domElement, 'Time before auto-switching from city scene');
+        cityDurCtrl.onChange((v) => sceneManager.setDuration('city', v));
+
+        const testDuration = { value: sceneManager.getDuration('test') || 10 };
+        const testDurCtrl = sceneFolder.add(testDuration, 'value', 3, 60, 1).name('Test Duration (s)');
+        addInfoIcon(testDurCtrl.domElement, 'Time before auto-switching from test scene');
+        testDurCtrl.onChange((v) => sceneManager.setDuration('test', v));
+
+        const nextSceneBtn = {
+            'Next Scene': () => {
+                params.forceNextScene = true;
+            }
+        };
+        const nextSceneCtrl = sceneFolder.add(nextSceneBtn, 'Next Scene').name('⏭ Next Scene');
+        addInfoIcon(nextSceneCtrl.domElement, 'Manually trigger transition to next scene');
+
+        const timerDisplay = { elapsed: '0s' };
+        sceneFolder.add(timerDisplay, 'elapsed').name('Timer').disable();
+
+        sceneFolder.close();
+
+        (function updateSceneGui() {
+            const active = sceneManager.getActiveScene();
+            if (active) {
+                sceneInfo.name = active.name;
+            }
+            const remaining = Math.max(0, sceneManager.timer.maxDuration - sceneManager.timer.elapsed);
+            timerDisplay.elapsed = remaining.toFixed(1) + 's';
+            requestAnimationFrame(updateSceneGui);
+        })();
+    }
 
     gui.close();
 

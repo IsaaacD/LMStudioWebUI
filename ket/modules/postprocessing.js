@@ -17,6 +17,19 @@ export class PostProcessor {
         );
         this.composer.addPass(this.bloomPass);
 
+        this.fadeOverlay = document.createElement('div');
+        Object.assign(this.fadeOverlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#000',
+            opacity: '0',
+            pointerEvents: 'none',
+            zIndex: '9999'
+        });
+        document.body.appendChild(this.fadeOverlay);
     }
 
     async initEdgePass() {
@@ -34,6 +47,35 @@ export class PostProcessor {
         this.composer.addPass(this.edgePass);
     }
 
+    async initPixelationPass() {
+        const pixelateShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uSharpness": { value: 1.0 },
+                "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: await loadShader('./shaders/pixelate.vert'),
+            fragmentShader: await loadShader('./shaders/pixelate.frag')
+        };
+
+        this.pixelationPass = new ShaderPass(pixelateShader);
+        this.composer.addPass(this.pixelationPass);
+    }
+
+    setScene(threeScene) {
+        this.renderPass.scene = threeScene;
+    }
+
+    setPixelationSharpness(value) {
+        if (this.pixelationPass) {
+            this.pixelationPass.uniforms.uSharpness.value = value;
+        }
+    }
+
+    setFadeOverlayAlpha(alpha) {
+        this.fadeOverlay.style.opacity = String(alpha);
+    }
+
     update(activeParams) {
         this.bloomPass.strength = activeParams.bloomStrength;
         this.bloomPass.radius = activeParams.bloomRadius;
@@ -42,7 +84,10 @@ export class PostProcessor {
         }
     }
 
-    render() {
+    render(scene) {
+        if (scene !== undefined) {
+            this.setScene(scene);
+        }
         this.composer.render();
     }
 
@@ -50,6 +95,9 @@ export class PostProcessor {
         this.composer.setSize(width, height);
         if (this.edgePass) {
             this.edgePass.uniforms['resolution'].value.set(width, height);
+        }
+        if (this.pixelationPass) {
+            this.pixelationPass.uniforms.uResolution.value.set(width, height);
         }
     }
 }
