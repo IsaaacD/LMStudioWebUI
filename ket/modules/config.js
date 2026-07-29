@@ -10,8 +10,8 @@ import {
 } from './utils.js';
 
 export const defaultParams = {
-    speed: 0.8,
-    timeScale: 1.0,
+    speed: 3.0,
+    timeScale: 0.5,
     bloomStrength: 1.5,
     bloomRadius: 0.4,
     foldIntensity: 1.0,
@@ -21,7 +21,7 @@ export const defaultParams = {
     edgeContrast: 0.5,
     paused: false,
     autoplay: true,
-    autoplaySpeed: 0.6,
+    autoplaySpeed: 3.0,
     controlMode: 'Rave',
     raveMode: true,
     sceneDurationCity: 45,
