@@ -696,7 +696,7 @@ export class WebRTCManager {
     createTextSprite(text, color) {
         const canvas = document.createElement('canvas');
         const size = 1024;
-        canvas.width = size;
+        canvas.width = size / 4 * text.length;
         canvas.height = size / 4;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'rgba(0, 0, 0, 0)';
