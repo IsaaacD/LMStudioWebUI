@@ -3,6 +3,7 @@ import * as THREE from 'three';
 const STORAGE_KEY_ID = 'webrtc-user-id';
 const STORAGE_KEY_PEERS = 'webrtc-peer-list';
 const STORAGE_KEY_USERNAME = 'webrtc-username';
+const STORAGE_KEY_COLOR = 'webrtc-user-color';
 
 function saveUserId(id) {
     try { localStorage.setItem(STORAGE_KEY_ID, id); } catch { }
@@ -31,6 +32,14 @@ function loadUsername() {
     try { return localStorage.getItem(STORAGE_KEY_USERNAME); } catch { return null; }
 }
 
+function saveUserColor(color) {
+    try { localStorage.setItem(STORAGE_KEY_COLOR, color); } catch { }
+}
+
+function loadUserColor() {
+    try { return localStorage.getItem(STORAGE_KEY_COLOR); } catch { return null; }
+}
+
 const isOnlineMode = new URLSearchParams(window.location.search).has('online');
 
 export class WebRTCManager {
@@ -39,7 +48,7 @@ export class WebRTCManager {
         this.peerData = new Map();
         this.userId = null;
         this.username = 'anon';
-        this.userColor = '#00ccff';
+        this.userColor = loadUserColor() || '#00ccff';
         this.el = null;
         this.peer = null;
         this.inputEl = null;
@@ -164,7 +173,7 @@ export class WebRTCManager {
 
         const colorPicker = document.createElement('input');
         colorPicker.type = 'color';
-        colorPicker.value = '#00ccff';
+        colorPicker.value = this.userColor;
         colorPicker.style.cssText = `
             width: 60px;
             height: 30px;
@@ -199,6 +208,7 @@ export class WebRTCManager {
             this.username = nameInput.value.trim() || 'anon';
             this.userColor = colorPicker.value;
             saveUsername(this.username);
+            saveUserColor(this.userColor);
             overlay.style.opacity = '0';
             setTimeout(() => overlay.remove(), 1000);
             this.el = this.createUI();
@@ -214,6 +224,7 @@ export class WebRTCManager {
 
     createUI() {
         const container = document.createElement('div');
+        container.classList = 'gui';
         container.id = 'webrtc-panel';
         container.style.cssText = `
             position: fixed;
