@@ -45,7 +45,7 @@ export class WebRTCManager {
         this.inputEl = null;
         this.savedPeerIds = loadPeerList();
         this.gossipTimer = null;
-        this.GOSSIP_INTERVAL = 500;
+        this.GOSSIP_INTERVAL = 200;
         this.camera = null;
         this.orbGroup = null;
         this.activeScene = null;
@@ -531,6 +531,7 @@ export class WebRTCManager {
     }
 
     broadcastPeerList() {
+        if (this.isDestroying) return;
         const list = this.getMyPeerList();
         const snapshot = this.buildPeerSnapshot();
         const msg = {
@@ -820,12 +821,14 @@ export class WebRTCManager {
             entry.connected = false;
             this.peers.delete(conn.peer);
             this.peerData.delete(conn.peer);
-            if (!this.isDestroying) this.persistPeers();
-            this.updateDisplay();
-            this.broadcastPeerList();
-            if (isOnlineMode) {
-                this.updateOrbs();
-                this.updateTeleportButton();
+            if (!this.isDestroying) {
+                this.persistPeers();
+                this.updateDisplay();
+                this.broadcastPeerList();
+                if (isOnlineMode) {
+                    this.updateOrbs();
+                    this.updateTeleportButton();
+                }
             }
         });
 
@@ -833,12 +836,14 @@ export class WebRTCManager {
             entry.connected = false;
             this.peers.delete(conn.peer);
             this.peerData.delete(conn.peer);
-            if (!this.isDestroying) this.persistPeers();
-            this.updateDisplay();
-            this.broadcastPeerList();
-            if (isOnlineMode) {
-                this.updateOrbs();
-                this.updateTeleportButton();
+            if (!this.isDestroying) {
+                this.persistPeers();
+                this.updateDisplay();
+                this.broadcastPeerList();
+                if (isOnlineMode) {
+                    this.updateOrbs();
+                    this.updateTeleportButton();
+                }
             }
         });
     }
@@ -884,20 +889,24 @@ export class WebRTCManager {
             entry.connected = false;
             this.peers.delete(remoteId);
             this.peerData.delete(remoteId);
-            if (!this.isDestroying) this.persistPeers();
-            this.updateDisplay();
-            this.broadcastPeerList();
-            if (isOnlineMode) this.updateOrbs();
+            if (!this.isDestroying) {
+                this.persistPeers();
+                this.updateDisplay();
+                this.broadcastPeerList();
+                if (isOnlineMode) this.updateOrbs();
+            }
         });
 
         conn.on('error', () => {
             entry.connected = false;
             this.peers.delete(remoteId);
             this.peerData.delete(remoteId);
-            if (!this.isDestroying) this.persistPeers();
-            this.updateDisplay();
-            this.broadcastPeerList();
-            if (isOnlineMode) this.updateOrbs();
+            if (!this.isDestroying) {
+                this.persistPeers();
+                this.updateDisplay();
+                this.broadcastPeerList();
+                if (isOnlineMode) this.updateOrbs();
+            }
         });
     }
 
@@ -912,6 +921,7 @@ export class WebRTCManager {
         const offset = 8;
         this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
         this.camera.lookAt(pos.x, pos.y, pos.z);
+        this.broadcastPeerList();
     }
 
     updateTeleportButton() {
