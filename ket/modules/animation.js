@@ -16,7 +16,7 @@ export class AnimationLoop {
         this.raveEngine = raveEngine;
         this.TILE_SIZE = tileConstants.TILE_SIZE;
         this.TILE_HEIGHT = tileConstants.TILE_HEIGHT;
-        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
         this.autoAngle = 0;
         this.autoOffsetX = 0;
         this.autoOffsetY = 0;
@@ -50,7 +50,8 @@ export class AnimationLoop {
             if (e.button === 0 && !this.pointerLocked) {
                 const el = e.target;
                 if (el.closest('#splash, .lil-gui, .gui, #gui, [class*="gui"]')) return;
-                document.body.requestPointerLock();
+                // if (document.body.requestPointerLock)
+                //     document.body.requestPointerLock();
             }
         });
 
@@ -187,6 +188,11 @@ export class AnimationLoop {
             yawInput += joystickState.right.yaw;
             pitchInput += joystickState.right.pitch;
         }
+
+        if (this.keys.arrowleft) yawInput += 0.1;
+        if (this.keys.arrowright) yawInput -= 0.1;
+        if (this.keys.arrowup) pitchInput += 0.1;
+        if (this.keys.arrowdown) pitchInput -= 0.1;
 
         yawInput -= this.mouseYawDelta;
         pitchInput -= this.mousePitchDelta;

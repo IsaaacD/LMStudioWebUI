@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const PRIMITIVE_COUNT = 500;
+const PRIMITIVE_COUNT = 200;
 const PRIMITIVES_PER_GRID_CELL = 0.35;
 const SUBDIVISIONS = 2;
 const RETENTION_DIST_SQ = 400 * 400;
