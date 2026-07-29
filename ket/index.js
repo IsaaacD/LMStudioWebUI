@@ -7,6 +7,7 @@ import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from 
 import { initAudio, setSceneReadyCallback } from './modules/audio.js';
 import { getTileConstants, TileManager } from './modules/tiles.js';
 import { PrimitiveManager } from './modules/primitives.js';
+import { ImageSpawner } from './modules/imageSpawner.js';
 import { PostProcessor } from './modules/postprocessing.js';
 import { RaveEngine } from './modules/raveMode.js';
 import { initGUI } from './modules/ui.js';
@@ -72,6 +73,7 @@ async function bootstrap() {
     const tileConstants = getTileConstants();
     const tileManager = new TileManager(scene, cityMaterial, wallMaterial);
     const primitiveManager = new PrimitiveManager(scene, primitiveMaterial, tileConstants.TILE_SIZE, tileConstants.TILE_HEIGHT, tileConstants.RECYCLE_DIST, tileConstants.RENDER_DIST);
+    const imageSpawner = new ImageSpawner(scene, 'images/ralph.png');
 
     const guiControllers = {};
     initGUI(params, guiControllers);
@@ -84,6 +86,7 @@ async function bootstrap() {
         params,
         tileManager,
         primitiveManager,
+        imageSpawner,
         raveEngine,
         tileConstants
     });

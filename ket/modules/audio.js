@@ -10,7 +10,7 @@ let audioStarted = false;
 let audioBtnEl = null;
 
 export function initAudio(splashEl, splashSub) {
-    audioElement = new Audio('./lights.mp3');
+    audioElement = new Audio('./music/lights.mp3');
     audioElement.loop = true;
     audioElement.volume = AUDIO_INITIAL_VOLUME;
 

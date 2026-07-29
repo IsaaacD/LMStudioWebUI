@@ -5,12 +5,13 @@ const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
 
 export class AnimationLoop {
-    constructor({ camera, composer, params, tileManager, primitiveManager, raveEngine, tileConstants }) {
+    constructor({ camera, composer, params, tileManager, primitiveManager, imageSpawner, raveEngine, tileConstants }) {
         this.camera = camera;
         this.composer = composer;
         this.params = params;
         this.tileManager = tileManager;
         this.primitiveManager = primitiveManager;
+        this.imageSpawner = imageSpawner;
         this.raveEngine = raveEngine;
         this.TILE_SIZE = tileConstants.TILE_SIZE;
         this.TILE_HEIGHT = tileConstants.TILE_HEIGHT;
@@ -150,6 +151,7 @@ export class AnimationLoop {
 
         this.tileManager.update(this.camera);
         this.primitiveManager.update(this.camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);
+        this.imageSpawner.update(this.camera, effectiveTime, dt);
 
         this.composer.render();
     }
