@@ -62,8 +62,9 @@ export class PrimitiveManager {
         const len = pool.length;
         for (let attempts = 0; attempts < len; attempts++) {
             if (!pool[this.nextFree].visible) {
+                const free = pool[this.nextFree];
                 this.nextFree = (this.nextFree + 1) % len;
-                return pool[this.nextFree];
+                return free;
             }
             this.nextFree = (this.nextFree + 1) % len;
         }
@@ -133,10 +134,16 @@ export class PrimitiveManager {
             p.material.uniforms.uColor1.value.set(colorA);
             p.material.uniforms.uColor2.value.set(colorB);
             p.material.uniforms.uCameraPos.value.copy(camera.position);
+            p.material.needsUpdate = true;
 
-            p.rotation.x += ud.rotSpeed.x * dt * 0.5;
-            p.rotation.y += ud.rotSpeed.y * dt * 0.5;
-            p.rotation.z += ud.rotSpeed.z * dt * 0.5;
+            const clampedDt = Math.min(dt, 0.1);
+            p.rotation.x += ud.rotSpeed.x * clampedDt * 0.5;
+            p.rotation.y += ud.rotSpeed.y * clampedDt * 0.5;
+            p.rotation.z += ud.rotSpeed.z * clampedDt * 0.5;
+
+            p.rotation.x = Math.max(-Math.PI, Math.min(Math.PI, p.rotation.x));
+            p.rotation.y = Math.max(-Math.PI, Math.min(Math.PI, p.rotation.y));
+            p.rotation.z = Math.max(-Math.PI, Math.min(Math.PI, p.rotation.z));
 
             const bobOffset = Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
             p.position.y = p._gy * this.subSizeY + this.subSizeY * 0.3 + bobOffset;

@@ -6,7 +6,7 @@ const RENDER_DIST = 140;
 const RECYCLE_DIST = 200;
 const GRID = Math.ceil(RENDER_DIST / TILE_SIZE) * 2 + 1;
 const MAX_TILES = GRID * GRID;
-const TILE_HEIGHT = 30;
+const TILE_HEIGHT = 25;
 
 const WALL_STRIP_LEN = RENDER_DIST * 2.5;
 const WALLS_PER_POOL = 600;
@@ -48,7 +48,7 @@ function makeWallPool(count, geo, material, scene, rotY) {
 function updateTiles(tiles, camX, camZ, camera, poolKeys, yOffset, halfY) {
     const cx = Math.floor(camX / TILE_SIZE);
     const cz = Math.floor(camZ / TILE_SIZE);
-    const cy = Math.floor(camera.position.y / TILE_HEIGHT);
+    const cy = Math.floor(camera.position.y / 10 + Math.random() * TILE_HEIGHT);
     const half = Math.max(2, Math.ceil(RENDER_DIST / TILE_SIZE) + 1);
     const avail = [];
 
