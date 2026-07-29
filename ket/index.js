@@ -11,6 +11,7 @@ import { initGUI } from './modules/ui.js';
 import { AnimationLoop } from './modules/animation.js';
 import { SceneManager } from './modules/sceneManager.js';
 import { TransitionEffect } from './modules/transition.js';
+import { FPSCounter } from './modules/fpsCounter.js';
 import { createCityScene } from './scenes/cityScene.js';
 import { createTestScene } from './scenes/testScene.js';
 import { loadAllAssets, setProgressCallback } from './modules/loader.js';
@@ -18,6 +19,12 @@ import { loadAllAssets, setProgressCallback } from './modules/loader.js';
 let postProcessor = null;
 let animationLoop = null;
 let params = null;
+let fpsCounter = null;
+
+if (new URLSearchParams(window.location.search).has('fps')) {
+    fpsCounter = new FPSCounter();
+    fpsCounter.init();
+}
 
 async function bootstrap() {
     const splashEl = document.getElementById('splash');
@@ -113,7 +120,8 @@ async function bootstrap() {
         params,
         sceneManager,
         transitionEffect,
-        raveEngine
+        raveEngine,
+        fpsCounter
     });
 
     window.addEventListener('resize', () => {

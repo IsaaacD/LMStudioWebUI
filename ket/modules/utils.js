@@ -1,5 +1,5 @@
 /* ── Tooltip / Overlay UI ── */
-export const TOOLTIP_Z_INDEX = '99999';
+export const TOOLTIP_Z_INDEX = '9999';
 export const TOOLTIP_MAX_WIDTH = '240px';
 export const TOOLTIP_BACKGROUND = 'rgba(10,10,20,0.92)';
 export const TOOLTIP_TEXT_COLOR = '#ddd';

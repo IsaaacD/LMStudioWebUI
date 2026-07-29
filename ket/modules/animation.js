@@ -5,13 +5,14 @@ const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
 
 export class AnimationLoop {
-    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine }) {
+    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine, fpsCounter }) {
         this.camera = camera;
         this.composer = composer;
         this.params = params;
         this.sceneManager = sceneManager;
         this.transitionEffect = transitionEffect;
         this.raveEngine = raveEngine;
+        this.fpsCounter = fpsCounter;
         this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
         this.autoAngle = 0;
         this.autoOffsetX = 0;
@@ -78,6 +79,8 @@ export class AnimationLoop {
     animate() {
         if (!this.running) return;
         requestAnimationFrame(() => this.animate());
+
+        if (this.fpsCounter) this.fpsCounter.update();
 
         if (this.params.paused) {
             this.composer.render();
