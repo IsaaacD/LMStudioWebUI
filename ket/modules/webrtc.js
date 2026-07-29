@@ -50,6 +50,10 @@ export class WebRTCManager {
         this.orbGroup = null;
         this.activeScene = null;
         this.sceneManager = null;
+        this.orientSpeed = 0;
+        this.prevBearing = null;
+        this.frameDt = 0.016;
+        this.isDestroying = false;
     }
 
     setCamera(cam) {
@@ -85,6 +89,10 @@ export class WebRTCManager {
             this.el = this.createUI();
             this.connectPeerJS();
         }
+        window.addEventListener('beforeunload', () => {
+            this.broadcastDisconnect();
+            this.destroy();
+        });
     }
 
     showOnlineSplash() {
@@ -254,6 +262,17 @@ export class WebRTCManager {
             `;
             posEl.textContent = 'POS: 0, 0, 0';
             container.appendChild(posEl);
+
+            const osEl = document.createElement('div');
+            osEl.id = 'webrtc-orient-speed';
+            osEl.style.cssText = `
+                margin-top: 4px;
+                font-size: 10px;
+                color: rgba(255, 255, 255, 0.3);
+                letter-spacing: 0.1em;
+            `;
+            osEl.textContent = 'ORIENT: 0.000 rad/s';
+            container.appendChild(osEl);
         }
 
         const idRow = document.createElement('div');
@@ -354,7 +373,9 @@ export class WebRTCManager {
 
         if (isOnlineMode) {
             const teleportBtn = document.createElement('button');
+            teleportBtn.id = 'teleport-btn';
             teleportBtn.textContent = 'TELEPORT';
+            teleportBtn.disabled = true;
             teleportBtn.style.cssText = `
                 margin-top: 10px;
                 width: 100%;
@@ -401,6 +422,10 @@ export class WebRTCManager {
             const p = this.camera.position;
             posEl.textContent = `POS: ${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`;
         }
+        const osEl = this.el.querySelector('#webrtc-orient-speed');
+        if (osEl) {
+            osEl.textContent = `ORIENT: ${this.orientSpeed.toFixed(3)} rad/s`;
+        }
     }
 
     get connectedCount() {
@@ -433,23 +458,76 @@ export class WebRTCManager {
             x: pos.x,
             y: pos.y,
             z: pos.z,
-            bearing: Math.atan2(dir.x, dir.z)
+            bearing: Math.atan2(dir.x, dir.z),
+            orientSpeed: this.orientSpeed
         };
+    }
+
+    computeOrientationSpeed(dt) {
+        if (!this.camera) {
+            this.orientSpeed = 0;
+            return;
+        }
+        this.frameDt = dt || this.frameDt;
+        const dir = new THREE.Vector3();
+        this.camera.getWorldDirection(dir);
+        const currentBearing = Math.atan2(dir.x, dir.z);
+        if (this.prevBearing !== null) {
+            let delta = currentBearing - this.prevBearing;
+            if (delta > Math.PI) delta -= 2 * Math.PI;
+            if (delta < -Math.PI) delta += 2 * Math.PI;
+            this.orientSpeed = Math.abs(delta) / this.frameDt;
+        }
+        this.prevBearing = currentBearing;
     }
 
     buildPeerSnapshot() {
         const snapshot = {};
-        snapshot[this.userId] = {
-            username: this.username,
-            color: this.userColor,
-            position: this.getMyPosition()
-        };
+        const myPos = this.getMyPosition();
+        if (myPos) {
+            snapshot[this.userId] = {
+                username: this.username,
+                color: this.userColor,
+                position: myPos
+            };
+        }
         for (const [peerId, data] of this.peerData) {
             if (data.position) {
                 snapshot[peerId] = data;
             }
         }
         return snapshot;
+    }
+
+    broadcastDisconnect() {
+        const msg = {
+            type: 'disconnect',
+            myId: this.userId
+        };
+        for (const [, entry] of this.peers) {
+            if (entry.connected && entry.conn) {
+                try {
+                    entry.conn.send(msg);
+                } catch { }
+            }
+        }
+    }
+
+    sendSnapshotToPeer(conn) {
+        if (!isOnlineMode) return;
+        const snapshot = this.buildPeerSnapshot();
+        const msg = {
+            type: 'peer-list',
+            peers: this.getMyPeerList(),
+            myId: this.userId,
+            username: this.username,
+            color: this.userColor,
+            position: this.getMyPosition(),
+            snapshot: snapshot
+        };
+        try {
+            conn.send(msg);
+        } catch { }
     }
 
     broadcastPeerList() {
@@ -489,11 +567,17 @@ export class WebRTCManager {
         if (isOnlineMode && data.snapshot) {
             for (const [peerId, peerInfo] of Object.entries(data.snapshot)) {
                 if (peerId === this.userId) continue;
+                const existing = this.peerData.get(peerId);
                 if (peerInfo.position) {
+                    this.peerData.set(peerId, peerInfo);
+                } else if (existing && existing.position) {
+                    this.peerData.set(peerId, { ...peerInfo, position: existing.position });
+                } else {
                     this.peerData.set(peerId, peerInfo);
                 }
             }
             this.updateOrbs();
+            this.updateTeleportButton();
         }
 
         if (changed) {
@@ -506,15 +590,32 @@ export class WebRTCManager {
             this.peerData.set(data.myId, {
                 username: data.username,
                 color: data.color,
-                position: data.position
+                position: data.position,
+                orientSpeed: data.position ? data.position.orientSpeed : 0
             });
             this.updateOrbs();
+            this.updateTeleportButton();
+        }
+    }
+
+    handleDisconnect(data) {
+        const peerId = data.myId;
+        if (!peerId) return;
+        this.peers.delete(peerId);
+        this.peerData.delete(peerId);
+        this.persistPeers();
+        this.updateDisplay();
+        this.broadcastPeerList();
+        if (isOnlineMode) {
+            this.updateOrbs();
+            this.updateTeleportButton();
         }
     }
 
     startGossipTimer() {
         if (this.gossipTimer) clearInterval(this.gossipTimer);
         this.gossipTimer = setInterval(() => {
+            this.computeOrientationSpeed(this.frameDt);
             this.refreshOrbParent();
             this.updatePosDisplay();
             this.broadcastPeerList();
@@ -636,6 +737,7 @@ export class WebRTCManager {
 
     animateOrbs(dt) {
         if (!this.orbGroup || !isOnlineMode) return;
+        this.computeOrientationSpeed(dt);
         const speed = 15;
         for (const orb of this.orbGroup.children) {
             const target = orb.userData.targetPosition;
@@ -688,7 +790,7 @@ export class WebRTCManager {
                 this.peer.destroy();
                 this.connectPeerJS();
             } else if (err.type === 'unavailable') {
-                setTimeout(() => this.connectPeerJS(), 5000);
+                setTimeout(() => this.connectPeerJS(), 500);
             }
         });
 
@@ -708,6 +810,7 @@ export class WebRTCManager {
             entry.connected = true;
             this.persistPeers();
             this.updateDisplay();
+            this.sendSnapshotToPeer(conn);
             this.broadcastPeerList();
         });
 
@@ -717,20 +820,26 @@ export class WebRTCManager {
             entry.connected = false;
             this.peers.delete(conn.peer);
             this.peerData.delete(conn.peer);
-            this.persistPeers();
+            if (!this.isDestroying) this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
-            if (isOnlineMode) this.updateOrbs();
+            if (isOnlineMode) {
+                this.updateOrbs();
+                this.updateTeleportButton();
+            }
         });
 
         conn.on('error', () => {
             entry.connected = false;
             this.peers.delete(conn.peer);
             this.peerData.delete(conn.peer);
-            this.persistPeers();
+            if (!this.isDestroying) this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
-            if (isOnlineMode) this.updateOrbs();
+            if (isOnlineMode) {
+                this.updateOrbs();
+                this.updateTeleportButton();
+            }
         });
     }
 
@@ -744,6 +853,9 @@ export class WebRTCManager {
             }
             if (data.type === 'position-update') {
                 this.handlePositionUpdate(data);
+            }
+            if (data.type === 'disconnect') {
+                this.handleDisconnect(data);
             }
         });
     }
@@ -762,6 +874,7 @@ export class WebRTCManager {
             entry.connected = true;
             this.persistPeers();
             this.updateDisplay();
+            this.sendSnapshotToPeer(conn);
             this.broadcastPeerList();
         });
 
@@ -771,7 +884,7 @@ export class WebRTCManager {
             entry.connected = false;
             this.peers.delete(remoteId);
             this.peerData.delete(remoteId);
-            this.persistPeers();
+            if (!this.isDestroying) this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
             if (isOnlineMode) this.updateOrbs();
@@ -781,7 +894,7 @@ export class WebRTCManager {
             entry.connected = false;
             this.peers.delete(remoteId);
             this.peerData.delete(remoteId);
-            this.persistPeers();
+            if (!this.isDestroying) this.persistPeers();
             this.updateDisplay();
             this.broadcastPeerList();
             if (isOnlineMode) this.updateOrbs();
@@ -791,24 +904,32 @@ export class WebRTCManager {
     teleportToRandomPeer() {
         if (!this.camera || !isOnlineMode) return;
         const peerEntries = Array.from(this.peerData.entries());
-        if (peerEntries.length === 0) {
-            console.log("peerEntries.length is 0");
-            return;
-        }
+        if (peerEntries.length === 0) return;
         let peerIdx = Math.floor(Math.random() * peerEntries.length);
         const [, data] = peerEntries[peerIdx];
-        if (!data.position) {
-            console.log("no position for peer", peerIdx,);
-            return;
-        }
+        if (!data.position) return;
         const pos = data.position;
         const offset = 8;
         this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
         this.camera.lookAt(pos.x, pos.y, pos.z);
     }
 
+    updateTeleportButton() {
+        const btn = this.el ? this.el.querySelector('#teleport-btn') : null;
+        if (!btn) return;
+        if (this.peerData.size > 0) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        } else {
+            btn.disabled = true;
+            btn.style.opacity = '0.15';
+        }
+    }
+
     destroy() {
         this.stopGossipTimer();
+        this.persistPeers();
+        this.isDestroying = true;
         for (const [, entry] of this.peers) {
             if (entry.conn) entry.conn.close();
         }
