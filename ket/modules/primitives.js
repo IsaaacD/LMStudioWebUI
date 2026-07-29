@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 
-const PRIMITIVE_COUNT = 1500;
-const PRIMITIVES_PER_GRID_CELL = 0.7;
+const PRIMITIVE_COUNT = 500;
+const PRIMITIVES_PER_GRID_CELL = 0.35;
+const SUBDIVISIONS = 2;
+const RETENTION_DIST_SQ = 400 * 400;
+const RECYCLE_DIST_SQ = 500 * 500;
+const MIN_LIFETIME = 2;
 
 function key(ax, ay, az) { return `${ax},${ay},${az}`; }
 
@@ -15,9 +19,10 @@ export class PrimitiveManager {
     constructor(scene, primitiveMaterial, TILE_SIZE, TILE_HEIGHT, RECYCLE_DIST, RENDER_DIST) {
         this.TILE_SIZE = TILE_SIZE;
         this.TILE_HEIGHT = TILE_HEIGHT;
-        this.RECYCLE_DIST = RECYCLE_DIST;
-        this.RENDER_DIST = RENDER_DIST;
         this.primitiveKeys = new Set();
+        this.subSizeX = TILE_SIZE / SUBDIVISIONS;
+        this.subSizeY = TILE_HEIGHT / SUBDIVISIONS;
+        this.spawnRadiusCells = Math.max(4, Math.ceil(RENDER_DIST / (TILE_SIZE / SUBDIVISIONS)));
 
         const primitiveGeos = [
             new THREE.BoxGeometry(2, 2, 2, 8, 8, 8),
@@ -26,6 +31,7 @@ export class PrimitiveManager {
         ];
 
         this.primitivePool = [];
+        this.nextFree = 0;
         for (let i = 0; i < PRIMITIVE_COUNT; i++) {
             const geoIdx = Math.floor(Math.random() * primitiveGeos.length);
             const mat = primitiveMaterial.clone();
@@ -51,46 +57,67 @@ export class PrimitiveManager {
         }
     }
 
+    _findFree() {
+        const pool = this.primitivePool;
+        const len = pool.length;
+        for (let attempts = 0; attempts < len; attempts++) {
+            if (!pool[this.nextFree].visible) {
+                this.nextFree = (this.nextFree + 1) % len;
+                return pool[this.nextFree];
+            }
+            this.nextFree = (this.nextFree + 1) % len;
+        }
+        return null;
+    }
+
     update(camera, effectiveTime, dt, colorA, colorB) {
-        const pCx = Math.floor(camera.position.x / this.TILE_SIZE);
-        const pCz = Math.floor(camera.position.z / this.TILE_SIZE);
-        const pCy = Math.floor(camera.position.y / this.TILE_HEIGHT);
-        const pHalf = Math.ceil(this.RENDER_DIST / this.TILE_SIZE);
+        const camX = camera.position.x;
+        const camY = camera.position.y;
+        const camZ = camera.position.z;
+        const pCx = Math.floor(camX / this.subSizeX);
+        const pCz = Math.floor(camZ / this.subSizeX);
+        const pCy = Math.floor(camY / this.subSizeY);
+        const pHalf = this.spawnRadiusCells;
 
         for (let i = 0; i < this.primitivePool.length; i++) {
             const p = this.primitivePool[i];
             if (p.visible) {
-                const dx = Math.abs(p.position.x - camera.position.x);
-                const dz = Math.abs(p.position.z - camera.position.z);
-                const dy = Math.abs(p.position.y - camera.position.y);
-                if (dx > this.RECYCLE_DIST || dz > this.RECYCLE_DIST || dy > this.RECYCLE_DIST) {
+                const age = effectiveTime - (p.userData.spawnTime || 0);
+                if (age < MIN_LIFETIME) continue;
+                const dx = p.position.x - camX;
+                const dy = p.position.y - camY;
+                const dz = p.position.z - camZ;
+                const distSq = dx * dx + dy * dy + dz * dz;
+                if (distSq > RECYCLE_DIST_SQ) {
                     p.visible = false;
                     this.primitiveKeys.delete(key(p._gx, p._gy, p._gz));
+                } else if (distSq < RETENTION_DIST_SQ) {
+                    p.userData.lastSeenTime = effectiveTime;
                 }
             }
         }
 
-        for (let gy = pCy - 2; gy <= pCy + 2; gy++) {
+        for (let gy = pCy - pHalf; gy <= pCy + pHalf; gy++) {
             for (let gx = pCx - pHalf; gx <= pCx + pHalf; gx++) {
                 for (let gz = pCz - pHalf; gz <= pCz + pHalf; gz++) {
                     const hash = cellHash(gx, gy, gz);
                     if ((hash % 100) / 100 > PRIMITIVES_PER_GRID_CELL) continue;
                     const k = key(gx, gy, gz);
                     if (this.primitiveKeys.has(k)) continue;
-                    const availIdx = this.primitivePool.findIndex(p => !p.visible);
-                    if (availIdx === -1) continue;
-                    const p = this.primitivePool[availIdx];
+                    const p = this._findFree();
+                    if (!p) continue;
                     const offsetX = ((hash >> 8) % 1000) / 1000;
                     const offsetZ = ((hash >> 16) % 1000) / 1000;
                     const offsetY = ((hash >> 24) % 1000) / 1000;
-                    p.position.x = gx * this.TILE_SIZE + (offsetX - 0.5) * this.TILE_SIZE * 0.6;
-                    p.position.z = gz * this.TILE_SIZE + (offsetZ - 0.5) * this.TILE_SIZE * 0.6;
-                    p.position.y = gy * this.TILE_HEIGHT + this.TILE_HEIGHT * 0.3 + offsetY * this.TILE_HEIGHT * 0.4;
+                    p.position.x = gx * this.subSizeX + (offsetX - 0.5) * this.subSizeX * 0.6;
+                    p.position.z = gz * this.subSizeX + (offsetZ - 0.5) * this.subSizeX * 0.6;
+                    p.position.y = gy * this.subSizeY + this.subSizeY * 0.3 + offsetY * this.subSizeY * 0.4;
                     p._gx = gx;
                     p._gz = gz;
                     p._gy = gy;
                     p.visible = true;
                     p.scale.setScalar(p.userData.scaleBase);
+                    p.userData.spawnTime = effectiveTime;
                     this.primitiveKeys.add(k);
                 }
             }
@@ -112,7 +139,7 @@ export class PrimitiveManager {
             p.rotation.z += ud.rotSpeed.z * dt * 0.5;
 
             const bobOffset = Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
-            p.position.y = p._gy * this.TILE_HEIGHT + this.TILE_HEIGHT * 0.3 + bobOffset;
+            p.position.y = p._gy * this.subSizeY + this.subSizeY * 0.3 + bobOffset;
         }
     }
 }

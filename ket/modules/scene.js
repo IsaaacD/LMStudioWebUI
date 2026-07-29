@@ -9,7 +9,7 @@ export function initScene() {
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x050011, 0.0003);
 
-    camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(120, innerWidth / innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
