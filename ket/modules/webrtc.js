@@ -244,7 +244,6 @@ export class WebRTCManager {
             font-size: 12px;
             letter-spacing: 0.15em;
             background: rgba(5, 0, 20, 0.6);
-            padding: 12px 16px;
             border-radius: 6px;
             border: 1px solid rgba(0, 204, 255, 0.15);
             backdrop-filter: blur(8px);
@@ -254,12 +253,81 @@ export class WebRTCManager {
             user-select: none;
             line-height: 1.6;
             max-width: 280px;
+            overflow: hidden;
+            transition: max-height 0.35s ease;
+            max-height: 40px;
         `;
+
+        const tab = document.createElement('div');
+        tab.id = 'webrtc-tab';
+        tab.classList = 'gui';
+        tab.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(0, 204, 255, 0.15);
+            background: rgba(5, 0, 20, 0.8);
+        `;
+
+        const arrowIcon = document.createElement('span');
+        arrowIcon.id = 'webrtc-tab-arrow';
+        arrowIcon.textContent = '▲';
+        arrowIcon.style.cssText = `
+            font-size: 10px;
+            color: rgba(0, 204, 255, 0.7);
+            transition: transform 0.35s ease;
+            display: inline-block;
+            transform: rotate(180deg);
+        `;
+        tab.appendChild(arrowIcon);
+
+        const content = document.createElement('div');
+        content.id = 'webrtc-content';
+        content.classList = 'gui';
+        content.style.cssText = `
+            padding: 0 16px;
+            max-height: 0px;
+            overflow-y: auto;
+            opacity: 0;
+            transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+        `;
+
+        let isCollapsed = true;
+        let contentHeight = null;
+
+        const togglePanel = () => {
+            isCollapsed = !isCollapsed;
+            if (isCollapsed) {
+                contentHeight = content.scrollHeight;
+                content.style.maxHeight = contentHeight + 'px';
+                content.style.opacity = '0';
+                content.style.padding = '0 16px';
+                arrowIcon.style.transform = 'rotate(180deg)';
+                requestAnimationFrame(() => {
+                    content.style.maxHeight = '0px';
+                });
+                container.style.maxHeight = '40px';
+            } else {
+                if (!contentHeight) contentHeight = 600;
+                content.style.maxHeight = contentHeight + 'px';
+                content.style.opacity = '1';
+                content.style.padding = '12px 16px';
+                arrowIcon.style.transform = 'rotate(0deg)';
+                container.style.maxHeight = '600px';
+                setTimeout(() => {
+                    if (!isCollapsed) content.style.maxHeight = '600px';
+                }, 360);
+            }
+        };
+
+        tab.addEventListener('click', togglePanel);
 
         const countEl = document.createElement('div');
         countEl.id = 'webrtc-count';
         countEl.innerHTML = `ONLINE: <span style="color: #00ccff; font-weight: bold;">1</span>`;
-        container.appendChild(countEl);
+        content.appendChild(countEl);
 
         if (isOnlineMode) {
             const nameEl = document.createElement('div');
@@ -270,7 +338,7 @@ export class WebRTCManager {
                 color: rgba(255, 255, 255, 0.5);
             `;
             nameEl.innerHTML = `<span style="color: ${this.userColor};">${this.username}</span>`;
-            container.appendChild(nameEl);
+            content.appendChild(nameEl);
 
             const posEl = document.createElement('div');
             posEl.id = 'webrtc-pos';
@@ -281,7 +349,7 @@ export class WebRTCManager {
                 letter-spacing: 0.1em;
             `;
             posEl.textContent = 'POS: 0, 0, 0';
-            container.appendChild(posEl);
+            content.appendChild(posEl);
 
             const osEl = document.createElement('div');
             osEl.id = 'webrtc-orient-speed';
@@ -292,7 +360,7 @@ export class WebRTCManager {
                 letter-spacing: 0.1em;
             `;
             osEl.textContent = 'ORIENT: 0.000 rad/s';
-            container.appendChild(osEl);
+            content.appendChild(osEl);
         }
 
         const idRow = document.createElement('div');
@@ -363,7 +431,7 @@ export class WebRTCManager {
             }
         });
         idRow.appendChild(shareBtn);
-        container.appendChild(idRow);
+        content.appendChild(idRow);
 
         const inputRow = document.createElement('div');
         inputRow.style.cssText = `
@@ -415,12 +483,12 @@ export class WebRTCManager {
 
         inputRow.appendChild(this.inputEl);
         inputRow.appendChild(connectBtn);
-        container.appendChild(inputRow);
+        content.appendChild(inputRow);
 
         if (isOnlineMode) {
             const teleportBtn = document.createElement('button');
             teleportBtn.id = 'teleport-btn';
-            teleportBtn.textContent = 'TELEPORT';
+            teleportBtn.textContent = 'TELEPORT TO RANDO';
             teleportBtn.disabled = true;
             teleportBtn.style.cssText = `
                 margin-top: 10px;
@@ -438,9 +506,11 @@ export class WebRTCManager {
             teleportBtn.addEventListener('click', () => {
                 this.teleportToRandomPeer();
             });
-            container.appendChild(teleportBtn);
+            content.appendChild(teleportBtn);
         }
 
+        container.appendChild(tab);
+        container.appendChild(content);
         document.body.appendChild(container);
         return container;
     }
