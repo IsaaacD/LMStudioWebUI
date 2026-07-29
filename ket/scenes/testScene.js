@@ -26,6 +26,7 @@ export async function createTestScene() {
             (Math.random() - 0.5) * 60,
             (Math.random() - 0.5) * 100
         );
+        const orbitRadius = 15 + Math.random() * 35;
         mesh.userData = {
             rotSpeed: new THREE.Vector3(
                 (Math.random() - 0.5) * 2,
@@ -36,16 +37,10 @@ export async function createTestScene() {
             bobPhase: Math.random() * Math.PI * 2,
             bobAmp: 1 + Math.random() * 3,
             baseY: mesh.position.y,
-            velocity: new THREE.Vector3(
-                (Math.random() - 0.5) * 0.05,
-                (Math.random() - 0.5) * 0.02,
-                (Math.random() - 0.5) * 0.05
-            ),
-            bounds: {
-                xMin: -50, xMax: 50,
-                yMin: -30, yMax: 30,
-                zMin: -50, zMax: 50
-            }
+            orbitRadius,
+            orbitAngle: Math.atan2(mesh.position.z, mesh.position.x),
+            orbitSpeed: (0.2 + Math.random() * 0.5) * (Math.random() < 0.5 ? 1 : -1),
+            orbitYOffset: mesh.position.y,
         };
         threeScene.add(mesh);
         geometries.push(mesh);
@@ -93,25 +88,11 @@ export async function createTestScene() {
                 mesh.rotation.y += ud.rotSpeed.y * dt;
                 mesh.rotation.z += ud.rotSpeed.z * dt;
 
-                mesh.position.x += ud.velocity.x;
-                mesh.position.z += ud.velocity.z;
-                mesh.position.y = ud.baseY + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
+                ud.orbitAngle += ud.orbitSpeed * dt;
 
-                if (mesh.position.x < ud.bounds.xMin || mesh.position.x > ud.bounds.xMax) ud.velocity.x *= -1;
-                if (mesh.position.z < ud.bounds.zMin || mesh.position.z > ud.bounds.zMax) ud.velocity.z *= -1;
-
-                const dx = mesh.position.x - camera.position.x;
-                const dy = mesh.position.y - camera.position.y;
-                const dz = mesh.position.z - camera.position.z;
-                const distSq = dx * dx + dy * dy + dz * dz;
-                if (distSq > RECYCLE_DIST_SQ) {
-                    mesh.position.set(
-                        camera.position.x + (Math.random() - 0.5) * 60,
-                        camera.position.y + (Math.random() - 0.5) * 40,
-                        camera.position.z + (Math.random() - 0.5) * 60
-                    );
-                    ud.baseY = mesh.position.y;
-                }
+                mesh.position.x = camera.position.x + Math.cos(ud.orbitAngle) * ud.orbitRadius;
+                mesh.position.z = camera.position.z + Math.sin(ud.orbitAngle) * ud.orbitRadius;
+                mesh.position.y = camera.position.y + ud.orbitYOffset + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
             }
         }
     };
