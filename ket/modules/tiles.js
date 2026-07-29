@@ -9,7 +9,7 @@ const MAX_TILES = GRID * GRID;
 const TILE_HEIGHT = 25;
 
 const WALL_STRIP_LEN = RENDER_DIST * 2.5;
-const WALLS_PER_POOL = 600;
+const WALLS_PER_POOL = 1200;
 
 export function getTileConstants() {
     return { TILE_SIZE, TILE_SEGMENTS, RENDER_DIST, RECYCLE_DIST, GRID, MAX_TILES, TILE_HEIGHT, WALL_STRIP_LEN, WALLS_PER_POOL };
@@ -45,11 +45,12 @@ function makeWallPool(count, geo, material, scene, rotY) {
     return pool;
 }
 
-function updateTiles(tiles, camX, camZ, camera, poolKeys, yOffset, halfY) {
+function updateTiles(tiles, camX, camZ, camera, poolKeys, yOffset, halfY, recycleDistY) {
     const cx = Math.floor(camX / TILE_SIZE);
     const cz = Math.floor(camZ / TILE_SIZE);
-    const cy = Math.floor(camera.position.y / 10 + Math.random() * TILE_HEIGHT);
+    const cy = Math.floor(camera.position.y / TILE_HEIGHT);
     const half = Math.max(2, Math.ceil(RENDER_DIST / TILE_SIZE) + 1);
+    const rdy = recycleDistY != null ? recycleDistY : RECYCLE_DIST;
     const avail = [];
 
     for (let i = 0; i < tiles.length; i++) {
@@ -58,7 +59,7 @@ function updateTiles(tiles, camX, camZ, camera, poolKeys, yOffset, halfY) {
             const dx = t.position.x - camX;
             const dz = t.position.z - camZ;
             const dy = t.position.y - camera.position.y;
-            if (Math.abs(dx) > RECYCLE_DIST || Math.abs(dz) > RECYCLE_DIST || Math.abs(dy) > RECYCLE_DIST) {
+            if (Math.abs(dx) > RECYCLE_DIST || Math.abs(dz) > RECYCLE_DIST || Math.abs(dy) > rdy) {
                 t.visible = false;
                 poolKeys.delete(key(t._gx, t._gy, t._gz));
                 avail.push(i);
@@ -131,8 +132,8 @@ export class TileManager {
     }
 
     update(camera) {
-        updateTiles(this.floorTiles, camera.position.x, camera.position.z, camera, this.floorKeys, 0, 4);
-        updateTiles(this.ceilTiles, camera.position.x, camera.position.z, camera, this.ceilKeys, TILE_HEIGHT, 4);
+        updateTiles(this.floorTiles, camera.position.x, camera.position.z, camera, this.floorKeys, 0, 4, 10000);
+        updateTiles(this.ceilTiles, camera.position.x, camera.position.z, camera, this.ceilKeys, TILE_HEIGHT, 4, 5000);
 
         const cy = Math.floor(camera.position.y / TILE_HEIGHT);
         const wallHalfY = 10;
@@ -166,48 +167,58 @@ export class TileManager {
                 }
             }
 
+            // Build sorted grid positions: nearest to camera first
+            const positions = [];
             for (let gy = cy - wallHalfY; gy <= cy + wallHalfY; gy++) {
                 for (let gi = -halfXZ; gi <= halfXZ; gi++) {
-                    const wHash = gi * 374761393 + gy * 668265263;
-                    if ((wHash & 0xff) > 200) continue;
-                    const stripGx = type === 'x' ? cx : (cx + gi);
-                    const stripGz = type === 'z' ? cz : (cz + gi);
-                    const k = key(stripGx, gy, stripGz);
-                    if (keys.has(k)) continue;
-                    if (avail.length === 0) {
-                        let farIdx = -1, farDist = 0;
-                        for (let fi = 0; fi < pool.length; fi++) {
-                            const ft = pool[fi];
-                            if (!ft.visible) continue;
-                            const pd = type === 'x' ? Math.abs(ft.position.z - camera.position.z) : Math.abs(ft.position.x - camera.position.x);
-                            const vd = Math.abs(ft.position.y - camera.position.y);
-                            const d = pd * pd + vd * vd;
-                            if (d > farDist) { farDist = d; farIdx = fi; }
-                        }
-                        if (farIdx >= 0) {
-                            const ft = pool[farIdx];
-                            ft.visible = false;
-                            keys.delete(key(ft._gx, ft._gy, ft._gz));
-                            avail.push(farIdx);
-                        } else continue;
-                    }
-                    const t = pool[avail.pop()];
-                    if (type === 'x') {
-                        t.position.x = camera.position.x;
-                        t.position.z = cz * TILE_SIZE + gi * TILE_SIZE;
-                        t._gx = cx;
-                        t._gz = cz + gi;
-                    } else {
-                        t.position.x = cx * TILE_SIZE + gi * TILE_SIZE;
-                        t.position.z = camera.position.z;
-                        t._gx = cx + gi;
-                        t._gz = cz;
-                    }
-                    t.position.y = gy * TILE_HEIGHT + TILE_HEIGHT / 2;
-                    t._gy = gy;
-                    t.visible = true;
-                    keys.add(k);
+                    positions.push({ gi, gy, dist2: gi * gi + (gy - cy) * (gy - cy) });
                 }
+            }
+            positions.sort((a, b) => a.dist2 - b.dist2);
+
+            for (const pos of positions) {
+                const { gi, gy } = pos;
+                const wHash = gi * 374761393 + gy * 668265263;
+                const normDist = Math.sqrt(pos.dist2) / halfXZ;
+                const threshold = 180 - normDist * 120;
+                if ((wHash & 0xff) > threshold) continue;
+                const stripGx = type === 'x' ? cx : (cx + gi);
+                const stripGz = type === 'z' ? cz : (cz + gi);
+                const k = key(stripGx, gy, stripGz);
+                if (keys.has(k)) continue;
+                if (avail.length === 0) {
+                    let farIdx = -1, farDist = 0;
+                    for (let fi = 0; fi < pool.length; fi++) {
+                        const ft = pool[fi];
+                        if (!ft.visible) continue;
+                        const pd = type === 'x' ? Math.abs(ft.position.z - camera.position.z) : Math.abs(ft.position.x - camera.position.x);
+                        const vd = Math.abs(ft.position.y - camera.position.y);
+                        const d = pd * pd + vd * vd;
+                        if (d > farDist) { farDist = d; farIdx = fi; }
+                    }
+                    if (farIdx >= 0) {
+                        const ft = pool[farIdx];
+                        ft.visible = false;
+                        keys.delete(key(ft._gx, ft._gy, ft._gz));
+                        avail.push(farIdx);
+                    } else continue;
+                }
+                const t = pool[avail.pop()];
+                if (type === 'x') {
+                    t.position.x = camera.position.x;
+                    t.position.z = cz * TILE_SIZE + gi * TILE_SIZE;
+                    t._gx = cx;
+                    t._gz = cz + gi;
+                } else {
+                    t.position.x = cx * TILE_SIZE + gi * TILE_SIZE;
+                    t.position.z = camera.position.z;
+                    t._gx = cx + gi;
+                    t._gz = cz;
+                }
+                t.position.y = gy * TILE_HEIGHT + TILE_HEIGHT / 2;
+                t._gy = gy;
+                t.visible = true;
+                keys.add(k);
             }
         }
     }
