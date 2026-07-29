@@ -51,11 +51,11 @@ export class RaveEngine {
 
         this.raveTemp.set(this.raveCurrent.colorA);
         this.raveTemp.lerp(new THREE.Color(this.raveTarget.colorA), l);
-        this.raveCurrent.colorA = this.raveTemp.getHex();
+        this.raveCurrent.colorA = this.raveTemp.getHexString();
 
         this.raveTemp.set(this.raveCurrent.colorB);
         this.raveTemp.lerp(new THREE.Color(this.raveTarget.colorB), l);
-        this.raveCurrent.colorB = this.raveTemp.getHex();
+        this.raveCurrent.colorB = this.raveTemp.getHexString();
     }
 
     update(dt, rawTime) {
