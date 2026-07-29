@@ -14,7 +14,7 @@ export async function createCityMaterial() {
             //uAlpha: { value: 0.8 }
         },
         vertexShader: await loadShader('./shaders/city.vert'),
-        fragmentShader: await loadShader('./shaders/city.frag'),
+        fragmentShader: await loadShader('./shaders/city-line.frag'),
         wireframe: false,
         //transparent: true,
         side: THREE.DoubleSide
