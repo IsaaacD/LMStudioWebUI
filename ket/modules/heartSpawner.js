@@ -35,7 +35,7 @@ export class HeartSpawner {
         this.heartMaterial = heartMaterial;
         this.pool = [];
         this.nextFree = 0;
-        this.nextSpawnTime = 0;
+        this.nextSpawnTime = 1 + Math.random() * 2;
         this.spawnInterval = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
         this.loaded = true;
 

@@ -6,6 +6,7 @@ const SUBDIVISIONS = 2;
 const RETENTION_DIST_SQ = 400 * 400;
 const RECYCLE_DIST_SQ = 500 * 500;
 const MIN_LIFETIME = 2;
+const WARMUP_FRAMES = 30;
 
 function key(ax, ay, az) { return `${ax},${ay},${az}`; }
 
@@ -32,6 +33,7 @@ export class PrimitiveManager {
 
         this.primitivePool = [];
         this.nextFree = 0;
+        this.warmupFrame = 0;
         for (let i = 0; i < PRIMITIVE_COUNT; i++) {
             const geoIdx = Math.floor(Math.random() * primitiveGeos.length);
             const mat = primitiveMaterial.clone();
@@ -80,6 +82,9 @@ export class PrimitiveManager {
         const pCy = Math.floor(camY / this.subSizeY);
         const pHalf = this.spawnRadiusCells;
 
+        this.warmupFrame++;
+        const warmup = Math.min(1, this.warmupFrame / WARMUP_FRAMES);
+
         for (let i = 0; i < this.primitivePool.length; i++) {
             const p = this.primitivePool[i];
             if (p.visible) {
@@ -98,30 +103,46 @@ export class PrimitiveManager {
             }
         }
 
+        const maxSpawnDistSq = RECYCLE_DIST_SQ * warmup * warmup;
+        const candidates = [];
         for (let gy = pCy - pHalf; gy <= pCy + pHalf; gy++) {
             for (let gx = pCx - pHalf; gx <= pCx + pHalf; gx++) {
                 for (let gz = pCz - pHalf; gz <= pCz + pHalf; gz++) {
-                    const hash = cellHash(gx, gy, gz);
-                    if ((hash % 100) / 100 > PRIMITIVES_PER_GRID_CELL) continue;
-                    const k = key(gx, gy, gz);
-                    if (this.primitiveKeys.has(k)) continue;
-                    const p = this._findFree();
-                    if (!p) continue;
-                    const offsetX = ((hash >> 8) % 1000) / 1000;
-                    const offsetZ = ((hash >> 16) % 1000) / 1000;
-                    const offsetY = ((hash >> 24) % 1000) / 1000;
-                    p.position.x = gx * this.subSizeX + (offsetX - 0.5) * this.subSizeX * 0.6;
-                    p.position.z = gz * this.subSizeX + (offsetZ - 0.5) * this.subSizeX * 0.6;
-                    p.position.y = gy * this.subSizeY + this.subSizeY * 0.3 + offsetY * this.subSizeY * 0.4;
-                    p._gx = gx;
-                    p._gz = gz;
-                    p._gy = gy;
-                    p.visible = true;
-                    p.scale.setScalar(p.userData.scaleBase);
-                    p.userData.spawnTime = effectiveTime;
-                    this.primitiveKeys.add(k);
+                    const wx = gx * this.subSizeX;
+                    const wy = gy * this.subSizeY;
+                    const wz = gz * this.subSizeX;
+                    const dx = wx - camX;
+                    const dy = wy - camY;
+                    const dz = wz - camZ;
+                    const distSq = dx * dx + dy * dy + dz * dz;
+                    if (distSq <= maxSpawnDistSq) {
+                        candidates.push({ gx, gy, gz, distSq });
+                    }
                 }
             }
+        }
+        candidates.sort((a, b) => a.distSq - b.distSq);
+
+        for (const c of candidates) {
+            const hash = cellHash(c.gx, c.gy, c.gz);
+            if ((hash % 100) / 100 > PRIMITIVES_PER_GRID_CELL) continue;
+            const k = key(c.gx, c.gy, c.gz);
+            if (this.primitiveKeys.has(k)) continue;
+            const p = this._findFree();
+            if (!p) break;
+            const offsetX = ((hash >> 8) % 1000) / 1000;
+            const offsetZ = ((hash >> 16) % 1000) / 1000;
+            const offsetY = ((hash >> 24) % 1000) / 1000;
+            p.position.x = c.gx * this.subSizeX + (offsetX - 0.5) * this.subSizeX * 0.6;
+            p.position.z = c.gz * this.subSizeX + (offsetZ - 0.5) * this.subSizeX * 0.6;
+            p.position.y = c.gy * this.subSizeY + this.subSizeY * 0.3 + offsetY * this.subSizeY * 0.4;
+            p._gx = c.gx;
+            p._gz = c.gz;
+            p._gy = c.gy;
+            p.visible = true;
+            p.scale.setScalar(p.userData.scaleBase);
+            p.userData.spawnTime = effectiveTime;
+            this.primitiveKeys.add(k);
         }
 
         for (const p of this.primitivePool) {

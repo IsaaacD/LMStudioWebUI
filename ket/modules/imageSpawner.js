@@ -15,7 +15,7 @@ export class ImageSpawner {
         this.imagePath = imagePath;
         this.pool = [];
         this.nextFree = 0;
-        this.nextSpawnTime = 0;
+        this.nextSpawnTime = 2 + Math.random() * 2;
         this.spawnInterval = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
         this.loaded = false;
 
