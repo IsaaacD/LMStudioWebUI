@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WebRTCRenderer } from './webrtcRender.js';
 
 const STORAGE_KEY_ID = 'webrtc-user-id';
 const STORAGE_KEY_PEERS = 'webrtc-peer-list';
@@ -58,22 +59,29 @@ export class WebRTCManager {
         this.gossipTimer = null;
         this.GOSSIP_INTERVAL = 200;
         this.camera = null;
-        this.orbGroup = null;
         this.activeScene = null;
         this.sceneManager = null;
         this.params = null;
 
         this.isDestroying = false;
         this.pendingJoinId = null;
+
+        this.renderer = new WebRTCRenderer({
+            camera: null,
+            peerData: this.peerData,
+            onTeleportButtonUpdate: () => this.updateTeleportButton()
+        });
     }
 
     setCamera(cam) {
         this.camera = cam;
+        this.renderer.setCamera(cam);
     }
 
     initActiveScene(scene) {
         this.activeScene = scene;
-        this.initOrbGroup(scene);
+        this.renderer.initOrbGroup(scene);
+        this.renderer.initArrowGroup(scene);
     }
 
     setSceneManager(sm) {
@@ -82,19 +90,6 @@ export class WebRTCManager {
 
     setParams(p) {
         this.params = p;
-    }
-
-    refreshOrbParent() {
-        if (!this.orbGroup || !this.sceneManager) return;
-        const activeScene = this.sceneManager.getActiveScene();
-        if (!activeScene || !activeScene.threeScene) return;
-        const targetScene = activeScene.threeScene;
-        if (this.orbGroup.parent !== targetScene) {
-            if (this.orbGroup.parent) {
-                this.orbGroup.parent.remove(this.orbGroup);
-            }
-            targetScene.add(this.orbGroup);
-        }
     }
 
     init() {
@@ -579,8 +574,6 @@ export class WebRTCManager {
         };
     }
 
-
-
     buildPeerSnapshot() {
         const snapshot = {};
         const myPos = this.getMyPosition();
@@ -677,7 +670,7 @@ export class WebRTCManager {
                     this.peerData.set(peerId, peerInfo);
                 }
             }
-            this.updateOrbs();
+            this.renderer.updateOrbs();
             this.updateTeleportButton();
         }
 
@@ -694,7 +687,7 @@ export class WebRTCManager {
                 position: data.position,
                 speed: data.position ? data.position.speed : 0
             });
-            this.updateOrbs();
+            this.renderer.updateOrbs();
             this.updateTeleportButton();
         }
     }
@@ -708,7 +701,7 @@ export class WebRTCManager {
         this.updateDisplay();
         this.broadcastPeerList();
         if (isOnlineMode) {
-            this.updateOrbs();
+            this.renderer.updateOrbs();
             this.updateTeleportButton();
         }
     }
@@ -716,7 +709,10 @@ export class WebRTCManager {
     startGossipTimer() {
         if (this.gossipTimer) clearInterval(this.gossipTimer);
         this.gossipTimer = setInterval(() => {
-            this.refreshOrbParent();
+            if (this.sceneManager) {
+                const activeScene = this.sceneManager.getActiveScene();
+                this.renderer.refreshOrbParent(activeScene);
+            }
             this.updatePosDisplay();
             this.broadcastPeerList();
         }, this.GOSSIP_INTERVAL);
@@ -729,130 +725,12 @@ export class WebRTCManager {
         }
     }
 
-    initOrbGroup(scene) {
-        this.orbGroup = new THREE.Group();
-        this.orbGroup.name = 'webrtc-orbs';
-        if (scene) {
-            scene.add(this.orbGroup);
-        }
-    }
-
-    updateOrbs() {
-        if (!this.orbGroup || !isOnlineMode) return;
-
-        const existingIds = new Set();
-        for (const child of this.orbGroup.children) {
-            existingIds.add(child.userData.peerId);
-        }
-
-        const dataIds = new Set();
-        for (const [peerId, data] of this.peerData) {
-            if (!data.position) continue;
-            dataIds.add(peerId);
-            this.updateOrb(peerId, data);
-        }
-
-        for (const id of existingIds) {
-            if (!dataIds.has(id)) {
-                const toRemove = this.orbGroup.children.find(c => c.userData.peerId === id);
-                if (toRemove) {
-                    this.orbGroup.remove(toRemove);
-                    if (toRemove.material) toRemove.material.dispose();
-                }
-            }
-        }
-    }
-
-    createTextSprite(text, color) {
-        const canvas = document.createElement('canvas');
-        const size = 1024;
-        canvas.width = size / 4 * text.length;
-        canvas.height = size / 4;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = 'Bold 250px Courier New, monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = color || '#00ccff';
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.minFilter = THREE.LinearFilter;
-        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(2, 0.5, 1);
-        return sprite;
-    }
-
-    updateOrb(peerId, data) {
-        let orb = this.orbGroup.children.find(c => c.userData.peerId === peerId);
-
-        if (!orb) {
-            const geometry = new THREE.SphereGeometry(3, 16, 16);
-            const color = new THREE.Color(data.color || '#00ccff');
-            const material = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.9,
-                fog: false
-            });
-            orb = new THREE.Mesh(geometry, material);
-            orb.userData.peerId = peerId;
-            orb.userData.targetPosition = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
-
-            const glowGeo = new THREE.SphereGeometry(8, 16, 16);
-            const glowMat = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.15,
-                side: THREE.BackSide,
-                fog: false
-            });
-            const glow = new THREE.Mesh(glowGeo, glowMat);
-            orb.add(glow);
-
-            const glow2Geo = new THREE.SphereGeometry(15, 16, 16);
-            const glow2Mat = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.06,
-                side: THREE.BackSide,
-                fog: false
-            });
-            const glow2 = new THREE.Mesh(glow2Geo, glow2Mat);
-            orb.add(glow2);
-
-            const light = new THREE.PointLight(color, 3, 50);
-            orb.add(light);
-
-            const label = this.createTextSprite(data.username || 'anon', data.color || '#00ccff');
-            label.position.y = 4;
-            orb.add(label);
-
-            this.orbGroup.add(orb);
-        }
-
-        orb.userData.targetPosition.set(data.position.x, data.position.y, data.position.z);
-        orb.userData.speed = data.position ? data.position.speed : 3;
-    }
-
     animateOrbs(dt) {
-        if (!this.orbGroup || !isOnlineMode) return;
-        for (const orb of this.orbGroup.children) {
-            const target = orb.userData.targetPosition;
-            if (!target) continue;
-            const dx = target.x - orb.position.x;
-            const dy = target.y - orb.position.y;
-            const dz = target.z - orb.position.z;
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist < 0.01) continue;
-            const peerSpeed = orb.userData.speed || 3;
-            const lerpSpeed = Math.max(peerSpeed * 2, 8);
-            const move = Math.min(lerpSpeed * dt * 60, dist);
-            orb.position.x += (dx / dist) * move;
-            orb.position.y += (dy / dist) * move;
-            orb.position.z += (dz / dist) * move;
-        }
+        this.renderer.animateOrbs(dt);
+    }
+
+    animateArrows(dt) {
+        this.renderer.animateArrows(dt);
     }
 
     connectPeerJS() {
@@ -932,7 +810,7 @@ export class WebRTCManager {
                 this.updateDisplay();
                 this.broadcastPeerList();
                 if (isOnlineMode) {
-                    this.updateOrbs();
+                    this.renderer.updateOrbs();
                     this.updateTeleportButton();
                 }
             }
@@ -947,7 +825,7 @@ export class WebRTCManager {
                 this.updateDisplay();
                 this.broadcastPeerList();
                 if (isOnlineMode) {
-                    this.updateOrbs();
+                    this.renderer.updateOrbs();
                     this.updateTeleportButton();
                 }
             }
@@ -999,7 +877,7 @@ export class WebRTCManager {
                 this.persistPeers();
                 this.updateDisplay();
                 this.broadcastPeerList();
-                if (isOnlineMode) this.updateOrbs();
+                if (isOnlineMode) this.renderer.updateOrbs();
             }
         });
 
@@ -1011,7 +889,7 @@ export class WebRTCManager {
                 this.persistPeers();
                 this.updateDisplay();
                 this.broadcastPeerList();
-                if (isOnlineMode) this.updateOrbs();
+                if (isOnlineMode) this.renderer.updateOrbs();
             }
         });
     }
@@ -1051,13 +929,7 @@ export class WebRTCManager {
         }
         this.peers.clear();
         this.peerData.clear();
-        if (this.orbGroup) {
-            for (const child of this.orbGroup.children) {
-                if (child.material) child.material.dispose();
-                if (child.geometry) child.geometry.dispose();
-            }
-            this.orbGroup.clear();
-        }
+        this.renderer.destroy();
         if (this.peer) this.peer.destroy();
         if (this.el) this.el.remove();
     }

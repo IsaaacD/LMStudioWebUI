@@ -156,6 +156,7 @@ export class AnimationLoop {
         }
 
         if (this.webrtcManager) this.webrtcManager.animateOrbs(dt);
+        if (this.webrtcManager) this.webrtcManager.animateArrows(dt);
 
         if (activeScene) {
             this.composer.render(activeScene.threeScene);
