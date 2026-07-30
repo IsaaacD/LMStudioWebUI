@@ -52,11 +52,11 @@ export class RaveEngine {
 
         this.raveTemp.set(normalizeColor(this.raveCurrent.colorA, 'raveMode:53'));
         this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorA, 'raveMode:54')), l);
-        this.raveCurrent.colorA = '0x' + this.raveTemp.getHexString();
+        this.raveCurrent.colorA = '#' + this.raveTemp.getHexString();
 
         this.raveTemp.set(normalizeColor(this.raveCurrent.colorB));
         this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorB, 'raveMode:58')), l);
-        this.raveCurrent.colorB = '0x' + this.raveTemp.getHexString();
+        this.raveCurrent.colorB = '#' + this.raveTemp.getHexString();
     }
 
     update(dt, rawTime) {

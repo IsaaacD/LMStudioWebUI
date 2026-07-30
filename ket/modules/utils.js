@@ -45,13 +45,13 @@ export const GUI_EDGE_CONTRAST_MIN = 0.1;
 export const GUI_EDGE_CONTRAST_MAX = 0.25;
 
 /* ── Color Normalization ── */
-export function normalizeColor(val, locationStr) {
-    console.log('normalizeColor location: ', locationStr);
+export function normalizeColor(val, _locationStr) {
     if (typeof val === 'string') {
-        if (val.startsWith('0x') || val.startsWith('#')) return val;
-        return '0x' + val;
+        if (val.startsWith('#')) return val;
+        if (val.startsWith('0x')) return '#' + val.slice(2);
+        return '#' + val;
     }
-    if (typeof val === 'number') return '0x' + val.toString(16).padStart(6, '0');
+    if (typeof val === 'number') return '#' + val.toString(16).padStart(6, '0');
     return val;
 }
 
