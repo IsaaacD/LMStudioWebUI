@@ -218,9 +218,32 @@ function handleTouchEnd(e) {
     updateJoystickVisuals();
 }
 
-export function initTouchControls(params) {
+let _lastTapTime = 0;
+let _lastTapX = 0;
+let _lastTapY = 0;
+const DOUBLE_TAP_WINDOW = 350;
+const DOUBLE_TAP_RADIUS = 60;
+
+export function initTouchControls(params, onDoubleTap) {
     document.addEventListener('touchstart', (e) => handleTouchStart(e, params), { passive: false });
     document.addEventListener('touchmove', (e) => handleTouchMove(e, params), { passive: false });
-    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    document.addEventListener('touchend', (e) => {
+        handleTouchEnd(e);
+        if (onDoubleTap) {
+            for (const touch of e.changedTouches) {
+                const now = Date.now();
+                const dx = touch.clientX - _lastTapX;
+                const dy = touch.clientY - _lastTapY;
+                if (now - _lastTapTime < DOUBLE_TAP_WINDOW && Math.sqrt(dx * dx + dy * dy) < DOUBLE_TAP_RADIUS) {
+                    onDoubleTap(touch.clientX, touch.clientY);
+                    _lastTapTime = 0;
+                } else {
+                    _lastTapTime = now;
+                    _lastTapX = touch.clientX;
+                    _lastTapY = touch.clientY;
+                }
+            }
+        }
+    }, { passive: false });
     document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 }

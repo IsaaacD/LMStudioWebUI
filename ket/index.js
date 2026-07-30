@@ -133,6 +133,7 @@ async function bootstrap() {
         webrtcManager.setSceneManager(sceneManager);
         webrtcManager.setParams(params);
         webrtcManager.initActiveScene(cityScene.threeScene);
+        webrtcManager.setDomElement(renderer.domElement);
         webrtcManager.init();
     }
 

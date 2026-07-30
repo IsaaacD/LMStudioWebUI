@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { joystickState, updateJoystickInputs } from './touchControls.js';
 import { normalizeColor } from './utils.js'
+import { updateStatusText } from './config.js';
 const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
 
@@ -19,6 +20,9 @@ export class AnimationLoop {
         this.fpsCounter = fpsCounter;
         this.webrtcManager = webrtcManager;
         this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
+        this.autoplayIdleTimer = 0;
+        this.autoplayResumeDelay = 5;
+        this.autoplayWasSuspended = false;
         this.autoAngle = 0;
         this.autoOffsetX = 0;
         this.autoOffsetY = 0;
@@ -143,12 +147,30 @@ export class AnimationLoop {
         const leftActive = joystickState.left.isActive;
         const rightActive = joystickState.right.isActive;
         const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.q || this.keys.e || leftActive || rightActive;
-        const useManual = (!this.params.autoplay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.pointerLocked));
+
+        if (isMoving) {
+            if (this.params.autoplay) {
+                this.autoplayWasSuspended = true;
+            }
+            this.autoplayIdleTimer = 0;
+        } else {
+            this.autoplayIdleTimer += dt;
+        }
+
+        if (this.autoplayIdleTimer >= this.autoplayResumeDelay && this.autoplayWasSuspended) {
+            this.params.autoplay = true;
+            this.autoplayWasSuspended = false;
+            updateStatusText(this.params.paused, this.params.raveMode, this.params.autoplay);
+        }
+
+        const inAutoplayDelay = this.autoplayWasSuspended && this.autoplayIdleTimer < this.autoplayResumeDelay;
+        const autoplaySpeedMult = inAutoplayDelay ? this.autoplayIdleTimer / this.autoplayResumeDelay : 1;
+        const useManual = (!this.params.autoplay && !inAutoplayDelay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.pointerLocked));
 
         if (useManual) {
             this.handleManualControl(activeParams, dt, leftActive, rightActive);
         } else {
-            this.handleAutoControl(activeParams, dt);
+            this.handleAutoControl(activeParams, dt, autoplaySpeedMult);
         }
 
         if (isMoving && this.params.raveMode) {
@@ -225,7 +247,7 @@ export class AnimationLoop {
         this.manualRotation = this.camera.quaternion.clone();
     }
 
-    handleAutoControl(activeParams, dt) {
+    handleAutoControl(activeParams, dt, speedMult) {
         if (this.wasUserMoving && this.params.raveMode) {
             this.autoAngle += 0.005 * activeParams.timeScale;
             const baseX = Math.sin(this.autoAngle) * (8 + Math.sin(this.autoAngle * 0.7) * 5);
@@ -243,11 +265,11 @@ export class AnimationLoop {
             this.wasUserMoving = false;
         }
 
-        this.autoAngle += 0.005 * activeParams.timeScale;
+        this.autoAngle += 0.005 * activeParams.timeScale * speedMult;
         const autoR = 8 + Math.sin(this.autoAngle * 0.7) * 5;
         const targetX = Math.sin(this.autoAngle) * autoR + this.autoOffsetX;
         const targetY = Math.cos(this.autoAngle * 0.5) * 3 + 2 + this.autoOffsetY;
-        const targetZ = this.camera.position.z - activeParams.autoplaySpeed;
+        const targetZ = this.camera.position.z - activeParams.autoplaySpeed * speedMult;
 
         this.camera.position.x += (targetX - this.camera.position.x) * 0.02;
         this.camera.position.y += (targetY - this.camera.position.y) * 0.02;

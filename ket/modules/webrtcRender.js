@@ -5,16 +5,48 @@ const ARROW_LABEL_OFFSET = 0.6;
 const ARROW_LABEL_MIN_SPREAD = 0.35;
 
 export class WebRTCRenderer {
-    constructor({ camera, peerData, onTeleportButtonUpdate }) {
+    constructor({ camera, peerData, onTeleportButtonUpdate, onArrowDoubleClick, domElement }) {
         this.camera = camera;
         this.peerData = peerData;
         this.onTeleportButtonUpdate = onTeleportButtonUpdate;
+        this.onArrowDoubleClick = onArrowDoubleClick;
         this.orbGroup = null;
         this.arrowGroup = null;
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+        this.hoveredArrow = null;
+        this.clickCount = 0;
+        this.clickTimer = 0;
+        this.clickTimeout = 400;
+        this.domElement = domElement;
+
+        this._mouseMoveHandler = (e) => {
+            if (!this.domElement) return;
+            const rect = this.domElement.getBoundingClientRect();
+            this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        };
+
+        this._mouseDownHandler = () => {
+            this.clickCount++;
+            this.clickTimer = 0;
+        };
+
+        document.addEventListener('mousemove', this._mouseMoveHandler);
+        if (this.domElement) {
+            this.domElement.addEventListener('mousedown', this._mouseDownHandler);
+        }
     }
 
     setCamera(cam) {
         this.camera = cam;
+    }
+
+    setDomElement(el) {
+        this.domElement = el;
+        if (el) {
+            el.addEventListener('mousedown', this._mouseDownHandler);
+        }
     }
 
     initOrbGroup(scene) {
@@ -54,7 +86,7 @@ export class WebRTCRenderer {
         const group = new THREE.Group();
         const c = new THREE.Color(color || '#00ccff');
 
-        const coneGeo = new THREE.ConeGeometry(0.2, 0.7, 8);
+        const coneGeo = new THREE.ConeGeometry(0.1, 0.5, 8);
         const coneMat = new THREE.MeshBasicMaterial({
             color: c,
             transparent: true,
@@ -66,7 +98,7 @@ export class WebRTCRenderer {
         const cone = new THREE.Mesh(coneGeo, coneMat);
         group.add(cone);
 
-        const shaftGeo = new THREE.CylinderGeometry(0.04, 0.07, 0.5, 6);
+        const shaftGeo = new THREE.CylinderGeometry(0.02, 0.04, 0.4, 6);
         const shaftMat = new THREE.MeshBasicMaterial({
             color: c,
             transparent: true,
@@ -79,18 +111,18 @@ export class WebRTCRenderer {
         shaft.position.y = -0.4;
         group.add(shaft);
 
-        const dotGeo = new THREE.SphereGeometry(0.07, 6, 6);
-        const dotMat = new THREE.MeshBasicMaterial({
-            color: c,
-            transparent: true,
-            opacity: 1.0,
-            fog: false,
-            depthTest: false,
-            renderOrder: 999
-        });
-        const dot = new THREE.Mesh(dotGeo, dotMat);
-        dot.position.y = -0.7;
-        group.add(dot);
+        // const dotGeo = new THREE.SphereGeometry(0.07, 6, 6);
+        // const dotMat = new THREE.MeshBasicMaterial({
+        //     color: c,
+        //     transparent: true,
+        //     opacity: 1.0,
+        //     fog: false,
+        //     depthTest: false,
+        //     renderOrder: 999
+        // });
+        // const dot = new THREE.Mesh(dotGeo, dotMat);
+        // dot.position.y = -0.7;
+        // group.add(dot);
 
         return group;
     }
@@ -174,6 +206,8 @@ export class WebRTCRenderer {
 
         this.syncArrowSet(peersWithData);
 
+        this._hoverAndClick(dt);
+
         const hudDist = 2;
         const halfFov = this.camera.fov * 0.5 * (Math.PI / 180);
         const maxOffset = hudDist * Math.tan(halfFov) * 0.4;
@@ -228,12 +262,17 @@ export class WebRTCRenderer {
 
             arrow.position.lerp(desiredPos, lerpFactor);
 
+            // Clamp post-lerp position to HUD bounds using correct camera-basis projection
             const relPos = arrow.position.clone().sub(camPos);
-            const clampedX = Math.max(-hardLimitX, Math.min(hardLimitX, camRight.dot(relPos)));
-            const clampedY = Math.max(-hardLimitY, Math.min(hardLimitY, camUp.dot(relPos)));
-            relPos.addScaledVector(camRight, clampedX - camRight.dot(relPos));
-            relPos.addScaledVector(camUp, clampedY - camUp.dot(relPos));
-            arrow.position.copy(camPos).add(relPos);
+            const fwdComp = camDir.dot(relPos);
+            let rc = camRight.dot(relPos);
+            let uc = camUp.dot(relPos);
+            rc = Math.max(-hardLimitX, Math.min(hardLimitX, rc));
+            uc = Math.max(-hardLimitY, Math.min(hardLimitY, uc));
+            arrow.position.copy(camPos)
+                .addScaledVector(camDir, fwdComp)
+                .addScaledVector(camRight, rc)
+                .addScaledVector(camUp, uc);
 
             const currentDir = arrow.userData.targetDir;
             currentDir.lerp(toPeer, lerpFactor);
@@ -255,6 +294,17 @@ export class WebRTCRenderer {
                 }
             }
 
+            if (arrow.userData.hovered) {
+                const pulse = 1.0 + Math.sin(Date.now() * 0.008) * 0.15;
+                const hs = ts * pulse;
+                arrow.scale.set(hs, hs, hs);
+                for (const mesh of arrow.children) {
+                    if (mesh.isMesh && mesh.material) {
+                        mesh.material.opacity = Math.min(1, mesh.material.opacity + 0.2);
+                    }
+                }
+            }
+
             visibleArrows.push({
                 arrow,
                 peerId,
@@ -268,22 +318,63 @@ export class WebRTCRenderer {
         this.resolveLabelOverlap(visibleArrows, camPos, camDir, camRight, camUp, hudDist, lerpFactor);
     }
 
+    _hoverAndClick(dt) {
+        if (!this.camera || !this.arrowGroup) return;
+
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const arrows = this.arrowGroup.children.filter(c => !c.userData.isLabel && c.visible);
+        const intersects = this.raycaster.intersectObjects(arrows, true);
+
+        let newHover = null;
+        if (intersects.length > 0) {
+            let hitObj = intersects[0].object;
+            while (hitObj && !hitObj.userData.peerId) {
+                hitObj = hitObj.parent;
+            }
+            if (hitObj && hitObj.userData.peerId) {
+                newHover = hitObj;
+            }
+        }
+
+        if (this.hoveredArrow !== newHover) {
+            if (this.hoveredArrow) {
+                this.hoveredArrow.userData.hovered = false;
+            }
+            this.hoveredArrow = newHover;
+            if (this.hoveredArrow) {
+                this.hoveredArrow.userData.hovered = true;
+            }
+        }
+
+        this.clickTimer += dt * 1000;
+        if (this.clickTimer > this.clickTimeout) {
+            this.clickCount = 0;
+        }
+
+        if (this.clickCount >= 2 && this.hoveredArrow) {
+            const peerData = this.peerData.get(this.hoveredArrow.userData.peerId);
+            if (peerData && peerData.position && this.onArrowDoubleClick) {
+                this.onArrowDoubleClick(peerData);
+            }
+            this.clickCount = 0;
+        }
+    }
+
     resolveLabelOverlap(visibleArrows, camPos, camDir, camRight, camUp, hudDist, lerpFactor) {
         for (const entry of visibleArrows) {
             if (!entry.label) continue;
 
-            const labelTarget = entry.arrow.position.clone();
+            // Snap label directly to arrow to prevent detachment during fast camera movement
+            entry.label.position.copy(entry.arrow.position);
             if (ARROW_LABEL_ABOVE) {
-                labelTarget.y += ARROW_LABEL_OFFSET * entry.scale;
+                entry.label.position.y += ARROW_LABEL_OFFSET * entry.scale;
             } else {
-                labelTarget.y -= ARROW_LABEL_OFFSET * entry.scale;
+                entry.label.position.y -= ARROW_LABEL_OFFSET * entry.scale;
             }
-
-            entry.label.position.lerp(labelTarget, lerpFactor);
 
             const distText = `${entry.peerData.username || 'anon'}: ${Math.round(entry.dist)}m`;
             this.updateTextSprite(entry.label, distText, entry.peerData.color || '#00ccff');
-            entry.label.scale.set(2.4 * entry.scale, 0.6 * entry.scale, 1);
+            //entry.label.scale.set(2.4 * entry.scale, 0.6 * entry.scale, 1);
         }
     }
 
@@ -299,7 +390,7 @@ export class WebRTCRenderer {
         canvas.height = baseSize / 4;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.font = 'Bold 250px Courier New, monospace';
+        ctx.font = 'Bold 150px Courier New, monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color || '#00ccff';
@@ -345,7 +436,7 @@ export class WebRTCRenderer {
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'rgba(0, 0, 0, 0)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = 'Bold 350px Courier New, monospace';
+        ctx.font = 'Bold 250px Courier New, monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = color || '#00ccff';
@@ -429,7 +520,36 @@ export class WebRTCRenderer {
         }
     }
 
+    tryTeleportArrow(ndcX, ndcY) {
+        if (!this.arrowGroup || !this.camera) return false;
+
+        this.mouse.set(ndcX, ndcY);
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        const arrows = this.arrowGroup.children.filter(c => !c.userData.isLabel && c.visible);
+        const intersects = this.raycaster.intersectObjects(arrows, true);
+
+        if (intersects.length > 0) {
+            let hitObj = intersects[0].object;
+            while (hitObj && !hitObj.userData.peerId) {
+                hitObj = hitObj.parent;
+            }
+            if (hitObj && hitObj.userData.peerId) {
+                const peerData = this.peerData.get(hitObj.userData.peerId);
+                if (peerData && peerData.position && this.onArrowDoubleClick) {
+                    this.onArrowDoubleClick(peerData);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     destroy() {
+        document.removeEventListener('mousemove', this._mouseMoveHandler);
+        if (this.domElement) {
+            this.domElement.removeEventListener('mousedown', this._mouseDownHandler);
+        }
         if (this.orbGroup) {
             for (const child of this.orbGroup.children) {
                 if (child.material) child.material.dispose();

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WebRTCRenderer } from './webrtcRender.js';
+import { createQRCanvas } from './qrGenerator.js';
 
 const STORAGE_KEY_ID = 'webrtc-user-id';
 const STORAGE_KEY_PEERS = 'webrtc-peer-list';
@@ -69,13 +70,18 @@ export class WebRTCManager {
         this.renderer = new WebRTCRenderer({
             camera: null,
             peerData: this.peerData,
-            onTeleportButtonUpdate: () => this.updateTeleportButton()
+            onTeleportButtonUpdate: () => this.updateTeleportButton(),
+            onArrowDoubleClick: (peerData) => this.teleportToPeer(peerData)
         });
     }
 
     setCamera(cam) {
         this.camera = cam;
         this.renderer.setCamera(cam);
+    }
+
+    setDomElement(el) {
+        this.renderer.setDomElement(el);
     }
 
     initActiveScene(scene) {
@@ -426,6 +432,44 @@ export class WebRTCManager {
             }
         });
         idRow.appendChild(shareBtn);
+
+        const qrBtn = document.createElement('button');
+        qrBtn.textContent = 'QR';
+        qrBtn.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 204, 255, 0.2);
+            border-radius: 4px;
+            padding: 2px 8px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        `;
+        qrBtn.addEventListener('click', () => {
+            if (this.userId) {
+                const base = window.location.origin + window.location.pathname;
+                const shareUrl = `${base}?online=true&joinId=${this.userId}`;
+                try {
+                    const qrCanvas = createQRCanvas(shareUrl, 280);
+                    const w = window.open('', '_blank');
+                    if (w) {
+                        w.document.title = 'QR Code';
+                        w.document.body.style.margin = '0';
+                        w.document.body.style.display = 'flex';
+                        w.document.body.style.justifyContent = 'center';
+                        w.document.body.style.alignItems = 'center';
+                        w.document.body.style.minHeight = '100vh';
+                        w.document.body.style.background = '#111';
+                        w.document.body.appendChild(qrCanvas);
+                    }
+                } catch {
+                    console.error('[QR] Failed to generate QR code');
+                }
+            }
+        });
+        idRow.appendChild(qrBtn);
         content.appendChild(idRow);
 
         const inputRow = document.createElement('div');
@@ -902,6 +946,15 @@ export class WebRTCManager {
         const [, data] = peerEntries[peerIdx];
         if (!data.position) return;
         const pos = data.position;
+        const offset = 8;
+        this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
+        this.camera.lookAt(pos.x, pos.y, pos.z);
+        this.broadcastPeerList();
+    }
+
+    teleportToPeer(peerData) {
+        if (!this.camera || !peerData.position) return;
+        const pos = peerData.position;
         const offset = 8;
         this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
         this.camera.lookAt(pos.x, pos.y, pos.z);
