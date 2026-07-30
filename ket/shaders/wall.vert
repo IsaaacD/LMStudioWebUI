@@ -1,7 +1,5 @@
-
 uniform float uTime;
 uniform float uFoldIntensity;
-uniform vec3 uTileOffset;
 varying vec2 vUv;
 varying float vElevation;
 varying vec3 vWorldPosition;
@@ -56,11 +54,11 @@ float snoise(vec3 v) {
 void main() {
     vUv = uv;
 
-    // World-space for vertical wall: Y is "vertical", one horiz axis is offset
-    vec2 worldYZ = vec2(position.y, position.z) + uTileOffset.xy;
+    vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    vec2 worldYZ = vec2(worldPos.y, worldPos.z);
 
-    float noiseVal = snoise(vec3(worldYZ.x * 0.1, worldYZ.y * 0.1, uTileOffset.z * 0.1 + uTime * 0.12));
-    float elevation = cos(worldYZ.x * 0.3 + uTileOffset.z * 0.2 + uTime * 0.7) * 1.5 + noiseVal * 3.0;
+    float noiseVal = snoise(vec3(worldYZ.x * 0.1, worldYZ.y * 0.1, worldPos.x * 0.1 + uTime * 0.12));
+    float elevation = cos(worldYZ.x * 0.3 + worldPos.x * 0.2 + uTime * 0.7) * 1.5 + noiseVal * 3.0;
     elevation *= uFoldIntensity;
 
     float gridY = floor(worldYZ.x * 0.4);

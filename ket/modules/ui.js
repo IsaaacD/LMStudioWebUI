@@ -86,10 +86,13 @@ export function initGUI(params, guiControllers, sceneManager) {
     addInfoIcon(raCtrl.domElement, 'Randomize all visual and movement parameters for a new look');
     actFolder.close();
 
+    let sceneInfo = null;
+    let timerDisplay = null;
+
     if (sceneManager) {
         const sceneFolder = gui.addFolder('Scenes');
 
-        const sceneInfo = { name: 'loading...' };
+        sceneInfo = { name: 'loading...' };
         sceneFolder.add(sceneInfo, 'name').name('Current Scene').disable();
 
         const cityDuration = { value: sceneManager.getDuration('city') || 45 };
@@ -110,21 +113,24 @@ export function initGUI(params, guiControllers, sceneManager) {
         const nextSceneCtrl = sceneFolder.add(nextSceneBtn, 'Next Scene').name('⏭ Next Scene');
         addInfoIcon(nextSceneCtrl.domElement, 'Manually trigger transition to next scene');
 
-        const timerDisplay = { elapsed: '0s' };
+        timerDisplay = { elapsed: '0s' };
         sceneFolder.add(timerDisplay, 'elapsed').name('Timer').disable();
 
         sceneFolder.close();
+    }
 
-        (function updateSceneGui() {
+    window._updateSceneGui = (elapsed, maxDuration) => {
+        if (sceneInfo && sceneManager) {
             const active = sceneManager.getActiveScene();
             if (active) {
                 sceneInfo.name = active.name;
             }
-            const remaining = Math.max(0, sceneManager.timer.maxDuration - sceneManager.timer.elapsed);
-            timerDisplay.elapsed = remaining.toFixed(1) + 's';
-            requestAnimationFrame(updateSceneGui);
-        })();
-    }
+            const remaining = Math.max(0, maxDuration - elapsed);
+            if (timerDisplay) {
+                timerDisplay.elapsed = remaining.toFixed(1) + 's';
+            }
+        }
+    };
 
     gui.close();
 

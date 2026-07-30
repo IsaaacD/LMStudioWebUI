@@ -1,7 +1,5 @@
-
 uniform float uTime;
 uniform float uFoldIntensity;
-uniform vec3 uTileOffset;
 varying vec2 vUv;
 varying float vElevation;
 varying vec3 vWorldPosition;
@@ -56,20 +54,14 @@ float snoise(vec3 v) {
 void main() {
     vUv = uv;
 
-    // World-space coordinates for seamless infinite tiling
-    vec2 worldXZ = position.xz + uTileOffset.xy;
+    vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+    vec2 worldXZ = worldPos.xz;
 
-    // FOLDING LOGIC with Intensity Control
-    float noiseVal = snoise(vec3(worldXZ.x * 0.1, worldXZ.y * 0.1, uTileOffset.z * 0.1 + uTime * 0.15));
-    float elevation = sin(worldXZ.x * 0.5 + uTileOffset.z * 0.3 + uTime) * 2.0 + noiseVal * 5.0;
-
-    // Apply Fold Intensity Multiplier
+    float noiseVal = snoise(vec3(worldXZ.x * 0.1, worldXZ.y * 0.1, worldPos.z * 0.1 + uTime * 0.15));
+    float elevation = sin(worldXZ.x * 0.5 + worldPos.z * 0.3 + uTime) * 2.0 + noiseVal * 5.0;
     elevation *= uFoldIntensity;
-
-    // Clamp to positive only (negative elevation pushes geometry down, canceling extrusion)
     elevation = max(0.0, elevation);
 
-    // City Grid Snapping (anti-aliased, ~75% coverage matching original intent)
     float gridX = fract(worldXZ.x * 0.5);
     float gridZ = fract(worldXZ.y * 0.5);
     float buildingMask = smoothstep(0.15, 0.28, gridX) * smoothstep(0.15, 0.28, gridZ);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { normalizeColor } from './utils.js';
 
 const PRIMITIVE_COUNT = 200;
 const PRIMITIVES_PER_GRID_CELL = 0.35;
@@ -16,6 +17,8 @@ function cellHash(x, y, z) {
     return (h ^ (h >> 16)) & 0x7fffffff;
 }
 
+const _tempColor = new THREE.Color();
+
 export class PrimitiveManager {
     constructor(scene, primitiveMaterial, TILE_SIZE, TILE_HEIGHT, RECYCLE_DIST, RENDER_DIST) {
         this.TILE_SIZE = TILE_SIZE;
@@ -24,11 +27,12 @@ export class PrimitiveManager {
         this.subSizeX = TILE_SIZE / SUBDIVISIONS;
         this.subSizeY = TILE_HEIGHT / SUBDIVISIONS;
         this.spawnRadiusCells = Math.max(4, Math.ceil(RENDER_DIST / (TILE_SIZE / SUBDIVISIONS)));
+        this.sharedMaterial = primitiveMaterial;
 
         const primitiveGeos = [
-            new THREE.BoxGeometry(2, 2, 2, 8, 8, 8),
-            new THREE.SphereGeometry(1.5, 16, 16),
-            new THREE.CylinderGeometry(1.2, 1.2, 3, 16, 8)
+            new THREE.BoxGeometry(2, 2, 2, 2, 2, 2),
+            new THREE.SphereGeometry(1.5, 8, 8),
+            new THREE.CylinderGeometry(1.2, 1.2, 3, 8, 4)
         ];
 
         this.primitivePool = [];
@@ -36,8 +40,7 @@ export class PrimitiveManager {
         this.warmupFrame = 0;
         for (let i = 0; i < PRIMITIVE_COUNT; i++) {
             const geoIdx = Math.floor(Math.random() * primitiveGeos.length);
-            const mat = primitiveMaterial.clone();
-            const mesh = new THREE.Mesh(primitiveGeos[geoIdx], mat);
+            const mesh = new THREE.Mesh(primitiveGeos[geoIdx], primitiveMaterial);
             mesh.visible = false;
             mesh.userData = {
                 alphaBase: 0.3 + Math.random() * 0.6,
@@ -145,17 +148,14 @@ export class PrimitiveManager {
             this.primitiveKeys.add(k);
         }
 
+        let maxAlpha = 0;
+        let avgWaveAmp = 0;
+        let visibleCount = 0;
+
         for (const p of this.primitivePool) {
             if (!p.visible) continue;
             const ud = p.userData;
-            const alpha = ud.alphaBase * (0.5 + 0.5 * Math.sin(effectiveTime * ud.alphaSpeed + ud.alphaPhase));
-            p.material.uniforms.uTime.value = effectiveTime;
-            p.material.uniforms.uAlpha.value = alpha;
-            p.material.uniforms.uWaveAmp.value = ud.waveAmp;
-            p.material.uniforms.uColor1.value.set(colorA);
-            p.material.uniforms.uColor2.value.set(colorB);
-            p.material.uniforms.uCameraPos.value.copy(camera.position);
-            p.material.needsUpdate = true;
+            visibleCount++;
 
             const clampedDt = Math.min(dt, 0.1);
             p.rotation.x += ud.rotSpeed.x * clampedDt * 0.5;
@@ -168,6 +168,22 @@ export class PrimitiveManager {
 
             const bobOffset = Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
             p.position.y = p._gy * this.subSizeY + this.subSizeY * 0.3 + bobOffset;
+
+            const alpha = ud.alphaBase * (0.5 + 0.5 * Math.sin(effectiveTime * ud.alphaSpeed + ud.alphaPhase));
+            if (alpha > maxAlpha) maxAlpha = alpha;
+            avgWaveAmp += ud.waveAmp;
+        }
+
+        if (visibleCount > 0) {
+            avgWaveAmp /= visibleCount;
+            this.sharedMaterial.uniforms.uTime.value = effectiveTime;
+            this.sharedMaterial.uniforms.uAlpha.value = maxAlpha;
+            this.sharedMaterial.uniforms.uWaveAmp.value = avgWaveAmp;
+            _tempColor.set(normalizeColor(colorA, 'primitives:182'));
+            this.sharedMaterial.uniforms.uColor1.value.copy(_tempColor);
+            _tempColor.set(normalizeColor(colorB, 'primitives:184'));
+            this.sharedMaterial.uniforms.uColor2.value.copy(_tempColor);
+            this.sharedMaterial.needsUpdate = true;
         }
     }
 }

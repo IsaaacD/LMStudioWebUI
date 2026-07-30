@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 const TILE_SIZE = 200;
-const TILE_SEGMENTS = 128;
+const TILE_SEGMENTS = 8;
 const RENDER_DIST = 240;
 const RECYCLE_DIST = 200;
 const GRID = Math.ceil(RENDER_DIST / TILE_SIZE) * 2 + 1;
@@ -10,7 +10,7 @@ const TILE_HEIGHT = 25;
 
 const WALL_STRIP_LEN = RENDER_DIST * 2.5;
 const WALL_STRIP_HEIGHT = TILE_HEIGHT * 3;
-const WALLS_PER_POOL = 200;
+const WALLS_PER_POOL = 100;
 const WALL_RECYCLE_DIST = 600;
 const WALL_DENSITY = 0.6;
 const WALL_PENDING_MAX = 40;
@@ -27,8 +27,7 @@ function key(ax, ay, az) { return `${ax},${ay},${az}`; }
 function makePool(count, geo, material, scene, isCeiling) {
     const pool = [];
     for (let i = 0; i < count; i++) {
-        const mat = material.clone();
-        const mesh = new THREE.Mesh(geo, mat);
+        const mesh = new THREE.Mesh(geo, material);
         mesh.rotation.x = isCeiling ? Math.PI / 2 : -Math.PI / 2;
         mesh.position.y = isCeiling ? TILE_HEIGHT : 0;
         mesh.visible = false;
@@ -41,8 +40,7 @@ function makePool(count, geo, material, scene, isCeiling) {
 function makeWallPool(count, geo, material, scene, rotY) {
     const pool = [];
     for (let i = 0; i < count; i++) {
-        const mat = material.clone();
-        const mesh = new THREE.Mesh(geo, mat);
+        const mesh = new THREE.Mesh(geo, material);
         mesh.rotation.y = rotY;
         mesh.position.y = TILE_HEIGHT / 2;
         mesh.visible = false;
@@ -253,10 +251,10 @@ function placeWall(pool, avail, keys, type, cx, cz, gi, gy, camera) {
 export class TileManager {
     constructor(scene, cityMaterial, wallMaterial) {
         const geo = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE, TILE_SEGMENTS, TILE_SEGMENTS);
-        const wallGeo = new THREE.PlaneGeometry(WALL_STRIP_LEN, WALL_STRIP_HEIGHT, Math.floor(TILE_SEGMENTS * 3), 8);
+        const wallGeo = new THREE.PlaneGeometry(WALL_STRIP_LEN, WALL_STRIP_HEIGHT, Math.floor(TILE_SEGMENTS * 1.5), 2);
 
-        this.floorTiles = makePool(MAX_TILES * 30, geo, cityMaterial, scene, false);
-        this.ceilTiles = makePool(MAX_TILES * 30, geo, cityMaterial, scene, true);
+        this.floorTiles = makePool(MAX_TILES * 6, geo, cityMaterial, scene, false);
+        this.ceilTiles = makePool(MAX_TILES * 6, geo, cityMaterial, scene, true);
 
         this.wallTilesX = makeWallPool(WALLS_PER_POOL, wallGeo, wallMaterial, scene, 0);
         this.wallTilesZ = makeWallPool(WALLS_PER_POOL, wallGeo, wallMaterial, scene, Math.PI / 2);

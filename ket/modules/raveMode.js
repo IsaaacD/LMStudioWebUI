@@ -7,6 +7,7 @@ import {
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
     GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
     GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
+    normalizeColor
 } from './utils.js';
 
 export class RaveEngine {
@@ -35,8 +36,8 @@ export class RaveEngine {
         this.raveTarget.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
         this.raveTarget.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
         this.raveTarget.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
-        this.raveTarget.colorA = Math.floor(Math.random() * 0xffffff);
-        this.raveTarget.colorB = Math.floor(Math.random() * 0xffffff);
+        this.raveTarget.colorA = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
+        this.raveTarget.colorB = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
     }
 
     lerp(dt) {
@@ -49,13 +50,13 @@ export class RaveEngine {
         this.raveCurrent.timeScale += (this.raveTarget.timeScale - this.raveCurrent.timeScale) * l;
         this.raveCurrent.autoplaySpeed += (this.raveTarget.autoplaySpeed - this.raveCurrent.autoplaySpeed) * l;
 
-        this.raveTemp.set(this.raveCurrent.colorA);
-        this.raveTemp.lerp(new THREE.Color(this.raveTarget.colorA), l);
-        this.raveCurrent.colorA = this.raveTemp.getHexString();
+        this.raveTemp.set(normalizeColor(this.raveCurrent.colorA, 'raveMode:53'));
+        this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorA, 'raveMode:54')), l);
+        this.raveCurrent.colorA = '0x' + this.raveTemp.getHexString();
 
-        this.raveTemp.set(this.raveCurrent.colorB);
-        this.raveTemp.lerp(new THREE.Color(this.raveTarget.colorB), l);
-        this.raveCurrent.colorB = this.raveTemp.getHexString();
+        this.raveTemp.set(normalizeColor(this.raveCurrent.colorB));
+        this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorB, 'raveMode:58')), l);
+        this.raveCurrent.colorB = '0x' + this.raveTemp.getHexString();
     }
 
     update(dt, rawTime) {

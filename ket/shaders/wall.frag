@@ -1,9 +1,7 @@
-
 uniform float uTime;
 uniform vec3 uColor1;
 uniform vec3 uColor2;
 uniform vec3 uColor3;
-uniform vec3 uCameraPos;
 varying float vElevation;
 varying vec2 vUv;
 varying vec3 vWorldPosition;
@@ -17,7 +15,6 @@ float veinNoise(vec2 uv) {
 }
 
 void main() {
-    // Gradient between Color A and Color B over elevation + time
     float t = (cos(uTime * 0.3) * 0.5 + 0.5) * 0.5 + vElevation * 0.5;
     vec3 col1 = mix(uColor1, uColor2, t);
     vec3 col2 = mix(uColor2, uColor1, t);
@@ -41,7 +38,7 @@ void main() {
     float gridLine = step(0.97, fract(vUv.x * 16.0)) + step(0.97, fract(vUv.y * 16.0));
     finalColor += col2 * gridLine * 0.4;
 
-    float dist = length(vWorldPosition.xz - uCameraPos.xz);
+    float dist = length(vWorldPosition.xz - cameraPosition.xz);
     float fogFactor = smoothstep(0.0, 80.0, dist);
     finalColor = mix(finalColor, vec3(0.05, 0.0, 0.1), fogFactor);
 

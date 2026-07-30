@@ -147,6 +147,10 @@ async function bootstrap() {
         webrtcManager
     });
 
+    animationLoop.onTimerUpdate = (elapsed, maxDuration) => {
+        if (window._updateSceneGui) window._updateSceneGui(elapsed, maxDuration);
+    };
+
     window.addEventListener('resize', () => {
         onResize();
         postProcessor.resize(innerWidth, innerHeight);

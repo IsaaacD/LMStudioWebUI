@@ -2,9 +2,7 @@ uniform float uTime;
 uniform vec3 uColor1;
 uniform vec3 uColor2;
 uniform vec3 uColor3;
-uniform vec3 uCameraPos;
 varying float vElevation;
-//uniform float uAlpha;
 varying vec2 vUv;
 varying vec3 vWorldPosition;
 
@@ -48,7 +46,7 @@ void main() {
     finalColor += col2 * (gridX + gridY) * 0.5;
 
     // Fog (camera-relative for infinite world)
-    float dist = length(vWorldPosition.xz - uCameraPos.xz);
+    float dist = length(vWorldPosition.xz - cameraPosition.xz);
     float fogFactor = smoothstep(40.0, 120.0, dist);
     finalColor = mix(finalColor, vec3(0.05, 0.0, 0.1), fogFactor);
 

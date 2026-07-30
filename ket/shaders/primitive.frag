@@ -1,7 +1,6 @@
 uniform float uTime;
 uniform vec3 uColor1;
 uniform vec3 uColor2;
-uniform vec3 uCameraPos;
 uniform float uAlpha;
 varying vec2 vUv;
 varying vec3 vNormal;
@@ -12,7 +11,8 @@ void main() {
     float t = sin(uTime * 0.4 + vDisplacement * 2.0) * 0.5 + 0.5;
     vec3 baseColor = mix(uColor1, uColor2, t);
 
-    float fresnel = pow(1.0 - abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0))), 2.0);
+    vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+    float fresnel = pow(1.0 - abs(dot(normalize(vNormal), viewDir)), 2.0);
     baseColor += fresnel * uColor2 * 0.6;
 
     float pulse = sin(uTime * 3.0) * 0.5 + 0.5;
@@ -22,7 +22,7 @@ void main() {
     vein1 = smoothstep(0.6, 0.9, vein1 * 0.5 + 0.5);
     baseColor = mix(baseColor, uColor1, vein1 * 0.4);
 
-    float dist = length(vWorldPosition - uCameraPos);
+    float dist = length(vWorldPosition - cameraPosition);
     float fogFactor = smoothstep(200.0, 450.0, dist);
 
     float edge = smoothstep(0.0, 0.3, vDisplacement + 1.0) * smoothstep(1.0, 0.3, vDisplacement + 1.0);

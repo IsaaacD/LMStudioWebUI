@@ -3,6 +3,9 @@ import { TileManager } from '../modules/tiles.js';
 import { PrimitiveManager } from '../modules/primitives.js';
 import { HeartSpawner } from '../modules/heartSpawner.js';
 import { ImageSpawner } from '../modules/imageSpawner.js';
+import { normalizeColor } from '../modules/utils.js';
+
+const _tempColor = new THREE.Color();
 
 export async function createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial) {
     const threeScene = new THREE.Scene();
@@ -27,34 +30,28 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
         defaultDuration: 45,
         managers: { tileManager, primitiveManager, imageSpawner, heartSpawner },
         constants: { TILE_SIZE, TILE_HEIGHT },
+        sharedMaterials: { cityMaterial, wallMaterial, primitiveMaterial, heartMaterial },
 
-        onEnter() {},
+        onEnter() { },
 
-        onExit() {},
+        onExit() { },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
-            for (const t of tileManager.getFloorCeilTiles()) {
-                if (!t.visible) continue;
-                t.material.uniforms.uTime.value = effectiveTime;
-                t.material.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
-                t.material.uniforms.uColor1.value.set(activeParams.colorA);
-                t.material.uniforms.uColor2.value.set(activeParams.colorB);
-                t.material.uniforms.uTileOffset.value.set(
-                    t._gx * TILE_SIZE, t._gz * TILE_SIZE, t._gy * TILE_HEIGHT
-                );
-                t.material.uniforms.uCameraPos.value.copy(camera.position);
-            }
-            for (const t of tileManager.getWallTiles()) {
-                if (!t.visible) continue;
-                t.material.uniforms.uTime.value = effectiveTime;
-                t.material.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
-                t.material.uniforms.uColor1.value.set(activeParams.colorA);
-                t.material.uniforms.uColor2.value.set(activeParams.colorB);
-                t.material.uniforms.uTileOffset.value.set(
-                    t._gx * TILE_SIZE, t._gz * TILE_SIZE, t._gy * TILE_HEIGHT
-                );
-                t.material.uniforms.uCameraPos.value.copy(camera.position);
-            }
+            cityMaterial.uniforms.uTime.value = effectiveTime;
+            cityMaterial.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
+            _tempColor.set(normalizeColor(activeParams.colorA, 'cityScene:42'));
+            cityMaterial.uniforms.uColor1.value.copy(_tempColor);
+            _tempColor.set(normalizeColor(activeParams.colorB, 'cityScene:44'));
+            cityMaterial.uniforms.uColor2.value.copy(_tempColor);
+            cityMaterial.needsUpdate = true;
+
+            wallMaterial.uniforms.uTime.value = effectiveTime;
+            wallMaterial.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
+            _tempColor.set(normalizeColor(activeParams.colorA, 'cityScene:50'));
+            wallMaterial.uniforms.uColor1.value.copy(_tempColor);
+            _tempColor.set(normalizeColor(activeParams.colorB, 'cityScene:52'));
+            wallMaterial.uniforms.uColor2.value.copy(_tempColor);
+            wallMaterial.needsUpdate = true;
 
             tileManager.update(camera);
             primitiveManager.update(camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);

@@ -1,5 +1,5 @@
 #define PI 3.14159265359
-#define NUM_POINTS 100.0
+#define NUM_POINTS 20.0
 #define RADIUS 0.5
 #define LINE_WIDTH 0.005
 #define LINE_COLOR vec3(1.0, 0.2, 0.4)

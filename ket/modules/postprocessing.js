@@ -11,8 +11,11 @@ export class PostProcessor {
         this.renderPass = new RenderPass(scene, camera);
         this.composer.addPass(this.renderPass);
 
+        const halfW = Math.floor(innerWidth / 2);
+        const halfH = Math.floor(innerHeight / 2);
+
         this.bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(innerWidth, innerHeight),
+            new THREE.Vector2(halfW, halfH),
             1.5, 0.4, 0.85
         );
         this.composer.addPass(this.bloomPass);

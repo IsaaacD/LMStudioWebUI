@@ -7,12 +7,13 @@ import {
     GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
     GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
+    normalizeColor
 } from './utils.js';
 
 export const defaultParams = {
     speed: 3.0,
     timeScale: 0.5,
-    bloomStrength: 1.5,
+    bloomStrength: 0.2,
     bloomRadius: 0.4,
     foldIntensity: 1.0,
     veinSpeed: 1.0,
@@ -37,8 +38,8 @@ export function randomizeParams(params) {
     params.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
     params.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
     params.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
-    params.colorA = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
-    params.colorB = new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
+    params.colorA = '0x' + new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
+    params.colorB = '0x' + new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
 }
 
 export function updateStatusText(paused, raveMode, autoplay) {

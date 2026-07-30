@@ -1,8 +1,12 @@
 import * as THREE from 'three';
 import { joystickState, updateJoystickInputs } from './touchControls.js';
-
+import { normalizeColor } from './utils.js'
 const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
+
+const _dir = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
 export class AnimationLoop {
     constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine, fpsCounter, webrtcManager }) {
@@ -31,6 +35,7 @@ export class AnimationLoop {
         this.mouseYawDelta = 0;
         this.mousePitchDelta = 0;
         this.pointerLocked = false;
+        this.onTimerUpdate = null;
 
         this.bindInput();
         this.running = false;
@@ -104,7 +109,7 @@ export class AnimationLoop {
                 foldIntensity: this.params.foldIntensity,
                 edgeContrast: this.params.edgeContrast,
                 autoplaySpeed: this.params.autoplaySpeed,
-                colorA: this.params.colorA,
+                colorA: normalizeColor(this.params.colorA, 'animation:112'),
                 colorB: this.params.colorB
             };
 
@@ -155,13 +160,16 @@ export class AnimationLoop {
         if (activeScene) {
             this.composer.render(activeScene.threeScene);
         }
+
+        if (this.onTimerUpdate) {
+            this.onTimerUpdate(this.sceneManager.timer.elapsed, this.sceneManager.timer.maxDuration);
+        }
     }
 
     handleManualControl(activeParams, dt, leftActive, rightActive) {
         const moveSpeed = this.params.speed * 0.5;
-        const dir = new THREE.Vector3();
-        this.camera.getWorldDirection(dir);
-        const right = new THREE.Vector3().crossVectors(dir, this.camera.up).normalize();
+        this.camera.getWorldDirection(_dir);
+        _right.crossVectors(_dir, this.camera.up).normalize();
 
         let forwardInput = 0;
         let strafeInput = 0;
@@ -199,21 +207,20 @@ export class AnimationLoop {
 
         yawInput = Math.max(-MAX_YAW_INCREMENT, Math.min(MAX_YAW_INCREMENT, yawInput));
 
-        this.camera.position.addScaledVector(dir, forwardInput * moveSpeed);
-        this.camera.position.addScaledVector(right, strafeInput * moveSpeed);
+        this.camera.position.addScaledVector(_dir, forwardInput * moveSpeed);
+        this.camera.position.addScaledVector(_right, strafeInput * moveSpeed);
         this.camera.position.y += verticalInput * moveSpeed;
 
         if (yawInput !== 0 || pitchInput !== 0) {
-            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-            euler.setFromQuaternion(this.camera.quaternion);
-            euler.y -= yawInput;
-            euler.x -= pitchInput;
-            euler.x = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, euler.x));
-            this.camera.quaternion.setFromEuler(euler);
-            this.camera.getWorldDirection(dir);
+            _euler.setFromQuaternion(this.camera.quaternion);
+            _euler.y -= yawInput;
+            _euler.x -= pitchInput;
+            _euler.x = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, _euler.x));
+            this.camera.quaternion.setFromEuler(_euler);
+            this.camera.getWorldDirection(_dir);
         }
 
-        this.camera.lookAt(this.camera.position.x + dir.x, this.camera.position.y + dir.y, this.camera.position.z + dir.z);
+        this.camera.lookAt(this.camera.position.x + _dir.x, this.camera.position.y + _dir.y, this.camera.position.z + _dir.z);
         this.manualRotation = this.camera.quaternion.clone();
     }
 
@@ -224,12 +231,12 @@ export class AnimationLoop {
             const baseY = Math.cos(this.autoAngle * 0.5) * 3 + 2;
             this.autoOffsetX = this.camera.position.x - baseX;
             this.autoOffsetY = this.camera.position.y - baseY;
-            const euler = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(this.camera.quaternion);
-            const clampedPitch = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, euler.x));
+            _euler.setFromQuaternion(this.camera.quaternion);
+            const clampedPitch = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, _euler.x));
             this.autoPitch = clampedPitch;
             this.autoPitchTarget = clampedPitch;
-            this.autoYaw = euler.y;
-            this.autoYawTarget = euler.y;
+            this.autoYaw = _euler.y;
+            this.autoYawTarget = _euler.y;
             this.autoPitchTransitionDuration = 0;
             this.autoYawTransitionDuration = 0;
             this.wasUserMoving = false;
@@ -273,7 +280,7 @@ export class AnimationLoop {
             this.autoYawTransitionDuration -= dt;
         }
 
-        const euler = new THREE.Euler(this.autoPitch, this.autoYaw, 0, 'YXZ');
-        this.camera.quaternion.setFromEuler(euler);
+        _euler.set(this.autoPitch, this.autoYaw, 0);
+        this.camera.quaternion.setFromEuler(_euler);
     }
 }

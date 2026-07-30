@@ -8,15 +8,11 @@ export async function createCityMaterial() {
             uColor1: { value: new THREE.Color(0xff0055) },
             uColor2: { value: new THREE.Color(0x00ccff) },
             uColor3: { value: new THREE.Color(0x110022) },
-            uFoldIntensity: { value: 1.0 },
-            uTileOffset: { value: new THREE.Vector3(0, 0, 0) },
-            uCameraPos: { value: new THREE.Vector3(0, 0, 0) },
-            //uAlpha: { value: 0.8 }
+            uFoldIntensity: { value: 1.0 }
         },
         vertexShader: await loadShader('./shaders/city.vert'),
         fragmentShader: await loadShader('./shaders/city-line.frag'),
         wireframe: false,
-        //transparent: true,
         side: THREE.DoubleSide
     });
 }
@@ -28,9 +24,7 @@ export async function createWallMaterial() {
             uColor1: { value: new THREE.Color(0xff0055) },
             uColor2: { value: new THREE.Color(0x00ccff) },
             uColor3: { value: new THREE.Color(0x110022) },
-            uFoldIntensity: { value: 1.0 },
-            uTileOffset: { value: new THREE.Vector3(0, 0, 0) },
-            uCameraPos: { value: new THREE.Vector3(0, 0, 0) }
+            uFoldIntensity: { value: 1.0 }
         },
         vertexShader: await loadShader('./shaders/wall.vert'),
         fragmentShader: await loadShader('./shaders/wall.frag'),
@@ -47,7 +41,6 @@ export async function createPrimitiveMaterial() {
             uTime: { value: 0 },
             uColor1: { value: new THREE.Color(0xff0055) },
             uColor2: { value: new THREE.Color(0x00ccff) },
-            uCameraPos: { value: new THREE.Vector3(0, 0, 0) },
             uAlpha: { value: 0.8 },
             uWaveAmp: { value: 0.4 }
         },
