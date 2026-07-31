@@ -1,29 +1,10 @@
-/**
- * Daily schedule synchronization.
- * 
- * At init (and when the day rolls over), a chain of switch times is built
- * from midnight UTC. Each interval duration is derived from a hash of the
- * previous switch time, producing 45s–240s intervals. All devices compute
- * the identical schedule from the same daily anchor.
- * 
- * update() binary-searches Date.now() against the schedule and fires when
- * a new switch slot is reached. Scene selection in switchToRandomOrBaseline
- * is also deterministic, seeded by the switch count.
- * 
- * Override individual scene durations via setDuration().
- */
-function hashNumber(n) {
-    let h = (n + 0x9e3779b9) | 0;
-    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) | 0;
-    h = Math.imul(h ^ (h >>> 13), 0x45d9f3b) | 0;
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
+import { hashNumber, hashRange } from './utils.js';
 
-const MIN_DURATION = 45;
-const MAX_DURATION = 240;
+const MIN_DURATION = 15;
+const MAX_DURATION = 60;
 
 function deriveDuration(seed) {
-    return MIN_DURATION + hashNumber(seed) * (MAX_DURATION - MIN_DURATION);
+    return hashRange(seed, MIN_DURATION, MAX_DURATION);
 }
 
 export class SceneManager {
@@ -207,4 +188,4 @@ export class SceneManager {
         this.timer.elapsed += dt;
         return false;
     }
-}
+} 

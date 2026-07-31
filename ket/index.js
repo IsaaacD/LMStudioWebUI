@@ -80,8 +80,8 @@ async function bootstrap() {
     const sparseScene = await createSparseScreen();
     const lumberScene = await createLumberScene();
     sceneManager.registerScene(cityScene);
-    sceneManager.registerScene(sparseScene);
-    sceneManager.registerScene(lumberScene);
+    //sceneManager.registerScene(sparseScene);
+    //sceneManager.registerScene(lumberScene);
 
     const initialScene = sceneManager.resolveInitialScene();
 
@@ -109,7 +109,7 @@ async function bootstrap() {
             params.raveMode = true;
             params.controlMode = 'Rave';
             raveEngine.pickTargets();
-            raveEngine.raveNextTime = clock.getElapsedTime() + 1 + Math.random() * 2;
+            //raveEngine.raveNextTime = clock.getElapsedTime() + 1 + Math.random() * 2;
         } else {
             params.autoplay = true;
             params.raveMode = false;

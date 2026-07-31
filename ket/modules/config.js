@@ -9,7 +9,8 @@ import {
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
     normalizeColor,
     GUI_BLOOM_STRENGTH_MIN,
-    GUI_BLOOM_STRENGTH_MAX
+    GUI_BLOOM_STRENGTH_MAX,
+    hashRange
 } from './utils.js';
 
 export const defaultParams = {
@@ -32,17 +33,30 @@ export const defaultParams = {
     forceNextScene: false
 };
 
+function _seed() {
+    return Math.floor(Date.now() / 2400);
+}
+
 export function randomizeParams(params) {
-    params.speed = GUI_SPEED_MIN + Math.random() * (GUI_SPEED_MAX - GUI_SPEED_MIN);
-    params.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
-    params.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
-    params.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
-    params.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
-    params.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
-    params.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
-    params.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
-    params.colorA = '#' + new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
-    params.colorB = '#' + new THREE.Color(`hsl(${Math.random() * 360}, ${60 + Math.random() * 40}%, ${40 + Math.random() * 30}%)`).getHexString();
+    const s = _seed();
+    params.speed = hashRange(s + 1, GUI_SPEED_MIN, GUI_SPEED_MAX);
+    params.foldIntensity = hashRange(s + 2, GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX);
+    params.edgeContrast = hashRange(s + 3, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX);
+    params.veinSpeed = hashRange(s + 4, GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX);
+    params.bloomStrength = hashRange(s + 5, GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX);
+    params.bloomRadius = hashRange(s + 6, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX);
+    params.autoplaySpeed = hashRange(s + 7, GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX);
+    params.timeScale = hashRange(s + 8, GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX);
+    const hueA = hashRange(s + 9, 0, 360);
+    const satA = hashRange(s + 10, 60, 100);
+    const litA = hashRange(s + 11, 40, 70);
+    params.colorA = '#' + new THREE.Color(`hsl(${hueA}, ${satA}%, ${litA}%)`).getHexString();
+    const hueB = hashRange(s + 12, 0, 360);
+    const satB = hashRange(s + 13, 60, 100);
+    const litB = hashRange(s + 14, 40, 70);
+    params.colorB = '#' + new THREE.Color(`hsl(${hueB}, ${satB}%, ${litB}%)`).getHexString();
+
+    return params;
 }
 
 export function updateStatusText(paused, raveMode, autoplay) {

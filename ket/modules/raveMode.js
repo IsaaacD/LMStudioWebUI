@@ -7,8 +7,10 @@ import {
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
     GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
     GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
-    normalizeColor
+    normalizeColor,
 } from './utils.js';
+
+import { randomizeParams } from './config.js'
 
 export class RaveEngine {
     constructor(params) {
@@ -42,16 +44,17 @@ export class RaveEngine {
     }
 
     pickTargets() {
-        this.raveTarget.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
-        this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_STRENGTH_MIN);
-        this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
-        this.raveTarget.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
-        this.raveTarget.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
-        this.raveTarget.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
-        this.raveTarget.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
-        this.raveTarget.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
-        this.raveTarget.colorA = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
-        this.raveTarget.colorB = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
+        this.raveTarget = randomizeParams(this.raveTarget);
+        // this.raveTarget.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
+        // this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_STRENGTH_MIN);
+        // this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
+        // this.raveTarget.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
+        // this.raveTarget.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
+        // this.raveTarget.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
+        // this.raveTarget.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
+        // this.raveTarget.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
+        // this.raveTarget.colorA = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
+        // this.raveTarget.colorB = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
     }
 
     lerp(dt) {
@@ -74,10 +77,10 @@ export class RaveEngine {
     }
 
     update(dt, rawTime) {
-        if (rawTime >= this.raveNextTime) {
-            this.pickTargets();
-            this.raveNextTime = rawTime + 1 + Math.random() * 2;
-        }
+        // if (rawTime >= this.raveNextTime) {
+        this.pickTargets();
+        //     this.raveNextTime = rawTime + 1 + Math.random() * 2;
+        // }
         this.lerp(dt);
     }
 

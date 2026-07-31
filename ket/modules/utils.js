@@ -61,6 +61,18 @@ export const FEATURES = {
     onlineMode: new URLSearchParams(window.location.search).has('online')
 };
 
+/* ── Deterministic hash PRNG (MurmurHash3 finalizer + IMUL mix) ── */
+export function hashNumber(n) {
+    let h = (n + 0x9e3779b9) | 0;
+    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) | 0;
+    h = Math.imul(h ^ (h >>> 13), 0x45d9f3b) | 0;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+export function hashRange(seed, min, max) {
+    return min + hashNumber(seed) * (max - min);
+}
+
 /* ── Seeded PRNG (mulberry32) ── */
 let _seed = 42;
 
