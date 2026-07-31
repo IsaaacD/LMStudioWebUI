@@ -802,9 +802,9 @@ export class WebRTCManager {
                 if (peerId === this.userId) continue;
                 const existing = this.peerData.get(peerId);
                 if (peerInfo.position) {
-                    this.peerData.set(peerId, peerInfo);
+                    this._updatePeerPosition(peerId, peerInfo.position, peerInfo.username, peerInfo.color, peerInfo.position.speed);
                 } else if (existing && existing.position) {
-                    this.peerData.set(peerId, { ...peerInfo, position: existing.position });
+                    this.peerData.set(peerId, { ...peerInfo, position: existing.position, velocity: existing.velocity, lastUpdateTime: existing.lastUpdateTime });
                 } else {
                     this.peerData.set(peerId, peerInfo);
                 }
@@ -820,15 +820,38 @@ export class WebRTCManager {
 
     handlePositionUpdate(data) {
         if (data.myId && isOnlineMode) {
-            this.peerData.set(data.myId, {
-                username: data.username,
-                color: data.color,
-                position: data.position,
-                speed: data.position ? data.position.speed : 0
-            });
+            this._updatePeerPosition(data.myId, data.position, data.username, data.color, data.position ? data.position.speed : 0);
             this.renderer.updateOrbs();
             this.updateTeleportButton();
         }
+    }
+
+    _updatePeerPosition(peerId, position, username, color, speed) {
+        if (!position) return;
+        const existing = this.peerData.get(peerId);
+        const now = performance.now();
+        let velocity = { x: 0, y: 0, z: 0 };
+        if (existing && existing.position && existing.lastUpdateTime) {
+            const dt = Math.max((now - existing.lastUpdateTime) / 1000, 0.016);
+            velocity.x = (position.x - existing.position.x) / dt;
+            velocity.y = (position.y - existing.position.y) / dt;
+            velocity.z = (position.z - existing.position.z) / dt;
+            const mag = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y + velocity.z * velocity.z);
+            const maxSpeed = Math.max(speed || 3, 15);
+            if (mag > maxSpeed) {
+                const s = maxSpeed / mag;
+                velocity.x *= s;
+                velocity.y *= s;
+                velocity.z *= s;
+            }
+        }
+        this.peerData.set(peerId, {
+            username,
+            color,
+            position,
+            velocity,
+            lastUpdateTime: now
+        });
     }
 
     handleDisconnect(data) {

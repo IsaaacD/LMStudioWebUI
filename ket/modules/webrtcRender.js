@@ -232,11 +232,7 @@ export class WebRTCRenderer {
                 continue;
             }
 
-            const targetPos = new THREE.Vector3(
-                peerData.position.x,
-                peerData.position.y,
-                peerData.position.z
-            );
+            const targetPos = this._predictPosition(peerData);
 
             const toPeer = new THREE.Vector3().subVectors(targetPos, camPos);
             const dist = toPeer.length();
@@ -465,6 +461,23 @@ export class WebRTCRenderer {
         return sprite;
     }
 
+    _predictPosition(peerData) {
+        if (!peerData || !peerData.position) return new THREE.Vector3();
+        const pos = peerData.position;
+        const vel = peerData.velocity;
+        const lastTime = peerData.lastUpdateTime;
+        if (vel && lastTime) {
+            const elapsed = Math.min((performance.now() - lastTime) / 1000, 2);
+            const decay = Math.max(0, 1 - elapsed * 0.5);
+            return new THREE.Vector3(
+                pos.x + vel.x * elapsed * decay,
+                pos.y + vel.y * elapsed * decay,
+                pos.z + vel.z * elapsed * decay
+            );
+        }
+        return new THREE.Vector3(pos.x, pos.y, pos.z);
+    }
+
     updateOrb(peerId, data) {
         let orb = this.orbGroup.children.find(c => c.userData.peerId === peerId);
 
@@ -512,6 +525,8 @@ export class WebRTCRenderer {
 
         orb.userData.targetPosition.set(data.position.x, data.position.y, data.position.z);
         orb.userData.speed = data.position ? data.position.speed : 3;
+        orb.userData.velocity = data.velocity || orb.userData.velocity || { x: 0, y: 0, z: 0 };
+        orb.userData.lastUpdateTime = data.lastUpdateTime || performance.now();
     }
 
     animateOrbs(dt) {
@@ -519,17 +534,38 @@ export class WebRTCRenderer {
         for (const orb of this.orbGroup.children) {
             const target = orb.userData.targetPosition;
             if (!target) continue;
-            const dx = target.x - orb.position.x;
-            const dy = target.y - orb.position.y;
-            const dz = target.z - orb.position.z;
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist < 0.01) continue;
-            const peerSpeed = orb.userData.speed || 3;
-            const lerpSpeed = Math.max(peerSpeed * 2, 8);
-            const move = Math.min(lerpSpeed * dt * 60, dist);
-            orb.position.x += (dx / dist) * move;
-            orb.position.y += (dy / dist) * move;
-            orb.position.z += (dz / dist) * move;
+            const vel = orb.userData.velocity;
+            const lastTime = orb.userData.lastUpdateTime;
+            if (vel && lastTime) {
+                const elapsed = Math.min((performance.now() - lastTime) / 1000, 2);
+                const decay = Math.max(0, 1 - elapsed * 0.5);
+                const px = target.x + vel.x * elapsed * decay;
+                const py = target.y + vel.y * elapsed * decay;
+                const pz = target.z + vel.z * elapsed * decay;
+                const dx = px - orb.position.x;
+                const dy = py - orb.position.y;
+                const dz = pz - orb.position.z;
+                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (dist < 0.01) continue;
+                const peerSpeed = orb.userData.speed || 3;
+                const lerpSpeed = Math.max(peerSpeed * 2, 8);
+                const move = Math.min(lerpSpeed * dt * 60, dist);
+                orb.position.x += (dx / dist) * move;
+                orb.position.y += (dy / dist) * move;
+                orb.position.z += (dz / dist) * move;
+            } else {
+                const dx = target.x - orb.position.x;
+                const dy = target.y - orb.position.y;
+                const dz = target.z - orb.position.z;
+                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (dist < 0.01) continue;
+                const peerSpeed = orb.userData.speed || 3;
+                const lerpSpeed = Math.max(peerSpeed * 2, 8);
+                const move = Math.min(lerpSpeed * dt * 60, dist);
+                orb.position.x += (dx / dist) * move;
+                orb.position.y += (dy / dist) * move;
+                orb.position.z += (dz / dist) * move;
+            }
         }
     }
 
