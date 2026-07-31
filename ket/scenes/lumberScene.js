@@ -14,7 +14,7 @@ const PARTICLE_SPAWN_Z = 90;
 const PARTICLE_PASS_Z = 12;
 const useParticles = false;
 const MIN_DURATION = 2;
-const MAX_DURATION = 10;
+const MAX_DURATION = 6;
 
 function hr(n) {
     return hashNumber(LUMBER_SEED + n);

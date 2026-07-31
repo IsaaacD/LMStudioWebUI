@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { loadShader, normalizeColor } from './utils.js';
+import { loadShader, normalizeColor, hashNumber, hashRange, minMaxRange } from './utils.js';
 
 const HEART_POOL_SIZE = 25;
 const MIN_LIFETIME = 3;
@@ -37,8 +37,9 @@ export class HeartSpawner {
         this.heartMaterial = heartMaterial;
         this.pool = [];
         this.nextFree = 0;
-        this.nextSpawnTime = 1 + Math.random() * 2;
-        this.spawnInterval = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+        this.nextSpawnTime = minMaxRange(1, 3);
+        this.spawnInterval = minMaxRange(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX);
+        this.spawnCounter = 0;
         this.loaded = true;
 
         const geometry = new THREE.CircleGeometry(CIRCLE_RADIUS, CIRCLE_SEGMENTS);
@@ -52,8 +53,8 @@ export class HeartSpawner {
             mesh.userData = {
                 baseY: 0,
                 spawnTime: 0,
-                alphaBase: 0.4 + Math.random() * 0.5,
-                colorPhase: Math.random() * Math.PI * 2
+                alphaBase: 0.4 + hashNumber(i * 2 + 20) * 0.5,
+                colorPhase: hashNumber(i * 2 + 21) * Math.PI * 2
             };
 
             this.scene.add(mesh);
@@ -102,9 +103,10 @@ export class HeartSpawner {
         if (this.nextSpawnTime <= 0) {
             const m = this._findFree();
             if (m) {
-                const angle = Math.random() * Math.PI * 2;
-                const radius = SPAWN_RADIUS_MIN + Math.random() * (SPAWN_RADIUS_MAX - SPAWN_RADIUS_MIN);
-                const heightOffset = (Math.random() - 0.5) * HEIGHT_SPREAD;
+                const seed = this.spawnCounter;
+                const angle = hashNumber(seed * 3 + 30) * Math.PI * 2;
+                const radius = hashRange(seed * 3 + 31, SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX);
+                const heightOffset = (hashNumber(seed * 3 + 32) - 0.5) * HEIGHT_SPREAD;
 
                 m.position.x = camX + Math.cos(angle) * radius;
                 m.position.y = camY + heightOffset;
@@ -113,10 +115,12 @@ export class HeartSpawner {
                 m.userData.spawnTime = effectiveTime;
 
                 m.visible = true;
+
+                this.spawnCounter++;
             }
 
             this.nextSpawnTime = this.spawnInterval;
-            this.spawnInterval = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+            this.spawnInterval = hashRange(this.spawnCounter + 200, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX);
         }
 
         let maxAlpha = 0;

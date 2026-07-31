@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { hashNumber, hashRange, minMaxRange } from './utils.js';
 
 const IMAGE_POOL_SIZE = 15;
 const MIN_LIFETIME = 3;
@@ -15,8 +16,9 @@ export class ImageSpawner {
         this.imagePath = imagePath;
         this.pool = [];
         this.nextFree = 0;
-        this.nextSpawnTime = 2 + Math.random() * 2;
-        this.spawnInterval = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+        this.nextSpawnTime = minMaxRange(2, 4);
+        this.spawnInterval = minMaxRange(SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX);
+        this.spawnCounter = 0;
         this.loaded = false;
 
         const loader = new THREE.TextureLoader();
@@ -48,14 +50,14 @@ export class ImageSpawner {
             mesh.visible = false;
             mesh.userData = {
                 rotSpeed: new THREE.Vector3(
-                    (Math.random() - 0.5) * 1.5,
-                    (Math.random() - 0.5) * 1.5,
-                    (Math.random() - 0.5) * 1.5
+                    (hashNumber(i * 3 + 2) - 0.5) * 1.5,
+                    (hashNumber(i * 3 + 3) - 0.5) * 1.5,
+                    (hashNumber(i * 3 + 4) - 0.5) * 1.5
                 ),
                 initialRotation: new THREE.Euler(
-                    Math.random() * Math.PI * 2,
-                    Math.random() * Math.PI * 2,
-                    Math.random() * Math.PI * 2
+                    hashNumber(i * 6 + 5) * Math.PI * 2,
+                    hashNumber(i * 6 + 6) * Math.PI * 2,
+                    hashNumber(i * 6 + 7) * Math.PI * 2
                 ),
                 baseY: 0,
                 spawnTime: 0
@@ -107,9 +109,10 @@ export class ImageSpawner {
         if (this.nextSpawnTime <= 0) {
             const m = this._findFree();
             if (m) {
-                const angle = Math.random() * Math.PI * 2;
-                const radius = SPAWN_RADIUS_MIN + Math.random() * (SPAWN_RADIUS_MAX - SPAWN_RADIUS_MIN);
-                const heightOffset = (Math.random() - 0.5) * HEIGHT_SPREAD;
+                const seed = this.spawnCounter;
+                const angle = hashNumber(seed * 3 + 10) * Math.PI * 2;
+                const radius = hashRange(seed * 3 + 11, SPAWN_RADIUS_MIN, SPAWN_RADIUS_MAX);
+                const heightOffset = (hashNumber(seed * 3 + 12) - 0.5) * HEIGHT_SPREAD;
 
                 m.position.x = camX + Math.cos(angle) * radius;
                 m.position.y = camY + heightOffset;
@@ -119,10 +122,12 @@ export class ImageSpawner {
 
                 m.rotation.copy(m.userData.initialRotation);
                 m.visible = true;
+
+                this.spawnCounter++;
             }
 
             this.nextSpawnTime = this.spawnInterval;
-            this.spawnInterval = SPAWN_INTERVAL_MIN + Math.random() * (SPAWN_INTERVAL_MAX - SPAWN_INTERVAL_MIN);
+            this.spawnInterval = hashRange(this.spawnCounter + 100, SPAWN_INTERVAL_MIN, SPAWN_INTERVAL_MAX);
         }
 
         for (const m of this.pool) {

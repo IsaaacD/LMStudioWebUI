@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { normalizeColor } from './utils.js';
+import { normalizeColor, hashNumber } from './utils.js';
 
 const PRIMITIVE_COUNT = 200;
 const PRIMITIVES_PER_GRID_CELL = 0.35;
@@ -39,23 +39,23 @@ export class PrimitiveManager {
         this.nextFree = 0;
         this.warmupFrame = 0;
         for (let i = 0; i < PRIMITIVE_COUNT; i++) {
-            const geoIdx = Math.floor(Math.random() * primitiveGeos.length);
+            const geoIdx = Math.floor(hashNumber(i * 30 + 1000) * primitiveGeos.length);
             const mesh = new THREE.Mesh(primitiveGeos[geoIdx], primitiveMaterial);
             mesh.visible = false;
             mesh.userData = {
-                alphaBase: 0.3 + Math.random() * 0.6,
-                alphaSpeed: 0.5 + Math.random() * 2,
-                alphaPhase: Math.random() * Math.PI * 2,
-                waveAmp: 0.2 + Math.random() * 0.5,
+                alphaBase: 0.3 + hashNumber(i * 30 + 1001) * 0.6,
+                alphaSpeed: 0.5 + hashNumber(i * 30 + 1002) * 2,
+                alphaPhase: hashNumber(i * 30 + 1003) * Math.PI * 2,
+                waveAmp: 0.2 + hashNumber(i * 30 + 1004) * 0.5,
                 rotSpeed: new THREE.Vector3(
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 2
+                    (hashNumber(i * 30 + 1005) - 0.5) * 2,
+                    (hashNumber(i * 30 + 1006) - 0.5) * 2,
+                    (hashNumber(i * 30 + 1007) - 0.5) * 2
                 ),
-                scaleBase: 0.5 + Math.random() * 1.5,
-                bobSpeed: 0.3 + Math.random() * 1,
-                bobPhase: Math.random() * Math.PI * 2,
-                bobAmp: 0.5 + Math.random() * 2
+                scaleBase: 0.5 + hashNumber(i * 30 + 1008) * 1.5,
+                bobSpeed: 0.3 + hashNumber(i * 30 + 1009) * 1,
+                bobPhase: hashNumber(i * 30 + 1010) * Math.PI * 2,
+                bobAmp: 0.5 + hashNumber(i * 30 + 1011) * 2
             };
             scene.add(mesh);
             this.primitivePool.push(mesh);

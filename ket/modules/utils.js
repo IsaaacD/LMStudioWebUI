@@ -69,6 +69,18 @@ export function hashNumber(n) {
     h = Math.imul(h ^ (h >>> _seed), 0x45d9f3b) | 0;
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
+export function todayAnchor() {
+    const d = new Date();
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+export function deriveDuration(seed, minDur, maxDur) {
+    return hashRange(seed, minDur, maxDur);
+}
+
+export function minMaxRange(min, max) {
+    return deriveDuration(todayAnchor(), min, max);
+}
 
 export function hashRange(seed, min, max) {
     return min + hashNumber(seed) * (max - min);

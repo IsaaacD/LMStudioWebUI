@@ -1,4 +1,4 @@
-import { hashNumber, hashRange } from './utils.js';
+import { deriveDuration, hashNumber, hashRange, minMaxRange, todayAnchor } from './utils.js';
 
 const MIN_DURATION = 15;
 const MAX_DURATION = 60;
@@ -17,18 +17,8 @@ export class SceneManager {
         this.rebuild();
         this.lastSwitchCount = this.getSwitchCount();
     }
-
-    _todayAnchor() {
-        const d = new Date();
-        return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-    }
-
-    _deriveDuration(seed, minDur, maxDur) {
-        return hashRange(seed, minDur, maxDur);
-    }
-
     rebuild() {
-        const anchor = this._todayAnchor();
+        const anchor = todayAnchor();
         if (this.anchoredDate === anchor) return;
         this.anchoredDate = anchor;
         this.switchTimes = [anchor];
@@ -38,7 +28,7 @@ export class SceneManager {
         const minDur = baseline?.minDuration ?? MIN_DURATION;
         const maxDur = baseline?.maxDuration ?? MAX_DURATION;
         while (t < end) {
-            t += this._deriveDuration(t, minDur, maxDur) * 1000;
+            t += deriveDuration(t, minDur, maxDur) * 1000;
             this.switchTimes.push(t);
         }
     }
@@ -194,6 +184,9 @@ export class SceneManager {
             return true;
         }
         this.timer.elapsed += dt;
+        if (this.timer.elapsed >= this.timer.maxDuration) {
+            return true;
+        }
         return false;
     }
 } 
