@@ -452,18 +452,43 @@ export class WebRTCManager {
                 const base = window.location.origin + window.location.pathname;
                 const shareUrl = `${base}?online=true&joinId=${this.userId}`;
                 try {
-                    const qrCanvas = createQRCanvas(shareUrl, 280);
-                    const w = window.open('', '_blank');
-                    if (w) {
-                        w.document.title = 'QR Code';
-                        w.document.body.style.margin = '0';
-                        w.document.body.style.display = 'flex';
-                        w.document.body.style.justifyContent = 'center';
-                        w.document.body.style.alignItems = 'center';
-                        w.document.body.style.minHeight = '100vh';
-                        w.document.body.style.background = '#111';
-                        w.document.body.appendChild(qrCanvas);
-                    }
+                    const qrCanvas = createQRCanvas(shareUrl, Math.min(500, window.innerWidth - 80));
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = `
+                        position: fixed;
+                        top: 0; left: 0;
+                        width: 100%; height: 100%;
+                        background: rgba(0, 0, 0, 0.45);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 100002;
+                    `;
+                    qrCanvas.style.cssText = `
+                        width:80%;
+                        max-width:20em;
+                        height:auto;
+                        border-radius: 8px;
+                    `;
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = '✕';
+                    closeBtn.classList = 'gui';
+                    closeBtn.style.cssText = `
+                        position: fixed;
+                        top: 20px; right: 20px;
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.3);
+                        border-radius: 50%;
+                        width: 40px; height: 40px;
+                        color: #fff;
+                        font-size: 18px;
+                        cursor: pointer;
+                        z-index: 100003;
+                    `;
+                    closeBtn.addEventListener('click', () => overlay.remove());
+                    overlay.appendChild(qrCanvas);
+                    overlay.appendChild(closeBtn);
+                    document.body.appendChild(overlay);
                 } catch {
                     console.error('[QR] Failed to generate QR code');
                 }
@@ -893,7 +918,7 @@ export class WebRTCManager {
         });
     }
 
-    connectToPeer(remoteId) {
+    connectToPeer(remoteId, attempt = 1, maxAttempts = 3) {
         if (!this.peer || this.peers.has(remoteId)) return;
 
         const conn = this.peer.connect(remoteId, {
@@ -913,7 +938,7 @@ export class WebRTCManager {
 
         this.attachDataHandler(conn, entry);
 
-        conn.on('close', () => {
+        const cleanup = () => {
             entry.connected = false;
             this.peers.delete(remoteId);
             this.peerData.delete(remoteId);
@@ -923,17 +948,17 @@ export class WebRTCManager {
                 this.broadcastPeerList();
                 if (isOnlineMode) this.renderer.updateOrbs();
             }
+        };
+
+        conn.on('close', () => {
+            cleanup();
         });
 
         conn.on('error', () => {
-            entry.connected = false;
-            this.peers.delete(remoteId);
-            this.peerData.delete(remoteId);
-            if (!this.isDestroying) {
-                this.persistPeers();
-                this.updateDisplay();
-                this.broadcastPeerList();
-                if (isOnlineMode) this.renderer.updateOrbs();
+            cleanup();
+            if (attempt < maxAttempts) {
+                console.log(`[webrtc] connect to ${remoteId} failed, retry ${attempt + 1}/${maxAttempts}`);
+                setTimeout(() => this.connectToPeer(remoteId, attempt + 1, maxAttempts), 1000);
             }
         });
     }
