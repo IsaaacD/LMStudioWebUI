@@ -200,30 +200,32 @@
                 closeModal();
             };
 
-            // Delegate click on splash to handle EDIT button
-            const splashEl = document.getElementById('splash');
-            if (splashEl) {
-                splashEl.addEventListener('click', (e) => {
-                    const editBtn = e.target.closest('#splash-edit-name-btn');
-                    if (editBtn) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openModal();
-                        return;
-                    }
-                }, true);
+            // Handle EDIT button directly
+            const editBtn = document.getElementById('splash-edit-name-btn');
+            if (editBtn) {
+                const handleEdit = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openModal();
+                };
+                editBtn.addEventListener('click', handleEdit, true);
+                editBtn.addEventListener('touchend', handleEdit, { capture: true, passive: false });
             }
 
             if (modalClose) {
-                modalClose.addEventListener('click', closeModal);
+                modalClose.addEventListener('click', closeModal, true);
+                modalClose.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); closeModal(); }, { capture: true, passive: false });
             }
             if (modalOverlay) {
-                modalOverlay.addEventListener('click', (e) => {
+                const overlayDismiss = (e) => {
                     if (e.target === modalOverlay) closeModal();
-                });
+                };
+                modalOverlay.addEventListener('click', overlayDismiss, true);
+                modalOverlay.addEventListener('touchend', overlayDismiss, { capture: true, passive: false });
             }
             if (modalSave) {
-                modalSave.addEventListener('click', doSave);
+                modalSave.addEventListener('click', doSave, true);
+                modalSave.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); doSave(); }, { capture: true, passive: false });
             }
             if (modalInput) {
                 modalInput.addEventListener('keydown', (e) => {
