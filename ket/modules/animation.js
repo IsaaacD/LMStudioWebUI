@@ -2,11 +2,10 @@ import * as THREE from 'three';
 import { joystickState, updateJoystickInputs } from './touchControls.js';
 import { normalizeColor } from './utils.js'
 import { updateStatusText } from './config.js';
+import { KeyMouseControls } from './keyMouseControls.js';
+
 const MAX_PITCH_ANGLE = Math.PI / 6;
 const MAX_YAW_INCREMENT = Math.PI / 6;
-
-const _dir = new THREE.Vector3();
-const _right = new THREE.Vector3();
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
 export class AnimationLoop {
@@ -19,7 +18,7 @@ export class AnimationLoop {
         this.raveEngine = raveEngine;
         this.fpsCounter = fpsCounter;
         this.webrtcManager = webrtcManager;
-        this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false, arrowup: false, arrowdown: false };
+        this.controls = new KeyMouseControls();
         this.autoplayIdleTimer = 0;
         this.autoplayResumeDelay = 5;
         this.autoplayWasSuspended = false;
@@ -35,44 +34,9 @@ export class AnimationLoop {
         this.autoPitchTransitionDuration = 0;
         this.autoYawTransitionDuration = 0;
         this.wasUserMoving = false;
-        this.manualRotation = null;
-        this.mouseYawDelta = 0;
-        this.mousePitchDelta = 0;
-        this.pointerLocked = false;
         this.onTimerUpdate = null;
 
-        this.bindInput();
         this.running = false;
-    }
-
-    bindInput() {
-        document.addEventListener('mousemove', (e) => {
-            if (this.pointerLocked) {
-                this.mouseYawDelta -= e.movementX * 0.002;
-                this.mousePitchDelta -= e.movementY * 0.002;
-            }
-        });
-
-        document.addEventListener('mousedown', (e) => {
-            if (e.button === 0 && !this.pointerLocked) {
-                const el = e.target;
-                if (el.closest('#splash, .lil-gui, .gui, #gui, [class*="gui"]')) return;
-            }
-        });
-
-        document.addEventListener('pointerlockchange', () => {
-            this.pointerLocked = document.pointerLockElement !== null;
-        });
-
-        document.addEventListener('keydown', (e) => {
-            const k = e.key.toLowerCase();
-            if (k in this.keys) this.keys[k] = true;
-        });
-
-        document.addEventListener('keyup', (e) => {
-            const k = e.key.toLowerCase();
-            if (k in this.keys) this.keys[k] = false;
-        });
     }
 
     start(clock) {
@@ -146,7 +110,7 @@ export class AnimationLoop {
         updateJoystickInputs();
         const leftActive = joystickState.left.isActive;
         const rightActive = joystickState.right.isActive;
-        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d || this.keys.q || this.keys.e || leftActive || rightActive;
+        const isMoving = this.controls.isMoving() || leftActive || rightActive;
 
         if (isMoving) {
             if (this.params.autoplay) {
@@ -165,10 +129,10 @@ export class AnimationLoop {
 
         const inAutoplayDelay = this.autoplayWasSuspended && this.autoplayIdleTimer < this.autoplayResumeDelay;
         const autoplaySpeedMult = inAutoplayDelay ? this.autoplayIdleTimer / this.autoplayResumeDelay : 1;
-        const useManual = (!this.params.autoplay && !inAutoplayDelay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.pointerLocked));
+        const useManual = (!this.params.autoplay && !inAutoplayDelay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.controls.pointerLocked));
 
         if (useManual) {
-            this.handleManualControl(activeParams, dt, leftActive, rightActive);
+            this.controls.applyManualControl(this.camera, this.params.speed * 0.5, joystickState, dt);
         } else {
             this.handleAutoControl(activeParams, dt, autoplaySpeedMult);
         }
@@ -187,64 +151,6 @@ export class AnimationLoop {
         if (this.onTimerUpdate) {
             this.onTimerUpdate(this.sceneManager.timer.elapsed, this.sceneManager.timer.maxDuration);
         }
-    }
-
-    handleManualControl(activeParams, dt, leftActive, rightActive) {
-        const moveSpeed = this.params.speed * 0.5;
-        this.camera.getWorldDirection(_dir);
-        _right.crossVectors(_dir, this.camera.up).normalize();
-
-        let forwardInput = 0;
-        let strafeInput = 0;
-        let verticalInput = 0;
-        let yawInput = 0;
-        let pitchInput = 0;
-
-        if (this.keys.w) forwardInput += 1;
-        if (this.keys.s) forwardInput -= 1;
-        if (this.keys.a) strafeInput -= 1;
-        if (this.keys.d) strafeInput += 1;
-        if (this.keys.e) verticalInput += 1;
-        if (this.keys.q) verticalInput -= 1;
-
-        if (leftActive) {
-            forwardInput += joystickState.left.forward;
-            strafeInput += joystickState.left.strafe;
-        }
-
-        if (rightActive) {
-            verticalInput += joystickState.right.vertical;
-            yawInput += joystickState.right.yaw;
-            pitchInput += joystickState.right.pitch;
-        }
-
-        if (this.keys.arrowleft) yawInput += 0.1;
-        if (this.keys.arrowright) yawInput -= 0.1;
-        if (this.keys.arrowup) pitchInput += 0.1;
-        if (this.keys.arrowdown) pitchInput -= 0.1;
-
-        yawInput -= this.mouseYawDelta;
-        pitchInput -= this.mousePitchDelta;
-        this.mouseYawDelta = 0;
-        this.mousePitchDelta = 0;
-
-        yawInput = Math.max(-MAX_YAW_INCREMENT, Math.min(MAX_YAW_INCREMENT, yawInput));
-
-        this.camera.position.addScaledVector(_dir, forwardInput * moveSpeed);
-        this.camera.position.addScaledVector(_right, strafeInput * moveSpeed);
-        this.camera.position.y += verticalInput * moveSpeed;
-
-        if (yawInput !== 0 || pitchInput !== 0) {
-            _euler.setFromQuaternion(this.camera.quaternion);
-            _euler.y -= yawInput;
-            _euler.x -= pitchInput;
-            _euler.x = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, _euler.x));
-            this.camera.quaternion.setFromEuler(_euler);
-            this.camera.getWorldDirection(_dir);
-        }
-
-        this.camera.lookAt(this.camera.position.x + _dir.x, this.camera.position.y + _dir.y, this.camera.position.z + _dir.z);
-        this.manualRotation = this.camera.quaternion.clone();
     }
 
     handleAutoControl(activeParams, dt, speedMult) {
