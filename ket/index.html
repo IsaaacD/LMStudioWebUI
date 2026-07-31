@@ -776,7 +776,11 @@
             const modalColor = document.getElementById('name-modal-color');
             const modalSave = document.getElementById('name-modal-save');
             const modalClose = document.getElementById('name-modal-close');
+            const isOnline = new URLSearchParams(window.location.search).has('online');
 
+            if (!isOnline) {
+                nameRowEl.style.visibility = 'hidden';
+            }
             if (nameTextEl && currentName) {
                 nameTextEl.textContent = currentName;
                 nameTextEl.style.color = currentColor;
