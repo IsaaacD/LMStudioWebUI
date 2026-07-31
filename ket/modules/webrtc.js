@@ -655,6 +655,16 @@ export class WebRTCManager {
         }
     }
 
+    updateNameDisplay() {
+        if (!this.el || !isOnlineMode) return;
+        const nameEl = this.el.querySelector('#webrtc-name');
+        if (nameEl) {
+            const savedName = loadUsername();
+            this.username = savedName;
+            nameEl.innerHTML = `<span style="color: ${this.userColor};">${this.username}</span>`;
+        }
+    }
+
     updatePosDisplay() {
         if (!this.el || !isOnlineMode || !this.camera) return;
         const posEl = this.el.querySelector('#webrtc-pos');
@@ -842,6 +852,7 @@ export class WebRTCManager {
                 const activeScene = this.sceneManager.getActiveScene();
                 this.renderer.refreshOrbParent(activeScene);
             }
+            this.updateNameDisplay();
             this.updatePosDisplay();
             this.broadcastPeerList();
         }, this.GOSSIP_INTERVAL);
@@ -873,6 +884,7 @@ export class WebRTCManager {
             console.log(`[webrtc] connected as ${id}`);
             saveUserId(id);
             this.updateIdDisplay();
+            this.updateNameDisplay();
             this.updateDisplay();
             this.startGossipTimer();
 
