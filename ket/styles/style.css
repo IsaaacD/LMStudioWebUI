@@ -92,6 +92,7 @@ canvas {
     pointer-events: auto;
     z-index: 100005;
     position: relative;
+    margin-bottom: 4em;
 }
 
 #splash-player-name.visible {

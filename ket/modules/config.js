@@ -30,7 +30,8 @@ export const defaultParams = {
     raveMode: true,
     sceneDurationCity: 45,
     sceneDurationTest: 10,
-    forceNextScene: false
+    forceNextScene: false,
+    //particles: false
 };
 
 function _seed() {

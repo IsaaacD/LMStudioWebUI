@@ -88,6 +88,9 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     const edgeCtrl = visFolder.add(params, 'edgeContrast', GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX).name('Outline Strength');
     addInfoIcon(edgeCtrl.domElement, 'Intensity of the edge-detection outline effect');
     edgeCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.edgeContrast = v; raveEngine.raveTarget.edgeContrast = v; } });
+    // const partCtrl = visFolder.add(params, 'particles').name('Particles');
+    // addInfoIcon(partCtrl.domElement, 'Toggle flying particle effects in scenes');
+    // partCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.particles = v; raveEngine.raveTarget.particles = v; } });
     visFolder.close();
 
     const actFolder = gui.addFolder('Actions');

@@ -24,7 +24,8 @@ export class RaveEngine {
             timeScale: params.timeScale,
             autoplaySpeed: params.autoplaySpeed,
             colorA: params.colorA,
-            colorB: params.colorB
+            colorB: params.colorB,
+            //particles: params.particles
         };
         this.raveTarget = { ...this.raveCurrent };
         this.raveNextTime = 0;
@@ -40,6 +41,7 @@ export class RaveEngine {
         this.raveCurrent.autoplaySpeed = params.autoplaySpeed;
         this.raveCurrent.colorA = params.colorA;
         this.raveCurrent.colorB = params.colorB;
+        //this.raveCurrent.particles = params.particles;
         this.raveTarget = { ...this.raveCurrent };
     }
 

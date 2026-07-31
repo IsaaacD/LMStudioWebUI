@@ -150,7 +150,7 @@ export function updateJoystickInputs() {
 function isTouchOnGui(touch) {
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!el) return false;
-    return el.closest('.lil-gui, .gui, #gui, [class*="gui"]') !== null;
+    return el.closest('.lil-gui, .gui, #gui, #eruda, [class*="gui"]') !== null;
 }
 
 function handleTouchStart(e, params) {

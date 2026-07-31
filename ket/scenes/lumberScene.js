@@ -9,6 +9,10 @@ const Y_SPREAD = 22;
 const BASE_SPEED = 4;
 const SPEED_VARIANCE = 3;
 const LUMBER_SEED = 777;
+const PARTICLE_COUNT = 600;
+const PARTICLE_SPAWN_Z = 90;
+const PARTICLE_PASS_Z = 12;
+const useParticles = false;
 
 function hr(n) {
     return hashNumber(LUMBER_SEED + n);
@@ -74,6 +78,54 @@ export async function createLumberScene() {
         threeScene.add(mesh);
         lumberPieces.push(mesh);
     }
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+    const particleColors = new Float32Array(PARTICLE_COUNT * 3);
+    const particleSizes = new Float32Array(PARTICLE_COUNT);
+    const particleData = [];
+    if (useParticles) {
+        // Flying particles
+
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const gray = 0.3 + hr(PARTICLE_COUNT * 16 + i * 8) * 0.5;
+            particlePositions[i * 3] = 0;
+            particlePositions[i * 3 + 1] = 0;
+            particlePositions[i * 3 + 2] = 0;
+            particleColors[i * 3] = gray;
+            particleColors[i * 3 + 1] = gray;
+            particleColors[i * 3 + 2] = gray;
+            particleSizes[i] = 0.3 + hr(PARTICLE_COUNT * 16 + i * 8 + 4) * 1.2;
+            particleData.push({
+                xOffset: (hr(PARTICLE_COUNT * 16 + i * 8 + 1) - 0.5) * 2 * X_SPREAD * 1.5,
+                yOffset: (hr(PARTICLE_COUNT * 16 + i * 8 + 2) - 0.5) * 2 * Y_SPREAD * 1.5,
+                zOffset: PARTICLE_PASS_Z + (i / PARTICLE_COUNT) * (PARTICLE_SPAWN_Z - PARTICLE_PASS_Z),
+                speed: 15 + hr(PARTICLE_COUNT * 16 + i * 8 + 5) * 35,
+                elongated: hr(PARTICLE_COUNT * 16 + i * 8 + 6) > 0.6,
+                elongationFactor: 2 + hr(PARTICLE_COUNT * 16 + i * 8 + 7) * 5,
+                baseSize: 0.3 + hr(PARTICLE_COUNT * 16 + i * 8 + 4) * 1.2,
+                recycleCount: 0,
+            });
+        }
+
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+        particleGeo.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+
+        const particleMat = new THREE.PointsMaterial({
+            size: 1.5,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            sizeAttenuation: true,
+            depthWrite: false,
+        });
+
+        const particles = new THREE.Points(particleGeo, particleMat);
+        particles.visible = false;
+        threeScene.add(particles);
+    }
+
 
     const light1 = new THREE.PointLight(0xff6633, 1.5, 200);
     light1.position.set(0, 10, 0);
@@ -94,6 +146,8 @@ export async function createLumberScene() {
         threeScene,
         defaultDuration: 45,
         geometries: lumberPieces,
+        //particles: particles || null,
+        //particleData: particleData || null,
         light1,
         light2,
 
@@ -109,6 +163,16 @@ export async function createLumberScene() {
                 mesh.visible = true;
             });
             spawnIndex = POOL_SIZE;
+            if (useParticles) {
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const pd = particleData[i];
+                    pd.xOffset = (hr(PARTICLE_COUNT * 16 + i * 8 + 1) - 0.5) * 2 * X_SPREAD * 1.5;
+                    pd.yOffset = (hr(PARTICLE_COUNT * 16 + i * 8 + 2) - 0.5) * 2 * Y_SPREAD * 1.5;
+                    pd.zOffset = PARTICLE_PASS_Z + (i / PARTICLE_COUNT) * (PARTICLE_SPAWN_Z - PARTICLE_PASS_Z);
+                    pd.recycleCount = 0;
+                }
+            }
+
         },
 
         onExit() { },
@@ -187,6 +251,39 @@ export async function createLumberScene() {
                     mesh.position.z + _forward.z
                 );
             }
+
+            // Update particles
+            if (useParticles) {
+                const posArr = particles.geometry.attributes.position.array;
+                const sizeArr = particles.geometry.attributes.size.array;
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const pd = particleData[i];
+                    const idx3 = i * 3;
+
+                    pd.zOffset += pd.speed * dt;
+
+                    if (pd.zOffset > PARTICLE_SPAWN_Z) {
+                        pd.zOffset = PARTICLE_PASS_Z + hr(PARTICLE_COUNT * 16 + i * 8 + 50 + pd.recycleCount) * 3;
+                        pd.xOffset = (hr(PARTICLE_COUNT * 16 + i * 8 + 51 + pd.recycleCount) - 0.5) * 2 * X_SPREAD * 1.5;
+                        pd.yOffset = (hr(PARTICLE_COUNT * 16 + i * 8 + 52 + pd.recycleCount) - 0.5) * 2 * Y_SPREAD * 1.5;
+                        pd.recycleCount++;
+                    }
+
+                    posArr[idx3] = camera.position.x + _right.x * pd.xOffset + _forward.x * pd.zOffset;
+                    posArr[idx3 + 1] = camera.position.y + _up.y * pd.yOffset + _forward.y * pd.zOffset;
+                    posArr[idx3 + 2] = camera.position.z + _right.z * pd.xOffset + _forward.z * pd.zOffset;
+
+                    if (pd.elongated) {
+                        sizeArr[i] = pd.baseSize * pd.elongationFactor;
+                    } else {
+                        sizeArr[i] = pd.baseSize;
+                    }
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+                particles.geometry.attributes.size.needsUpdate = true;
+                particles.visible = true;
+            }
+
         }
     };
 }
