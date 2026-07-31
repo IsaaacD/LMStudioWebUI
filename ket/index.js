@@ -90,6 +90,8 @@ async function bootstrap() {
 
     params = { ...defaultParams };
 
+    const isDebug = new URLSearchParams(window.location.search).has('debug');
+
     params.switchMode = () => {
         if (params.controlMode === 'Auto') {
             params.autoplay = false;
@@ -106,7 +108,7 @@ async function bootstrap() {
             params.raveMode = false;
             params.controlMode = 'Auto';
         }
-        guiControllers.updateModeDisplay();
+        if (isDebug && guiControllers.updateModeDisplay) guiControllers.updateModeDisplay();
         updateStatusText(params.paused, params.raveMode, params.autoplay);
     };
 
@@ -117,13 +119,16 @@ async function bootstrap() {
 
     params.randomize = () => {
         randomizeParams(params);
-        guiControllers.updateDisplays(params);
+        raveEngine.syncCurrent(params);
+        if (isDebug && guiControllers.updateDisplays) guiControllers.updateDisplays(params);
     };
 
     const raveEngine = new RaveEngine(params);
 
     const guiControllers = {};
-    initGUI(params, guiControllers, sceneManager);
+    if (isDebug) {
+        initGUI(params, guiControllers, sceneManager, raveEngine);
+    }
 
     initTouchControls(params);
 
@@ -133,7 +138,7 @@ async function bootstrap() {
         webrtcManager.setSceneManager(sceneManager);
         webrtcManager.setParams(params);
         webrtcManager.initActiveScene(cityScene.threeScene);
-        webrtcManager.setDomElement(renderer.domElement);
+        //webrtcManager.setDomElement(renderer.domElement);
         webrtcManager.init();
     }
 
@@ -149,7 +154,7 @@ async function bootstrap() {
     });
 
     animationLoop.onTimerUpdate = (elapsed, maxDuration) => {
-        if (window._updateSceneGui) window._updateSceneGui(elapsed, maxDuration);
+        if (isDebug && window._updateSceneGui) window._updateSceneGui(elapsed, maxDuration);
     };
 
     window.addEventListener('resize', () => {

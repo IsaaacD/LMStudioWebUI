@@ -28,6 +28,19 @@ export class RaveEngine {
         this.raveNextTime = 0;
     }
 
+    syncCurrent(params) {
+        this.raveCurrent.bloomStrength = params.bloomStrength;
+        this.raveCurrent.bloomRadius = params.bloomRadius;
+        this.raveCurrent.foldIntensity = params.foldIntensity;
+        this.raveCurrent.veinSpeed = params.veinSpeed;
+        this.raveCurrent.edgeContrast = params.edgeContrast;
+        this.raveCurrent.timeScale = params.timeScale;
+        this.raveCurrent.autoplaySpeed = params.autoplaySpeed;
+        this.raveCurrent.colorA = params.colorA;
+        this.raveCurrent.colorB = params.colorB;
+        this.raveTarget = { ...this.raveCurrent };
+    }
+
     pickTargets() {
         this.raveTarget.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
         this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_STRENGTH_MIN);

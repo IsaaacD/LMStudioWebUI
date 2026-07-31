@@ -14,7 +14,7 @@ import {
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
 } from './utils.js';
 
-export function initGUI(params, guiControllers, sceneManager) {
+export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     const gui = new GUI({ title: 'Trip Controls' });
 
     const tooltipEl = document.createElement('div');
@@ -58,8 +58,10 @@ export function initGUI(params, guiControllers, sceneManager) {
     addInfoIcon(speedCtrl.domElement, 'Movement speed in manual mode (WASD keys)');
     const autoSpeedCtrl = movFolder.add(params, 'autoplaySpeed', GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX).name('Auto Speed');
     addInfoIcon(autoSpeedCtrl.domElement, 'Forward speed of the camera in autopilot mode');
+    autoSpeedCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.autoplaySpeed = v; raveEngine.raveTarget.autoplaySpeed = v; } });
     const timeCtrl = movFolder.add(params, 'timeScale', GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX).name('Time Dilation');
     addInfoIcon(timeCtrl.domElement, 'Global time multiplier — affects animation speed and shader effects');
+    timeCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.timeScale = v; raveEngine.raveTarget.timeScale = v; } });
     const paCtrl = movFolder.add(params, 'togglePause').name('⏸ Pause / Resume');
     addInfoIcon(paCtrl.domElement, 'Pause or resume the animation loop');
     movFolder.close();
@@ -67,18 +69,25 @@ export function initGUI(params, guiControllers, sceneManager) {
     const visFolder = gui.addFolder('Visuals');
     const blCtrl = visFolder.add(params, 'bloomStrength', GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX).name('Bloom Glow');
     addInfoIcon(blCtrl.domElement, 'Intensity of the bloom post-processing glow effect');
+    blCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.bloomStrength = v; raveEngine.raveTarget.bloomStrength = v; } });
     const radiusCtrl = visFolder.add(params, 'bloomRadius', GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX).name('Glow Radius');
     addInfoIcon(radiusCtrl.domElement, 'Spread radius of the bloom glow');
+    radiusCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.bloomRadius = v; raveEngine.raveTarget.bloomRadius = v; } });
     const foldCtrl = visFolder.add(params, 'foldIntensity', GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX).name('Fold Intensity');
     addInfoIcon(foldCtrl.domElement, 'Strength of the terrain folding and distortion in shaders');
+    foldCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.foldIntensity = v; raveEngine.raveTarget.foldIntensity = v; } });
     const veinCtrl = visFolder.add(params, 'veinSpeed', GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX).name('Vein Flow');
     addInfoIcon(veinCtrl.domElement, 'Speed of the organic vein patterns flowing across surfaces');
+    veinCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.veinSpeed = v; raveEngine.raveTarget.veinSpeed = v; } });
     const colorACtrl = visFolder.addColor(params, 'colorA').name('Color A');
     addInfoIcon(colorACtrl.domElement, 'Primary accent color for terrain and walls');
+    colorACtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.colorA = v; raveEngine.raveTarget.colorA = v; } });
     const colorBCtrl = visFolder.addColor(params, 'colorB').name('Color B');
     addInfoIcon(colorBCtrl.domElement, 'Secondary accent color for terrain and walls');
+    colorBCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.colorB = v; raveEngine.raveTarget.colorB = v; } });
     const edgeCtrl = visFolder.add(params, 'edgeContrast', GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX).name('Outline Strength');
     addInfoIcon(edgeCtrl.domElement, 'Intensity of the edge-detection outline effect');
+    edgeCtrl.onChange((v) => { if (raveEngine) { raveEngine.raveCurrent.edgeContrast = v; raveEngine.raveTarget.edgeContrast = v; } });
     visFolder.close();
 
     const actFolder = gui.addFolder('Actions');
@@ -136,6 +145,7 @@ export function initGUI(params, guiControllers, sceneManager) {
 
     guiControllers.updateDisplays = (p) => {
         speedCtrl.updateDisplay();
+        blCtrl.updateDisplay();
         foldCtrl.updateDisplay();
         edgeCtrl.updateDisplay();
         veinCtrl.updateDisplay();
