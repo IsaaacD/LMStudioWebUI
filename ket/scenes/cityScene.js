@@ -6,6 +6,8 @@ import { ImageSpawner } from '../modules/imageSpawner.js';
 import { normalizeColor } from '../modules/utils.js';
 
 const _tempColor = new THREE.Color();
+const MIN_DURATION = 45;
+const MAX_DURATION = MIN_DURATION * 2;
 
 export async function createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial) {
     const threeScene = new THREE.Scene();
@@ -26,6 +28,8 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
     return {
         id: 'city',
         name: 'City',
+        minDuration: MIN_DURATION,
+        maxDuration: MAX_DURATION,
         threeScene,
         defaultDuration: 45,
         managers: { tileManager, primitiveManager, imageSpawner, heartSpawner },

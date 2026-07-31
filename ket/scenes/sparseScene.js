@@ -7,6 +7,8 @@ const SUPERNOVA_PARTICLE_COUNT = 300;
 const SUPERNOVA_RING_COUNT = 5;
 const SUPERNOVA_EPOCH = 1751190000000;
 const SUPERNOVA_SEED = 42;
+const MIN_DURATION = 2;
+const MAX_DURATION = 10;
 
 export async function createSparseScreen() {
     const threeScene = new THREE.Scene();
@@ -150,8 +152,10 @@ export async function createSparseScreen() {
     threeScene.add(supernovaLight);
 
     return {
-        id: 'test',
-        name: 'Test',
+        id: 'sparse',
+        name: 'Sparse Supernova',
+        minDuration: MIN_DURATION,
+        maxDuration: MAX_DURATION,
         threeScene,
         defaultDuration: 10,
         geometries,

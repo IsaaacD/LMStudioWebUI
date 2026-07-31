@@ -13,6 +13,8 @@ const PARTICLE_COUNT = 600;
 const PARTICLE_SPAWN_Z = 90;
 const PARTICLE_PASS_Z = 12;
 const useParticles = false;
+const MIN_DURATION = 2;
+const MAX_DURATION = 10;
 
 function hr(n) {
     return hashNumber(LUMBER_SEED + n);
@@ -143,6 +145,8 @@ export async function createLumberScene() {
     return {
         id: 'lumber',
         name: 'Lumber',
+        minDuration: MIN_DURATION,
+        maxDuration: MAX_DURATION,
         threeScene,
         defaultDuration: 45,
         geometries: lumberPieces,

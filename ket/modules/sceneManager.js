@@ -3,10 +3,6 @@ import { hashNumber, hashRange } from './utils.js';
 const MIN_DURATION = 15;
 const MAX_DURATION = 60;
 
-function deriveDuration(seed) {
-    return hashRange(seed, MIN_DURATION, MAX_DURATION);
-}
-
 export class SceneManager {
     constructor() {
         this.scenes = new Map();
@@ -27,6 +23,10 @@ export class SceneManager {
         return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
     }
 
+    _deriveDuration(seed, minDur, maxDur) {
+        return hashRange(seed, minDur, maxDur);
+    }
+
     rebuild() {
         const anchor = this._todayAnchor();
         if (this.anchoredDate === anchor) return;
@@ -34,8 +34,11 @@ export class SceneManager {
         this.switchTimes = [anchor];
         let t = anchor;
         const end = anchor + 86400000;
+        const baseline = this.scenes.get(this.baselineSceneId);
+        const minDur = baseline?.minDuration ?? MIN_DURATION;
+        const maxDur = baseline?.maxDuration ?? MAX_DURATION;
         while (t < end) {
-            t += deriveDuration(t) * 1000;
+            t += this._deriveDuration(t, minDur, maxDur) * 1000;
             this.switchTimes.push(t);
         }
     }
@@ -84,6 +87,8 @@ export class SceneManager {
     }
 
     registerScene(definition) {
+        definition.minDuration = definition.minDuration ?? MIN_DURATION;
+        definition.maxDuration = definition.maxDuration ?? MAX_DURATION;
         this.scenes.set(definition.id, definition);
         this.rotation.push(definition.id);
         if (this.scenes.size === 1) {
@@ -105,12 +110,14 @@ export class SceneManager {
     }
 
     _applyDuration(next) {
+        let duration;
         const override = this.durationOverrides.get(next.id);
         if (override !== undefined) {
-            this.timer.maxDuration = override;
+            duration = override;
         } else {
-            this.timer.maxDuration = this._timeUntilNextSwitch();
+            duration = this._timeUntilNextSwitch();
         }
+        this.timer.maxDuration = Math.max(next.minDuration, Math.min(next.maxDuration, duration));
     }
 
     switchTo(targetId) {
@@ -172,8 +179,9 @@ export class SceneManager {
     }
 
     getDuration(sceneId) {
-        return this.durationOverrides.get(sceneId) ??
-            (this.scenes.get(sceneId)?.defaultDuration ?? 45);
+        const scene = this.scenes.get(sceneId);
+        const duration = this.durationOverrides.get(sceneId) ?? scene?.defaultDuration ?? 45;
+        return Math.max(scene?.minDuration, Math.min(scene?.maxDuration, duration));
     }
 
     update(dt) {
