@@ -16,12 +16,23 @@ export function initScene() {
     clock = new THREE.Clock();
 
     window.addEventListener('resize', onResize);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onResize);
+    }
+}
+
+function getViewportSize() {
+    if (window.visualViewport) {
+        return { w: window.visualViewport.width, h: window.visualViewport.height };
+    }
+    return { w: innerWidth, h: innerHeight };
 }
 
 export function onResize() {
-    camera.aspect = innerWidth / innerHeight;
+    const { w, h } = getViewportSize();
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
+    renderer.setSize(w, h);
 }
 
 export function getCamera() { return camera; }

@@ -56,7 +56,9 @@ export class KeyMouseControls {
     isMoving() {
         return (
             this.keys.w || this.keys.s || this.keys.a || this.keys.d ||
-            this.keys.q || this.keys.e
+            this.keys.q || this.keys.e ||
+            this.keys.arrowleft || this.keys.arrowright ||
+            this.keys.arrowup || this.keys.arrowdown
         );
     }
 
