@@ -107,7 +107,7 @@ export class WebRTCRenderer {
         const shaftMat = new THREE.MeshBasicMaterial({
             color: c,
             transparent: true,
-            opacity: 0.65,
+            opacity: 0.95,
             fog: false,
             depthTest: false,
             renderOrder: 999
