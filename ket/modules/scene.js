@@ -16,17 +16,32 @@ export function initScene() {
     clock = new THREE.Clock();
 
     window.addEventListener('resize', onResize);
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', onResize);
+    try {
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', onResize);
+        }
+    } catch {
+        // visualViewport not supported (e.g. Firefox iOS)
     }
+    // Force resize when keyboard dismisses on mobile
+    document.addEventListener('focusout', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+            setTimeout(onResize, 100);
+            setTimeout(onResize, 400);
+        }
+    }, true);
 }
 
 function getViewportSize() {
-    if (window.visualViewport) {
-        return { w: window.visualViewport.width, h: window.visualViewport.height };
-    }
+    try {
+        if (window.visualViewport) {
+            return { w: window.visualViewport.width, h: window.visualViewport.height };
+        }
+    } catch { }
     return { w: innerWidth, h: innerHeight };
 }
+
+export { getViewportSize };
 
 export function onResize() {
     const { w, h } = getViewportSize();

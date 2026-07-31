@@ -9,7 +9,7 @@ if (urlSeed !== null) {
     setGlobalSeed(parseInt(urlSeed, 10));
     console.log('[seed] Math.random seeded with', getGlobalSeed());
 }
-import { initScene, getCamera, getRenderer, getClock, onResize } from './modules/scene.js';
+import { initScene, getCamera, getRenderer, getClock, onResize, getViewportSize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
 import { createHeartMaterial } from './modules/heartSpawner.js';
 import { initAudio, setSceneReadyCallback } from './modules/audio.js';
@@ -154,8 +154,21 @@ async function bootstrap() {
 
     window.addEventListener('resize', () => {
         onResize();
-        postProcessor.resize(innerWidth, innerHeight);
+        const { w, h } = getViewportSize();
+        postProcessor.resize(w, h);
     });
+
+    document.addEventListener('focusout', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+            const doResize = () => {
+                onResize();
+                const { w, h } = getViewportSize();
+                postProcessor.resize(w, h);
+            };
+            setTimeout(doResize, 100);
+            setTimeout(doResize, 400);
+        }
+    }, true);
 
     setSceneReadyCallback(() => {
         animationLoop.start(clock);
