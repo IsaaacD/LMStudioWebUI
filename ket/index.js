@@ -83,11 +83,13 @@ async function bootstrap() {
     sceneManager.registerScene(sparseScene);
     sceneManager.registerScene(lumberScene);
 
+    const initialScene = sceneManager.resolveInitialScene();
+
     const camera = getCamera();
     const renderer = getRenderer();
     const clock = getClock();
 
-    postProcessor = new PostProcessor(renderer, cityScene.threeScene, camera);
+    postProcessor = new PostProcessor(renderer, initialScene.threeScene, camera);
     await postProcessor.initEdgePass();
     await postProcessor.initPixelationPass();
 
@@ -142,7 +144,7 @@ async function bootstrap() {
         webrtcManager.setCamera(camera);
         webrtcManager.setSceneManager(sceneManager);
         webrtcManager.setParams(params);
-        webrtcManager.initActiveScene(cityScene.threeScene);
+        webrtcManager.initActiveScene(initialScene.threeScene);
         //webrtcManager.setDomElement(renderer.domElement);
         webrtcManager.init();
     }
