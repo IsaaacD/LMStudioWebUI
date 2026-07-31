@@ -44,36 +44,27 @@
         ctx.fill();
       }
 
-      update(mouse) {
-        // Calculate distance from mouse
-        const dx = mouse.x - this.x;
-        const dy = mouse.y - this.y;
+      repel(point) {
+        const dx = point.x - this.x;
+        const dy = point.y - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Move particles if close to mouse
         if (distance < 100) {
           const forceDirectionX = dx / distance;
           const forceDirectionY = dy / distance;
-          const maxDistance = 100; // Max distance for effect
-
-          const force = (maxDistance - distance) / maxDistance;
-
+          const force = (100 - distance) / 100;
           this.x -= forceDirectionX * force * this.density;
           this.y -= forceDirectionY * force * this.density;
-        } else {
-          // Return to original position if mouse is far
-          if (this.x !== this.baseX) {
-            const dx = this.baseX - this.x;
-            this.x += dx / 10;
-          }
-          if (this.y !== this.baseY) {
-            const dy = this.baseY - this.y;
-            this.y += dy / 10;
-          }
         }
+      }
 
-        // Draw particle
-        this.draw();
+      returnToBase() {
+        if (this.x !== this.baseX) {
+          this.x += (this.baseX - this.x) / 10;
+        }
+        if (this.y !== this.baseY) {
+          this.y += (this.baseY - this.y) / 10;
+        }
       }
     }
 
@@ -101,12 +92,64 @@
       mouse.y = event.y;
     });
 
+    // Touch points array for multitouch
+    let touches = [];
+
+    window.addEventListener('touchstart', (event) => {
+      event.preventDefault();
+      touches = [];
+      for (let i = 0; i < event.touches.length; i++) {
+        touches.push({ x: event.touches[i].clientX, y: event.touches[i].clientY });
+      }
+      if (touches.length === 1) {
+        mouse.x = touches[0].x;
+        mouse.y = touches[0].y;
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (event) => {
+      event.preventDefault();
+      touches = [];
+      for (let i = 0; i < event.touches.length; i++) {
+        touches.push({ x: event.touches[i].clientX, y: event.touches[i].clientY });
+      }
+      if (touches.length === 1) {
+        mouse.x = touches[0].x;
+        mouse.y = touches[0].y;
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (event) => {
+      if (event.touches.length === 0) {
+        mouse.x = null;
+        mouse.y = null;
+        touches = [];
+      } else {
+        touches = [];
+        for (let i = 0; i < event.touches.length; i++) {
+          touches.push({ x: event.touches[i].clientX, y: event.touches[i].clientY });
+        }
+      }
+    });
+
     // Animation loop
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particles.forEach(particle => {
-        particle.update(mouse);
+        // Apply mouse repulsion
+        if (mouse.x !== null) {
+          particle.repel(mouse);
+        }
+
+        // Apply repulsion for each touch point
+        touches.forEach(touch => {
+          particle.repel(touch);
+        });
+
+        // Return to base and draw
+        particle.returnToBase();
+        particle.draw();
       });
 
       requestAnimationFrame(animate);
