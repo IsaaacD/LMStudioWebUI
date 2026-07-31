@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { normalizeColor } from '../modules/utils.js';
 
 const FLOATER_COUNT = 50;
 const RECYCLE_DIST_SQ = 600 * 600;
@@ -66,11 +67,16 @@ export async function createTestScene() {
         light1,
         light2,
 
-        onEnter() {},
+        onEnter() { },
 
-        onExit() {},
+        onExit() { },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
+            const bgColor = activeParams && activeParams.colorA ? normalizeColor(activeParams.colorA) : '#000000';
+            threeScene.background = new THREE.Color(bgColor);
+            const fogColor = activeParams && activeParams.colorB ? normalizeColor(activeParams.colorB) : '#000000';
+            threeScene.fog.color.set(fogColor);
+
             const h1 = (effectiveTime * 0.1) % 1;
             const h2 = (effectiveTime * 0.1 + 0.5) % 1;
             light1.color.setHSL(h1, 0.9, 0.5);
