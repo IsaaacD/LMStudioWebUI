@@ -7,13 +7,15 @@ import {
     GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
     GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
-    normalizeColor
+    normalizeColor,
+    GUI_BLOOM_STRENGTH_MIN,
+    GUI_BLOOM_STRENGTH_MAX
 } from './utils.js';
 
 export const defaultParams = {
     speed: 1.5,
     timeScale: 0.5,
-    bloomStrength: 0.2,
+    bloomStrength: 0.09,
     bloomRadius: 0.4,
     foldIntensity: 1.0,
     veinSpeed: 1.0,
@@ -35,6 +37,7 @@ export function randomizeParams(params) {
     params.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
     params.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
     params.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
+    params.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
     params.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
     params.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
     params.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);

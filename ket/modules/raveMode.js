@@ -30,6 +30,7 @@ export class RaveEngine {
 
     pickTargets() {
         this.raveTarget.bloomStrength = GUI_BLOOM_STRENGTH_MIN + Math.random() * (GUI_BLOOM_STRENGTH_MAX - GUI_BLOOM_STRENGTH_MIN);
+        this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_STRENGTH_MIN);
         this.raveTarget.bloomRadius = GUI_BLOOM_RADIUS_MIN + Math.random() * (GUI_BLOOM_RADIUS_MAX - GUI_BLOOM_RADIUS_MIN);
         this.raveTarget.foldIntensity = GUI_FOLD_INTENSITY_MIN + Math.random() * (GUI_FOLD_INTENSITY_MAX - GUI_FOLD_INTENSITY_MIN);
         this.raveTarget.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
