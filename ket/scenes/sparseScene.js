@@ -1,8 +1,12 @@
 import * as THREE from 'three';
-import { normalizeColor } from '../modules/utils.js';
+import { normalizeColor, hashNumber } from '../modules/utils.js';
 
 const FLOATER_COUNT = 50;
 const RECYCLE_DIST_SQ = 600 * 600;
+const SUPERNOVA_PARTICLE_COUNT = 300;
+const SUPERNOVA_RING_COUNT = 5;
+const SUPERNOVA_EPOCH = 1751190000000;
+const SUPERNOVA_SEED = 42;
 
 export async function createSparseScreen() {
     const threeScene = new THREE.Scene();
@@ -58,6 +62,93 @@ export async function createSparseScreen() {
     const ambientLight = new THREE.AmbientLight(0x222222);
     threeScene.add(ambientLight);
 
+    // Supernova on the horizon
+    const supernovaGroup = new THREE.Group();
+    const supernovaDist = 120;
+    supernovaGroup.position.set(0, -5, -supernovaDist);
+    threeScene.add(supernovaGroup);
+
+    // Core - bright pulsing sphere
+    const coreGeo = new THREE.SphereGeometry(3, 32, 32);
+    const coreMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.9,
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    supernovaGroup.add(core);
+
+    // Inner glow layers
+    const glowColors = [0xff4400, 0xff8800, 0xffcc00, 0xffffff];
+    const glowLayers = [];
+    glowColors.forEach((col, i) => {
+        const r = 5 + i * 4;
+        const g = new THREE.SphereGeometry(r, 16, 16);
+        const m = new THREE.MeshBasicMaterial({
+            color: col,
+            transparent: true,
+            opacity: 0.15 - i * 0.02,
+            side: THREE.BackSide,
+        });
+        const mesh = new THREE.Mesh(g, m);
+        supernovaGroup.add(mesh);
+        glowLayers.push(mesh);
+    });
+
+    // Shockwave rings
+    const rings = [];
+    for (let i = 0; i < SUPERNOVA_RING_COUNT; i++) {
+        const ringGeo = new THREE.TorusGeometry(8 + i * 3, 0.15, 8, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0xff6600,
+            transparent: true,
+            opacity: 0,
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.userData = {
+            phase: (i / SUPERNOVA_RING_COUNT) * Math.PI * 2,
+            maxRadius: 25 + i * 5,
+            baseRadius: 8 + i * 3,
+        };
+        supernovaGroup.add(ring);
+        rings.push(ring);
+    }
+
+    // Ejection particles
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(SUPERNOVA_PARTICLE_COUNT * 3);
+    const particleSizes = new Float32Array(SUPERNOVA_PARTICLE_COUNT);
+    const particleData = [];
+    for (let i = 0; i < SUPERNOVA_PARTICLE_COUNT; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const speed = 0.5 + Math.random() * 2;
+        particlePositions[i * 3] = 0;
+        particlePositions[i * 3 + 1] = 0;
+        particlePositions[i * 3 + 2] = 0;
+        particleSizes[i] = 0.5 + Math.random() * 2;
+        particleData.push({ theta, phi, speed, phase: Math.random() * Math.PI * 2 });
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particleGeo.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+
+    const particleMat = new THREE.PointsMaterial({
+        color: 0xff8844,
+        size: 1.5,
+        transparent: true,
+        opacity: 0.7,
+        sizeAttenuation: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+    });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    supernovaGroup.add(particles);
+
+    // Supernova light
+    const supernovaLight = new THREE.PointLight(0xff4400, 0, 300);
+    supernovaLight.position.copy(supernovaGroup.position);
+    threeScene.add(supernovaLight);
+
     return {
         id: 'test',
         name: 'Test',
@@ -66,6 +157,14 @@ export async function createSparseScreen() {
         geometries,
         light1,
         light2,
+        supernovaGroup,
+        core,
+        coreMat,
+        glowLayers,
+        rings,
+        particles,
+        particleData,
+        supernovaLight,
 
         onEnter() { },
 
@@ -100,6 +199,53 @@ export async function createSparseScreen() {
                 mesh.position.z = camera.position.z + Math.sin(ud.orbitAngle) * ud.orbitRadius;
                 mesh.position.y = camera.position.y + ud.orbitYOffset + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
             }
+
+            // Supernova animation — synced across all instances via wall clock + hash
+            const t = (Date.now() - SUPERNOVA_EPOCH) / 1000;
+            const h = (idx) => hashNumber(SUPERNOVA_SEED + idx);
+            const pulse = Math.sin(t * 3 + h(1) * Math.PI * 2) * 0.5 + 0.5;
+            const buildUp = Math.min(1, t * 0.05);
+            const jitter = Math.sin(t * 47 + h(2) * Math.PI * 2) * Math.sin(t * 83 + h(3) * Math.PI * 2) * 0.1;
+            const intensity = (pulse * 0.6 + 0.4 + jitter) * buildUp;
+
+            core.scale.setScalar(0.8 + intensity * 0.8);
+            coreMat.opacity = 0.7 + intensity * 0.3;
+            coreMat.color.setHSL(0.06 + pulse * 0.04, 1, 0.5 + intensity * 0.5);
+
+            glowLayers.forEach((layer, i) => {
+                const s = 1 + Math.sin(t * (2 + i) + h(10 + i) * Math.PI * 2) * 0.3 * intensity;
+                layer.scale.setScalar(s);
+                layer.material.opacity = (0.1 + intensity * 0.15) * (1 - i * 0.15);
+            });
+
+            rings.forEach((ring, i) => {
+                const p = (Math.sin(t * 1.5 + h(20 + i) * Math.PI * 2) * 0.5 + 0.5);
+                ring.scale.setScalar(1 + p * 2);
+                ring.material.opacity = (1 - p) * 0.6 * buildUp;
+                ring.material.color.setHSL(0.08 - p * 0.05, 1, 0.5 + p * 0.3);
+            });
+
+            // Ejection particles
+            const posArr = particles.geometry.attributes.position.array;
+            for (let i = 0; i < SUPERNOVA_PARTICLE_COUNT; i++) {
+                const pd = particleData[i];
+                const cycle = (t * pd.speed * 0.3 + h(100 + i) * Math.PI * 2) % (Math.PI * 2);
+                const dist = (cycle / (Math.PI * 2)) * 40 * buildUp;
+                posArr[i * 3] = Math.sin(pd.phi) * Math.cos(pd.theta) * dist;
+                posArr[i * 3 + 1] = Math.sin(pd.phi) * Math.sin(pd.theta) * dist;
+                posArr[i * 3 + 2] = Math.cos(pd.phi) * dist;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+            particleMat.opacity = 0.5 * buildUp;
+            particleMat.color.setHSL(0.07 + pulse * 0.03, 1, 0.4 + intensity * 0.4);
+
+            // Supernova light
+            supernovaLight.intensity = intensity * 15 * buildUp;
+            supernovaLight.color.setHSL(0.06 + pulse * 0.04, 1, 0.5);
+            supernovaGroup.position.x = camera.position.x;
+            supernovaGroup.position.y = camera.position.y - 8;
+            supernovaGroup.position.z = camera.position.z - supernovaDist;
+            supernovaLight.position.copy(supernovaGroup.position);
         }
     };
 }

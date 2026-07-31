@@ -116,15 +116,15 @@ void main() {
     woodBase = mix(woodBase, endGrain, endFactor * 0.5);
 
     vec3 lightDir = normalize(vec3(1.0, 1.0, 0.5));
-    float diff = max(dot(vNormal, lightDir), 0.0) * 0.6 + 0.4;
+    float diff = max(dot(vNormal, lightDir), 0.0) * 0.2 + 0.1;
 
     vec3 finalColor = woodBase * diff;
 
     float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
-    finalColor += fresnel * uColorA * 0.15;
+    finalColor += fresnel * uColorA * 0.05;
 
     float glow = sin(uTime * 0.5 + vWorldPos.y * 0.3) * 0.5 + 0.5;
-    finalColor += (uColorA + uColorB) * glow * 0.05;
+    finalColor += (uColorA + uColorB) * glow * 0.02;
 
     gl_FragColor = vec4(finalColor, 1.0);
 }

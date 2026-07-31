@@ -80,8 +80,8 @@ async function bootstrap() {
     const sparseScene = await createSparseScreen();
     const lumberScene = await createLumberScene();
     sceneManager.registerScene(cityScene);
-    //sceneManager.registerScene(sparseScene);
-    //sceneManager.registerScene(lumberScene);
+    sceneManager.registerScene(sparseScene);
+    sceneManager.registerScene(lumberScene);
 
     const initialScene = sceneManager.resolveInitialScene();
 

@@ -1,13 +1,18 @@
 import * as THREE from 'three';
-import { normalizeColor, loadShader } from '../modules/utils.js';
+import { normalizeColor, loadShader, hashNumber } from '../modules/utils.js';
 
-const POOL_SIZE = 160;
+const POOL_SIZE = 110;
 const SPAWN_DISTANCE = 80;
 const PASS_DISTANCE = 15;
 const X_SPREAD = 35;
 const Y_SPREAD = 22;
 const BASE_SPEED = 4;
 const SPEED_VARIANCE = 3;
+const LUMBER_SEED = 777;
+
+function hr(n) {
+    return hashNumber(LUMBER_SEED + n);
+}
 
 const _forward = new THREE.Vector3();
 const _right = new THREE.Vector3();
@@ -25,18 +30,18 @@ export async function createLumberScene() {
     const lumberPieces = [];
 
     for (let i = 0; i < POOL_SIZE; i++) {
-        const length = 12 + Math.random() * 14;
-        const width = 1.5 + Math.random() * 1.0;
-        const depth = 2.0 + Math.random() * 1.5;
+        const length = 12 + hr(i * 16) * 14;
+        const width = 1.5 + hr(i * 16 + 1) * 1.0;
+        const depth = 2.0 + hr(i * 16 + 2) * 1.5;
 
         const geo = new THREE.BoxGeometry(width, depth, length, 2, 2, 8);
 
         const uniforms = {
             uTime: { value: 0 },
-            uColorA: { value: new THREE.Color().setHSL(Math.random(), 0.7, 0.35) },
-            uColorB: { value: new THREE.Color().setHSL(Math.random(), 0.6, 0.2) },
-            uGrainIntensity: { value: 0.8 + Math.random() * 0.6 },
-            uKnotIntensity: { value: 0.3 + Math.random() * 0.5 },
+            uColorA: { value: new THREE.Color().setHSL(hr(i * 16 + 3), 0.3, 0.2) },
+            uColorB: { value: new THREE.Color().setHSL(hr(i * 16 + 4), 0.25, 0.12) },
+            uGrainIntensity: { value: 0.8 + hr(i * 16 + 5) * 0.6 },
+            uKnotIntensity: { value: 0.3 + hr(i * 16 + 6) * 0.5 },
         };
 
         const mat = new THREE.ShaderMaterial({
@@ -50,30 +55,31 @@ export async function createLumberScene() {
 
         mesh.userData = {
             active: false,
-            xOffset: (Math.random() - 0.5) * 2 * X_SPREAD,
-            yOffset: (Math.random() - 0.5) * 2 * Y_SPREAD,
+            xOffset: (hr(i * 16 + 7) - 0.5) * 2 * X_SPREAD,
+            yOffset: (hr(i * 16 + 8) - 0.5) * 2 * Y_SPREAD,
             zOffset: SPAWN_DISTANCE,
-            speed: BASE_SPEED + Math.random() * SPEED_VARIANCE,
+            speed: BASE_SPEED + hr(i * 16 + 9) * SPEED_VARIANCE,
             rotSpeed: new THREE.Vector3(
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2
+                (hr(i * 16 + 10) - 0.5) * 2,
+                (hr(i * 16 + 11) - 0.5) * 2,
+                (hr(i * 16 + 12) - 0.5) * 2
             ),
-            bobSpeed: 0.3 + Math.random() * 0.8,
-            bobPhase: Math.random() * Math.PI * 2,
-            bobAmp: 0.5 + Math.random() * 1.5,
+            bobSpeed: 0.3 + hr(i * 16 + 13) * 0.8,
+            bobPhase: hr(i * 16 + 14) * Math.PI * 2,
+            bobAmp: 0.5 + hr(i * 16 + 15) * 1.5,
             uniforms,
+            recycleCount: 0,
         };
 
         threeScene.add(mesh);
         lumberPieces.push(mesh);
     }
 
-    const light1 = new THREE.PointLight(0xff6633, 4, 200);
+    const light1 = new THREE.PointLight(0xff6633, 1.5, 200);
     light1.position.set(0, 10, 0);
     threeScene.add(light1);
 
-    const light2 = new THREE.PointLight(0x33ccff, 4, 200);
+    const light2 = new THREE.PointLight(0x33ccff, 1.5, 200);
     light2.position.set(0, -10, 0);
     threeScene.add(light2);
 
@@ -93,29 +99,30 @@ export async function createLumberScene() {
 
         onEnter() {
             spawnIndex = 0;
-            for (const mesh of lumberPieces) {
+            lumberPieces.forEach((mesh, i) => {
                 const ud = mesh.userData;
                 ud.active = true;
-                ud.xOffset = (Math.random() - 0.5) * 2 * X_SPREAD;
-                ud.yOffset = (Math.random() - 0.5) * 2 * Y_SPREAD;
-                ud.zOffset = 5 + Math.random() * (SPAWN_DISTANCE - 5);
+                ud.xOffset = (hr(i * 16 + 7) - 0.5) * 2 * X_SPREAD;
+                ud.yOffset = (hr(i * 16 + 8) - 0.5) * 2 * Y_SPREAD;
+                ud.zOffset = 5 + hr(i * 16 + 9) * (SPAWN_DISTANCE - 5);
+                ud.recycleCount = 0;
                 mesh.visible = true;
-            }
+            });
             spawnIndex = POOL_SIZE;
         },
 
         onExit() { },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
-            const bgColor = activeParams && activeParams.colorA ? normalizeColor(activeParams.colorA) : '#1a0a00';
-            threeScene.background = new THREE.Color(bgColor);
+            //const bgColor = activeParams && activeParams.colorA ? normalizeColor(activeParams.colorA) : '#1a0a00';
+            threeScene.background = new THREE.Color(0x000000);
             const fogColor = activeParams && activeParams.colorB ? normalizeColor(activeParams.colorB) : '#1a0a00';
             threeScene.fog.color.set(fogColor);
 
             const h1 = (effectiveTime * 0.08) % 1;
             const h2 = (effectiveTime * 0.08 + 0.4) % 1;
-            light1.color.setHSL(h1, 0.85, 0.5);
-            light2.color.setHSL(h2, 0.85, 0.5);
+            light1.color.setHSL(h1, 0.4, 0.35);
+            light2.color.setHSL(h2, 0.4, 0.35);
 
             light1.position.x = Math.sin(effectiveTime * 0.4) * 18;
             light1.position.z = Math.cos(effectiveTime * 0.4) * 18;
@@ -133,7 +140,8 @@ export async function createLumberScene() {
                 if (!ud.active) {
                     if (spawnIndex < POOL_SIZE) {
                         ud.active = true;
-                        ud.zOffset = SPAWN_DISTANCE + Math.random() * 20;
+                        ud.zOffset = SPAWN_DISTANCE + hr(i * 16 + 100 + ud.recycleCount) * 20;
+                        ud.recycleCount++;
                         mesh.visible = true;
                         spawnIndex++;
                     } else {
@@ -157,9 +165,10 @@ export async function createLumberScene() {
                 ud.zOffset -= ud.speed * dt;
 
                 if (ud.zOffset < -PASS_DISTANCE) {
-                    ud.zOffset = SPAWN_DISTANCE + Math.random() * 15;
-                    ud.xOffset = (Math.random() - 0.5) * 2 * X_SPREAD;
-                    ud.yOffset = (Math.random() - 0.5) * 2 * Y_SPREAD;
+                    ud.zOffset = SPAWN_DISTANCE + hr(i * 16 + 200 + ud.recycleCount) * 15;
+                    ud.xOffset = (hr(i * 16 + 201 + ud.recycleCount) - 0.5) * 2 * X_SPREAD;
+                    ud.yOffset = (hr(i * 16 + 202 + ud.recycleCount) - 0.5) * 2 * Y_SPREAD;
+                    ud.recycleCount++;
                 }
 
                 mesh.rotation.x += ud.rotSpeed.x * dt;
