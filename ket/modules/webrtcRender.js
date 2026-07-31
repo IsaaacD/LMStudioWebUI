@@ -4,6 +4,13 @@ const ARROW_LABEL_ABOVE = true;
 const ARROW_LABEL_OFFSET = 0.6;
 const ARROW_LABEL_MIN_SPREAD = 0.35;
 
+// Shared geometries
+const _coneGeo = new THREE.ConeGeometry(0.1, 0.5, 8);
+const _shaftGeo = new THREE.CylinderGeometry(0.02, 0.04, 0.4, 6);
+const _orbGeo = new THREE.SphereGeometry(3, 16, 16);
+const _glowGeo = new THREE.SphereGeometry(8, 16, 16);
+const _glow2Geo = new THREE.SphereGeometry(15, 16, 16);
+
 export class WebRTCRenderer {
     constructor({ camera, peerData, onTeleportButtonUpdate, onArrowDoubleClick, domElement }) {
         this.camera = camera;
@@ -86,7 +93,6 @@ export class WebRTCRenderer {
         const group = new THREE.Group();
         const c = new THREE.Color(color || '#00ccff');
 
-        const coneGeo = new THREE.ConeGeometry(0.1, 0.5, 8);
         const coneMat = new THREE.MeshBasicMaterial({
             color: c,
             transparent: true,
@@ -95,10 +101,9 @@ export class WebRTCRenderer {
             depthTest: false,
             renderOrder: 999
         });
-        const cone = new THREE.Mesh(coneGeo, coneMat);
+        const cone = new THREE.Mesh(_coneGeo, coneMat);
         group.add(cone);
 
-        const shaftGeo = new THREE.CylinderGeometry(0.02, 0.04, 0.4, 6);
         const shaftMat = new THREE.MeshBasicMaterial({
             color: c,
             transparent: true,
@@ -107,7 +112,7 @@ export class WebRTCRenderer {
             depthTest: false,
             renderOrder: 999
         });
-        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+        const shaft = new THREE.Mesh(_shaftGeo, shaftMat);
         shaft.position.y = -0.4;
         group.add(shaft);
 
@@ -168,7 +173,6 @@ export class WebRTCRenderer {
                     this.arrowGroup.remove(toRemove);
                     for (const mesh of toRemove.children) {
                         if (mesh.material) mesh.material.dispose();
-                        if (mesh.geometry) mesh.geometry.dispose();
                     }
                     if (toRemove.userData.label && toRemove.userData.label.material) {
                         toRemove.userData.label.material.dispose();
@@ -384,10 +388,18 @@ export class WebRTCRenderer {
         if (sprite.userData.cachedText === text) return;
         sprite.userData.cachedText = text;
 
-        const canvas = document.createElement('canvas');
         const baseSize = 1024;
-        canvas.width = Math.max(baseSize / 4 * text.length, 256);
-        canvas.height = baseSize / 4;
+        const width = Math.max(baseSize / 4 * text.length, 256);
+        const height = baseSize / 4;
+
+        let canvas = sprite.userData.canvas;
+        if (!canvas || canvas.width !== width || canvas.height !== height) {
+            canvas = document.createElement('canvas');
+            sprite.userData.canvas = canvas;
+        }
+        canvas.width = width;
+        canvas.height = height;
+
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.font = 'Bold 150px Courier New, monospace';
@@ -396,6 +408,9 @@ export class WebRTCRenderer {
         ctx.fillStyle = color || '#00ccff';
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
+        if (sprite.material.map) {
+            sprite.material.map.dispose();
+        }
         const newTexture = new THREE.CanvasTexture(canvas);
         newTexture.minFilter = THREE.LinearFilter;
         sprite.material.map = newTexture;
@@ -453,7 +468,6 @@ export class WebRTCRenderer {
         let orb = this.orbGroup.children.find(c => c.userData.peerId === peerId);
 
         if (!orb) {
-            const geometry = new THREE.SphereGeometry(3, 16, 16);
             const color = new THREE.Color(data.color || '#00ccff');
             const material = new THREE.MeshBasicMaterial({
                 color: color,
@@ -461,11 +475,10 @@ export class WebRTCRenderer {
                 opacity: 0.9,
                 fog: false
             });
-            orb = new THREE.Mesh(geometry, material);
+            orb = new THREE.Mesh(_orbGeo, material);
             orb.userData.peerId = peerId;
             orb.userData.targetPosition = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
 
-            const glowGeo = new THREE.SphereGeometry(8, 16, 16);
             const glowMat = new THREE.MeshBasicMaterial({
                 color: color,
                 transparent: true,
@@ -473,10 +486,9 @@ export class WebRTCRenderer {
                 side: THREE.BackSide,
                 fog: false
             });
-            const glow = new THREE.Mesh(glowGeo, glowMat);
+            const glow = new THREE.Mesh(_glowGeo, glowMat);
             orb.add(glow);
 
-            const glow2Geo = new THREE.SphereGeometry(15, 16, 16);
             const glow2Mat = new THREE.MeshBasicMaterial({
                 color: color,
                 transparent: true,
@@ -484,7 +496,7 @@ export class WebRTCRenderer {
                 side: THREE.BackSide,
                 fog: false
             });
-            const glow2 = new THREE.Mesh(glow2Geo, glow2Mat);
+            const glow2 = new THREE.Mesh(_glow2Geo, glow2Mat);
             orb.add(glow2);
 
             const light = new THREE.PointLight(color, 3, 50);
@@ -553,7 +565,6 @@ export class WebRTCRenderer {
         if (this.orbGroup) {
             for (const child of this.orbGroup.children) {
                 if (child.material) child.material.dispose();
-                if (child.geometry) child.geometry.dispose();
             }
             this.orbGroup.clear();
         }
@@ -564,7 +575,6 @@ export class WebRTCRenderer {
                 } else {
                     for (const mesh of child.children) {
                         if (mesh.material) mesh.material.dispose();
-                        if (mesh.geometry) mesh.geometry.dispose();
                     }
                 }
             }
