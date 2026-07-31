@@ -3,6 +3,7 @@
 export const JOYSTICK_RADIUS = 60;
 export const JOYSTICK_DEADZONE = 0.15;
 export const JOYSTICK_MAX_DRAG = 50;
+export const JOYSTICK_CURVE = 3.5;
 
 export const joystickState = {
     left: {
@@ -109,6 +110,12 @@ export function applyJoystickDeadzone(value) {
     return Math.max(-1, Math.min(1, value));
 }
 
+function applyJoystickCurve(value) {
+    const sign = Math.sign(value);
+    const mag = Math.abs(value);
+    return sign * Math.pow(mag, JOYSTICK_CURVE);
+}
+
 export function updateJoystickInputs() {
     const l = joystickState.left;
     const r = joystickState.right;
@@ -117,8 +124,8 @@ export function updateJoystickInputs() {
         const rawDx = l.dx / JOYSTICK_RADIUS;
         const rawDy = l.dy / JOYSTICK_RADIUS;
         l.isActive = Math.abs(rawDx) > JOYSTICK_DEADZONE || Math.abs(rawDy) > JOYSTICK_DEADZONE;
-        l.forward = l.isActive ? applyJoystickDeadzone(-rawDy) : 0;
-        l.strafe = l.isActive ? applyJoystickDeadzone(rawDx) : 0;
+        l.forward = l.isActive ? applyJoystickCurve(applyJoystickDeadzone(-rawDy)) : 0;
+        l.strafe = l.isActive ? applyJoystickCurve(applyJoystickDeadzone(rawDx)) : 0;
     } else {
         l.isActive = false;
         l.forward = 0;
@@ -129,9 +136,9 @@ export function updateJoystickInputs() {
         const rawDx = r.dx / JOYSTICK_RADIUS;
         const rawDy = r.dy / JOYSTICK_RADIUS;
         r.isActive = Math.abs(rawDx) > JOYSTICK_DEADZONE || Math.abs(rawDy) > JOYSTICK_DEADZONE;
-        r.vertical = r.isActive ? applyJoystickDeadzone(-rawDy) : 0;
-        r.yaw = r.isActive ? applyJoystickDeadzone(rawDx) * 0.03 : 0;
-        r.pitch = r.isActive ? applyJoystickDeadzone(rawDy) * 0.02 : 0;
+        r.vertical = r.isActive ? applyJoystickCurve(applyJoystickDeadzone(-rawDy)) : 0;
+        r.yaw = r.isActive ? applyJoystickCurve(applyJoystickDeadzone(rawDx)) * 0.03 : 0;
+        r.pitch = r.isActive ? applyJoystickCurve(applyJoystickDeadzone(rawDy)) * 0.02 : 0;
     } else {
         r.isActive = false;
         r.vertical = 0;
