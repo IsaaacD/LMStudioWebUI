@@ -44,6 +44,7 @@ function loadUserColor() {
 
 const urlParams = new URLSearchParams(window.location.search);
 const isOnlineMode = urlParams.has('online');
+const isDebugMode = urlParams.has('debug');
 const autoJoinId = urlParams.get('joinId') || null;
 
 function showToast(message, color, onFollowClick) {
@@ -116,6 +117,10 @@ export class WebRTCManager {
 
         this.isDestroying = false;
         this.pendingJoinId = null;
+        this.sentBytes = 0;
+        this.receivedBytes = 0;
+        this.sentCount = 0;
+        this.receivedCount = 0;
 
         this.renderer = new WebRTCRenderer({
             camera: null,
@@ -159,6 +164,7 @@ export class WebRTCManager {
             this.el = this.createUI();
             this.connectPeerJS();
         }
+        this.createDebugPanel();
         window.addEventListener('beforeunload', () => {
             this.broadcastDisconnect();
             this.destroy();
@@ -736,13 +742,79 @@ export class WebRTCManager {
             type: 'disconnect',
             myId: this.userId
         };
+        const bytes = this.measureBytes(msg);
         for (const [, entry] of this.peers) {
             if (entry.connected && entry.conn) {
                 try {
                     entry.conn.send(msg);
+                    this.sentBytes += bytes;
+                    this.sentCount++;
+                    this.updateDebugPanel();
                 } catch { }
             }
         }
+    }
+
+    measureBytes(data) {
+        try {
+            const json = JSON.stringify(data);
+            const blob = new Blob([json]);
+            return blob.size;
+        } catch {
+            return 0;
+        }
+    }
+
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 B';
+        const units = ['B', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        const val = (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 2);
+        return `${val} ${units[i]}`;
+    }
+
+    createDebugPanel() {
+        if (!isDebugMode) return;
+        const panel = document.createElement('div');
+        panel.id = 'webrtc-debug';
+        panel.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            background: rgba(5, 0, 20, 0.7);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 0, 85, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 99990;
+            user-select: none;
+            padding: 10px 14px;
+            line-height: 1.7;
+            min-width: 180px;
+        `;
+        panel.innerHTML = `
+            <div style="color: rgba(255,0,85,0.8); font-weight: bold; margin-bottom: 4px;">DEBUG</div>
+            <div>SENT: <span id="webrtc-debug-sent" style="color: #00ccff;">0 (0 B)</span></div>
+            <div>RECV: <span id="webrtc-debug-recv" style="color: #00ccff;">0 (0 B)</span></div>
+            <div>AVG: <span id="webrtc-debug-avg" style="color: #00ccff;">0 B</span></div>
+        `;
+        document.body.appendChild(panel);
+    }
+
+    updateDebugPanel() {
+        if (!isDebugMode) return;
+        const sentEl = document.getElementById('webrtc-debug-sent');
+        const recvEl = document.getElementById('webrtc-debug-recv');
+        const avgEl = document.getElementById('webrtc-debug-avg');
+        if (sentEl) sentEl.textContent = `${this.sentCount} (${this.formatBytes(this.sentBytes)})`;
+        if (recvEl) recvEl.textContent = `${this.receivedCount} (${this.formatBytes(this.receivedBytes)})`;
+        const total = this.sentCount + this.receivedCount;
+        const avg = total > 0 ? (this.sentBytes + this.receivedBytes) / total : 0;
+        if (avgEl) avgEl.textContent = this.formatBytes(avg);
     }
 
     sendSnapshotToPeer(conn) {
@@ -758,7 +830,11 @@ export class WebRTCManager {
             snapshot: snapshot
         };
         try {
+            const bytes = this.measureBytes(msg);
             conn.send(msg);
+            this.sentBytes += bytes;
+            this.sentCount++;
+            this.updateDebugPanel();
         } catch { }
     }
 
@@ -775,10 +851,14 @@ export class WebRTCManager {
             position: this.getMyPosition(),
             snapshot: snapshot
         };
+        const bytes = this.measureBytes(msg);
         for (const [, entry] of this.peers) {
             if (entry.connected && entry.conn) {
                 try {
                     entry.conn.send(msg);
+                    this.sentBytes += bytes;
+                    this.sentCount++;
+                    this.updateDebugPanel();
                 } catch { }
             }
         }
@@ -998,8 +1078,16 @@ export class WebRTCManager {
 
     attachDataHandler(conn, entry) {
         conn.on('data', (data) => {
+            const bytes = this.measureBytes(data);
+            this.receivedBytes += bytes;
+            this.receivedCount++;
+            this.updateDebugPanel();
             if (data.type === 'ping') {
-                conn.send({ type: 'pong' });
+                const pong = { type: 'pong' };
+                conn.send(pong);
+                this.sentBytes += this.measureBytes(pong);
+                this.sentCount++;
+                this.updateDebugPanel();
             }
             if (data.type === 'peer-list') {
                 this.handlePeerList(data);
@@ -1130,5 +1218,7 @@ export class WebRTCManager {
         this.renderer.destroy();
         if (this.peer) this.peer.destroy();
         if (this.el) this.el.remove();
+        const debugEl = document.getElementById('webrtc-debug');
+        if (debugEl) debugEl.remove();
     }
 }
