@@ -46,6 +46,53 @@ const urlParams = new URLSearchParams(window.location.search);
 const isOnlineMode = urlParams.has('online');
 const autoJoinId = urlParams.get('joinId') || null;
 
+function showToast(message, color, onFollowClick) {
+    const existing = document.getElementById('teleport-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'teleport-toast';
+    toast.classList = 'gui';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${color};
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        font-weight: bold;
+        letter-spacing: 0.1em;
+        padding: 10px 24px;
+        border-radius: 6px;
+        z-index: 10000;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        user-select: none;
+    `;
+
+    document.body.appendChild(toast);
+    onFollowClick();
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+    });
+
+    const dismiss = () => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    // toast.addEventListener('click', () => {
+    //     if (onFollowClick) onFollowClick();
+    //     dismiss();
+    // });
+
+    setTimeout(() => dismiss(), 3000);
+}
+
 export class WebRTCManager {
     constructor() {
         this.peers = new Map();
@@ -63,6 +110,9 @@ export class WebRTCManager {
         this.activeScene = null;
         this.sceneManager = null;
         this.params = null;
+        this.animationLoop = null;
+        this.followTarget = null;
+        this.followTargetId = null;
 
         this.isDestroying = false;
         this.pendingJoinId = null;
@@ -71,7 +121,7 @@ export class WebRTCManager {
             camera: null,
             peerData: this.peerData,
             onTeleportButtonUpdate: () => this.updateTeleportButton(),
-            onArrowDoubleClick: (peerData) => this.teleportToPeer(peerData)
+            onArrowDoubleClick: (peerData, peerId) => this.teleportToPeer(peerData, peerId)
         });
     }
 
@@ -96,6 +146,10 @@ export class WebRTCManager {
 
     setParams(p) {
         this.params = p;
+    }
+
+    setAnimationLoop(loop) {
+        this.animationLoop = loop;
     }
 
     init() {
@@ -968,22 +1022,47 @@ export class WebRTCManager {
         const peerEntries = Array.from(this.peerData.entries());
         if (peerEntries.length === 0) return;
         let peerIdx = Math.floor(Math.random() * peerEntries.length);
-        const [, data] = peerEntries[peerIdx];
+        const [peerId, data] = peerEntries[peerIdx];
         if (!data.position) return;
-        const pos = data.position;
-        const offset = 8;
-        this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
-        this.camera.lookAt(pos.x, pos.y, pos.z);
+        this.placeCameraNearTarget(data.position, data.username, data.color, peerId);
         this.broadcastPeerList();
     }
 
-    teleportToPeer(peerData) {
+    teleportToPeer(peerData, peerId) {
         if (!this.camera || !peerData.position) return;
-        const pos = peerData.position;
-        const offset = 8;
-        this.camera.position.set(pos.x + offset, pos.y + 2, pos.z + offset);
-        this.camera.lookAt(pos.x, pos.y, pos.z);
+        this.placeCameraNearTarget(peerData.position, peerData.username, peerData.color, peerId);
         this.broadcastPeerList();
+    }
+
+    startFollowing(peerId, peerData) {
+        this.followTarget = peerData;
+        this.followTargetId = peerId;
+        if (this.animationLoop) this.animationLoop.pauseForTeleport(2);
+    }
+
+    stopFollowing() {
+        this.followTarget = null;
+        this.followTargetId = null;
+    }
+
+    placeCameraNearTarget(pos, username, color, peerId) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 10 + Math.random() * 6;
+        const height = 3 + Math.random() * 4;
+        this.camera.position.set(
+            pos.x + Math.cos(angle) * distance,
+            pos.y + height,
+            pos.z + Math.sin(angle) * distance
+        );
+        this.camera.lookAt(pos.x, pos.y, pos.z);
+        if (this.animationLoop) this.animationLoop.pauseForTeleport(2);
+        showToast(`Teleported to and following ${username}`, color, () => {
+            const data = this.peerData.get(peerId);
+            if (data && data.position) {
+                this.startFollowing(peerId, data);
+                //showToast(`Following ${username}`, color);
+            }
+        });
     }
 
     updateTeleportButton() {

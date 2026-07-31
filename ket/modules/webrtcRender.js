@@ -356,9 +356,10 @@ export class WebRTCRenderer {
         }
 
         if (this.clickCount >= 2 && this.hoveredArrow) {
-            const peerData = this.peerData.get(this.hoveredArrow.userData.peerId);
+            const peerId = this.hoveredArrow.userData.peerId;
+            const peerData = this.peerData.get(peerId);
             if (peerData && peerData.position && this.onArrowDoubleClick) {
-                this.onArrowDoubleClick(peerData);
+                this.onArrowDoubleClick(peerData, peerId);
             }
             this.clickCount = 0;
         }
@@ -547,9 +548,10 @@ export class WebRTCRenderer {
                 hitObj = hitObj.parent;
             }
             if (hitObj && hitObj.userData.peerId) {
-                const peerData = this.peerData.get(hitObj.userData.peerId);
+                const peerId = hitObj.userData.peerId;
+                const peerData = this.peerData.get(peerId);
                 if (peerData && peerData.position && this.onArrowDoubleClick) {
-                    this.onArrowDoubleClick(peerData);
+                    this.onArrowDoubleClick(peerData, peerId);
                     return true;
                 }
             }

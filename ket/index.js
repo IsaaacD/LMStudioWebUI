@@ -157,6 +157,8 @@ async function bootstrap() {
         if (isDebug && window._updateSceneGui) window._updateSceneGui(elapsed, maxDuration);
     };
 
+    if (webrtcManager) webrtcManager.setAnimationLoop(animationLoop);
+
     window.addEventListener('resize', () => {
         onResize();
         const { w, h } = getViewportSize();

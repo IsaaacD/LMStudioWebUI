@@ -35,8 +35,13 @@ export class AnimationLoop {
         this.autoYawTransitionDuration = 0;
         this.wasUserMoving = false;
         this.onTimerUpdate = null;
+        this.teleportPauseTimer = 0;
 
         this.running = false;
+    }
+
+    pauseForTeleport(duration) {
+        this.teleportPauseTimer = duration;
     }
 
     start(clock) {
@@ -107,10 +112,31 @@ export class AnimationLoop {
 
         this.composer.update(activeParams);
 
+        if (this.teleportPauseTimer > 0) {
+            this.teleportPauseTimer -= dt;
+            if (this.teleportPauseTimer <= 0) {
+                this.teleportPauseTimer = 0;
+                this.autoOffsetX = this.camera.position.x - Math.sin(this.autoAngle) * (8 + Math.sin(this.autoAngle * 0.7) * 5);
+                this.autoOffsetY = this.camera.position.y - (Math.cos(this.autoAngle * 0.5) * 3 + 2);
+                _euler.setFromQuaternion(this.camera.quaternion);
+                const clampedPitch = Math.max(-MAX_PITCH_ANGLE, Math.min(MAX_PITCH_ANGLE, _euler.x));
+                this.autoPitch = clampedPitch;
+                this.autoPitchTarget = clampedPitch;
+                this.autoYaw = _euler.y;
+                this.autoYawTarget = _euler.y;
+                this.autoPitchNextTime = 3;
+                this.autoYawNextTime = 3;
+            }
+        }
+
         updateJoystickInputs();
         const leftActive = joystickState.left.isActive;
         const rightActive = joystickState.right.isActive;
         const isMoving = this.controls.isMoving() || leftActive || rightActive;
+
+        if (isMoving && this.webrtcManager && this.webrtcManager.followTargetId) {
+            this.webrtcManager.stopFollowing();
+        }
 
         if (isMoving) {
             if (this.params.autoplay) {
@@ -129,12 +155,20 @@ export class AnimationLoop {
 
         const inAutoplayDelay = this.autoplayWasSuspended && this.autoplayIdleTimer < this.autoplayResumeDelay;
         const autoplaySpeedMult = inAutoplayDelay ? this.autoplayIdleTimer / this.autoplayResumeDelay : 1;
-        const useManual = (!this.params.autoplay && !inAutoplayDelay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.controls.pointerLocked));
 
-        if (useManual) {
-            this.controls.applyManualControl(this.camera, this.params.speed * 0.5, joystickState, dt);
+        if (this.webrtcManager && this.webrtcManager.followTargetId) {
+            const followData = this.webrtcManager.peerData.get(this.webrtcManager.followTargetId);
+            if (followData && followData.position) {
+                this.handleFollowControl(followData.position, dt, activeParams);
+            }
         } else {
-            this.handleAutoControl(activeParams, dt, autoplaySpeedMult);
+            const useManual = this.teleportPauseTimer > 0 || (!this.params.autoplay && !inAutoplayDelay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.controls.pointerLocked));
+
+            if (useManual) {
+                this.controls.applyManualControl(this.camera, this.params.speed * 0.5, joystickState, dt);
+            } else {
+                this.handleAutoControl(activeParams, dt, autoplaySpeedMult);
+            }
         }
 
         if (isMoving && this.params.raveMode) {
@@ -211,5 +245,30 @@ export class AnimationLoop {
 
         _euler.set(this.autoPitch, this.autoYaw, 0);
         this.camera.quaternion.setFromEuler(_euler);
+    }
+
+    handleFollowControl(targetPos, dt, activeParams) {
+        const followDistance = 12;
+        const followHeight = 5;
+        const followSpeed = 0.03;
+        const followYawSpeed = 0.005 * activeParams.timeScale;
+
+        this.autoAngle += followYawSpeed * dt * 60;
+
+        const targetX = targetPos.x + Math.cos(this.autoAngle) * followDistance;
+        const targetY = targetPos.y + followHeight;
+        const targetZ = targetPos.z + Math.sin(this.autoAngle) * followDistance;
+
+        this.camera.position.x += (targetX - this.camera.position.x) * followSpeed;
+        this.camera.position.y += (targetY - this.camera.position.y) * followSpeed;
+        this.camera.position.z += (targetZ - this.camera.position.z) * followSpeed;
+
+        _euler.setFromQuaternion(this.camera.quaternion);
+        const lookTarget = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
+        const currentDir = new THREE.Vector3();
+        this.camera.getWorldDirection(currentDir);
+        const desiredDir = lookTarget.clone().sub(this.camera.position).normalize();
+        currentDir.lerp(desiredDir, followSpeed * 2);
+        this.camera.lookAt(this.camera.position.clone().add(currentDir));
     }
 }
