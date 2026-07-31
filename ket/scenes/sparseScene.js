@@ -4,7 +4,7 @@ import { normalizeColor } from '../modules/utils.js';
 const FLOATER_COUNT = 50;
 const RECYCLE_DIST_SQ = 600 * 600;
 
-export async function createTestScene() {
+export async function createSparseScreen() {
     const threeScene = new THREE.Scene();
     threeScene.background = new THREE.Color(0x000000);
     threeScene.fog = new THREE.FogExp2(0x000000, 0.02);

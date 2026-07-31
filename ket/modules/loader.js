@@ -12,6 +12,8 @@ const ASSET_MANIFEST = [
     { id: 'shader-prim-f', type: 'shader', path: './shaders/primitive.frag' },
     { id: 'shader-heart-v', type: 'shader', path: './shaders/heart.vert' },
     { id: 'shader-heart-f', type: 'shader', path: './shaders/heart.frag' },
+    { id: 'shader-wood-v', type: 'shader', path: './shaders/wood.vert' },
+    { id: 'shader-wood-f', type: 'shader', path: './shaders/wood.frag' },
     // Shaders: postprocessing
     { id: 'shader-sorbel-v', type: 'shader', path: './shaders/sorbel.vert' },
     { id: 'shader-sorbel-f', type: 'shader', path: './shaders/sorbel.frag' },

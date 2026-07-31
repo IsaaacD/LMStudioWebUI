@@ -21,8 +21,11 @@ import { SceneManager } from './modules/sceneManager.js';
 import { TransitionEffect } from './modules/transition.js';
 import { FPSCounter } from './modules/fpsCounter.js';
 import { WebRTCManager } from './modules/webrtc.js';
+
 import { createCityScene } from './scenes/cityScene.js';
-import { createTestScene } from './scenes/testScene.js';
+import { createSparseScreen } from './scenes/sparseScene.js';
+import { createLumberScene } from './scenes/lumberScene.js'
+
 import { loadAllAssets, setProgressCallback } from './modules/loader.js';
 
 let postProcessor = null;
@@ -74,9 +77,11 @@ async function bootstrap() {
     const heartMaterial = await createHeartMaterial();
     const sceneManager = new SceneManager();
     const cityScene = await createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial);
-    const testScene = await createTestScene();
+    const sparseScene = await createSparseScreen();
+    const lumberScene = await createLumberScene();
     sceneManager.registerScene(cityScene);
-    sceneManager.registerScene(testScene);
+    sceneManager.registerScene(sparseScene);
+    sceneManager.registerScene(lumberScene);
 
     const camera = getCamera();
     const renderer = getRenderer();
