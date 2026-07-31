@@ -98,7 +98,7 @@ export class AnimationLoop {
         }
 
         if (this.transitionEffect.consumeSwap()) {
-            this.sceneManager.switchToNext();
+            this.sceneManager.switchToRandomOrBaseline();
         }
 
         const activeScene = this.sceneManager.getActiveScene();

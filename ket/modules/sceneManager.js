@@ -5,12 +5,14 @@ export class SceneManager {
         this.activeIndex = 0;
         this.timer = { elapsed: 0, maxDuration: 45 };
         this.durationOverrides = new Map();
+        this.baselineSceneId = null;
     }
 
     registerScene(definition) {
         this.scenes.set(definition.id, definition);
         this.rotation.push(definition.id);
         if (this.scenes.size === 1) {
+            this.baselineSceneId = definition.id;
             this.timer.maxDuration =
                 this.durationOverrides.get(definition.id) ?? definition.defaultDuration;
         }
@@ -19,6 +21,11 @@ export class SceneManager {
     getActiveScene() {
         const activeId = this.rotation[this.activeIndex];
         return this.scenes.get(activeId);
+    }
+
+    isBaselineActive() {
+        const active = this.getActiveScene();
+        return active && active.id === this.baselineSceneId;
     }
 
     switchTo(targetId) {
@@ -55,6 +62,22 @@ export class SceneManager {
             if (next.onEnter) {
                 next.onEnter();
             }
+        }
+    }
+
+    switchToRandomOrBaseline() {
+        if (this.isBaselineActive()) {
+            const nonBaselineIds = this.rotation.filter(id => id !== this.baselineSceneId);
+            if (nonBaselineIds.length === 0) {
+                this.switchToNext();
+                return;
+            }
+            const pick = nonBaselineIds[Math.floor(Math.random() * nonBaselineIds.length)];
+            this.switchTo(pick);
+            this.timer.maxDuration = 2 + Math.random() * 8;
+        } else {
+            this.switchTo(this.baselineSceneId);
+            this.timer.maxDuration = 30 + Math.random() * 15;
         }
     }
 

@@ -27,8 +27,8 @@ export function initAudio(splashEl, splashSub) {
     audioBtnEl.addEventListener('click', toggleAudio);
     document.body.appendChild(audioBtnEl);
 
-    splashEl.addEventListener('click', () => enterScene(splashEl, splashSub));
-    splashEl.addEventListener('touchend', (e) => { e.preventDefault(); enterScene(splashEl, splashSub); });
+    splashEl.addEventListener('click', (e) => { if (e.target.closest('.splash-ignore-click')) return; enterScene(splashEl, splashSub); });
+    splashEl.addEventListener('touchend', (e) => { if (e.target.closest('.splash-ignore-click')) return; e.preventDefault(); enterScene(splashEl, splashSub); });
 }
 
 function enterScene(splashEl, splashSub) {

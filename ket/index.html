@@ -91,6 +91,149 @@
             user-select: none;
         }
 
+        #splash-player-name {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(13px, 2.5vw, 20px);
+            color: rgba(0, 204, 255, 0.8);
+            margin-top: 18px;
+            letter-spacing: 0.2em;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: auto;
+            z-index: 100005;
+            position: relative;
+        }
+
+        #splash-player-name.visible {
+            opacity: 1;
+        }
+
+        #splash-edit-name-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 204, 255, 0.25);
+            border-radius: 4px;
+            padding: 3px 10px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+            position: relative;
+            z-index: 100005;
+        }
+
+        #splash-edit-name-btn:hover {
+            background: rgba(0, 204, 255, 0.15);
+            border-color: rgba(0, 204, 255, 0.5);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Name Edit Modal */
+        #name-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100002;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        #name-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #name-modal-title {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(14px, 3vw, 24px);
+            color: #fff;
+            text-shadow: 0 0 10px #ff0055, 0 0 30px #00ccff;
+            letter-spacing: 0.3em;
+            margin-bottom: 36px;
+        }
+
+        #name-modal-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        #name-modal-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            border-radius: 6px;
+            padding: 10px 16px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+            width: 240px;
+        }
+
+        #name-modal-color-label {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.2em;
+        }
+
+        #name-modal-color {
+            width: 60px;
+            height: 30px;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        #name-modal-save {
+            margin-top: 8px;
+            background: rgba(0, 204, 255, 0.15);
+            border: 1px solid rgba(0, 204, 255, 0.4);
+            border-radius: 6px;
+            padding: 10px 32px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            letter-spacing: 0.2em;
+            cursor: pointer;
+        }
+
+        #name-modal-close {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+        }
+
         #splash-progress-track {
             width: clamp(180px, 40vw, 320px);
             height: 3px;
@@ -478,14 +621,26 @@
             background: rgba(0, 204, 255, 0.15);
             border-radius: 1px;
         }
+
+        .version {
+            color: white;
+            font-size: small;
+        }
     </style>
 </head>
 
 <body>
     <div id="splash">
-        <div id="splash-ring"></div>
+        <div id="splash-ring">
+            <img src="../web-app-manifest-192x192.png" style="width: 3em; height: auto;" />
+        </div>
         <div id="splash-title">KETAMINE DREAMS</div>
+        <div class="version">v 0.0.1</div>
         <div id="splash-sub">Dream parsing...</div>
+        <div id="splash-player-name" class="splash-ignore-click">
+            <span id="splash-player-name-text">anon</span>
+            <button id="splash-edit-name-btn" class="splash-ignore-click">EDIT</button>
+        </div>
         <div id="splash-progress-track">
             <div id="splash-progress-bar"></div>
         </div>
@@ -568,6 +723,18 @@
         </div>
     </div>
     <div id="overlay"></div>
+
+    <!-- Name Edit Modal -->
+    <div id="name-modal-overlay">
+        <button id="name-modal-close">✕</button>
+        <div id="name-modal-title">IDENTITY</div>
+        <div id="name-modal-form">
+            <input id="name-modal-input" type="text" placeholder="username" maxlength="16" />
+            <div id="name-modal-color-label">YOUR COLOR</div>
+            <input id="name-modal-color" type="color" value="#00ccff" />
+            <button id="name-modal-save">SAVE</button>
+        </div>
+    </div>
     <!-- <div id="text">
         SYSTEM: KETAMINE DREAMS<br>
         STATUS: <span id="status" style="color:#ff00ff"">RAVE</span>
@@ -580,6 +747,106 @@
             s.onload = () => eruda.init();
             document.head.appendChild(s);
         }
+
+        // Player name display and name-edit modal
+        (function () {
+            const STORAGE_KEY_USERNAME = 'webrtc-username';
+            const STORAGE_KEY_COLOR = 'webrtc-user-color';
+
+            function loadUsername() {
+                try { return localStorage.getItem(STORAGE_KEY_USERNAME); } catch { return null; }
+            }
+            function loadUserColor() {
+                try { return localStorage.getItem(STORAGE_KEY_COLOR); } catch { return null; }
+            }
+            function saveUsername(name) {
+                try { localStorage.setItem(STORAGE_KEY_USERNAME, name); } catch { }
+            }
+            function saveUserColor(color) {
+                try { localStorage.setItem(STORAGE_KEY_COLOR, color); } catch { }
+            }
+
+            let currentName = loadUsername();
+            let currentColor = loadUserColor() || '#00ccff';
+
+            const nameTextEl = document.getElementById('splash-player-name-text');
+            const nameRowEl = document.getElementById('splash-player-name');
+            const modalOverlay = document.getElementById('name-modal-overlay');
+            const modalInput = document.getElementById('name-modal-input');
+            const modalColor = document.getElementById('name-modal-color');
+            const modalSave = document.getElementById('name-modal-save');
+            const modalClose = document.getElementById('name-modal-close');
+
+            if (nameTextEl && currentName) {
+                nameTextEl.textContent = currentName;
+                nameTextEl.style.color = currentColor;
+            }
+
+            if (nameRowEl) {
+                setTimeout(() => { nameRowEl.classList.add('visible'); }, 600);
+            }
+
+            const openModal = () => {
+                if (modalInput) modalInput.value = currentName || '';
+                if (modalColor) modalColor.value = currentColor;
+                if (modalOverlay) modalOverlay.classList.add('active');
+                if (modalInput) modalInput.focus();
+            };
+            const closeModal = () => {
+                if (modalOverlay) modalOverlay.classList.remove('active');
+            };
+
+            const doSave = () => {
+                const name = (modalInput && modalInput.value.trim()) || 'anon';
+                const color = (modalColor && modalColor.value) || '#00ccff';
+                saveUsername(name);
+                saveUserColor(color);
+                currentName = name;
+                currentColor = color;
+                if (nameTextEl) {
+                    nameTextEl.textContent = name;
+                    nameTextEl.style.color = color;
+                }
+                closeModal();
+            };
+
+            // Delegate click on splash to handle EDIT button
+            const splashEl = document.getElementById('splash');
+            if (splashEl) {
+                splashEl.addEventListener('click', (e) => {
+                    const editBtn = e.target.closest('#splash-edit-name-btn');
+                    if (editBtn) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openModal();
+                        return;
+                    }
+                }, true);
+            }
+
+            if (modalClose) {
+                modalClose.addEventListener('click', closeModal);
+            }
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) closeModal();
+                });
+            }
+            if (modalSave) {
+                modalSave.addEventListener('click', doSave);
+            }
+            if (modalInput) {
+                modalInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') doSave();
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modalOverlay && modalOverlay.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        })();
 
         // Detect touch capability to show appropriate controls
         (function () {
@@ -622,7 +889,8 @@
 
             // Hide controls when splash exits
             const splashEl = document.getElementById('splash');
-            splashEl.addEventListener('click', function hideControls() {
+            splashEl.addEventListener('click', function hideControls(e) {
+                if (e.target.closest('.splash-ignore-click')) return;
                 setTimeout(() => {
                     if (isTouchDevice) {
                         touchPanel.style.opacity = '0';

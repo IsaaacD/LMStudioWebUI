@@ -167,6 +167,12 @@ export class WebRTCManager {
 
     showOnlineSplash() {
         const savedName = loadUsername();
+        if (savedName) {
+            this.username = savedName;
+            this.el = this.createUI();
+            this.connectPeerJS();
+            return;
+        }
 
         const overlay = document.createElement('div');
         overlay.classList = 'gui';
