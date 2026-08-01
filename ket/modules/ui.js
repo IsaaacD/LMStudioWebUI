@@ -16,6 +16,8 @@ function createTooltip() {
 }
 
 function attachTooltip(el, text, tooltipEl) {
+    if (tooltipEl === null) return;
+
     const icon = document.createElement('span');
     icon.innerHTML = '?';
     icon.className = 'gui-info-icon';
@@ -113,6 +115,19 @@ function createColorRow(label, value, onChange, tooltip, tooltipEl) {
     return { row, input };
 }
 
+function createText(text, tooltip, tooltipEl) {
+    const el = document.createElement('div');
+    el.className = 'gui-folder-header';
+    el.style.cursor = 'default';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = text;
+    if (tooltip) attachTooltip(titleSpan, tooltip, tooltipEl);
+
+    el.appendChild(titleSpan);
+    return el;
+}
+
 function createFolder(title, tooltip, tooltipEl) {
     const header = document.createElement('div');
     header.className = 'gui-folder-header';
@@ -169,7 +184,7 @@ function createToggleButton(label, isActive, onChange, tooltip, tooltipEl) {
 }
 
 export function initGUI(params, guiControllers, sceneManager, raveEngine) {
-    const tooltipEl = createTooltip();
+    const tooltipEl = null;//createTooltip();
 
     const container = document.createElement('div');
     container.className = 'gui-panel';
@@ -208,7 +223,8 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     };
 
     tab.addEventListener('click', togglePanel);
-
+    const modeDisplay = createText('Settings', 'Current control mode: Auto (autopilot) or Manual (WASD)', tooltipEl);
+    content.appendChild(modeDisplay);
     const pauseBtnResult = createToggleButton('Pause', params.paused, (e) => {
         params.togglePause();
         console.log(e);
@@ -216,14 +232,14 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     content.appendChild(pauseBtnResult.element);
 
     // --- Mode display ---
-    const modeDisplay = createDisabledText('Mode', params.controlMode,
-        'Current control mode: Auto (autopilot) or Manual (WASD)', tooltipEl);
-    content.appendChild(modeDisplay);
+    // const modeDisplay = createDisabledText('Mode', params.controlMode,
+    //     'Current control mode: Auto (autopilot) or Manual (WASD)', tooltipEl);
+    // content.appendChild(modeDisplay);
 
     // --- Switch button ---
-    const switchBtnResult = createButton('Switch Mode', () => {
+    const switchBtnResult = createButton(`Movement: ${params.controlMode}`, () => {
         params.switchMode();
-        modeDisplay.innerHTML = `Mode: <span style="color: rgba(255,255,255,0.5);">${params.controlMode}</span>`;
+        switchBtnResult.btn.textContent = `Movement: ${params.controlMode}`;
     }, 'Toggle between automatic flight and manual WASD controls', tooltipEl);
     content.appendChild(switchBtnResult.element);
 
@@ -275,7 +291,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         'Intensity of the bloom post-processing glow effect', tooltipEl);
     visFolder.body.appendChild(bloomSlider.row);
 
-    const radiusSlider = createSliderRow('Glow Rad', params.bloomRadius, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX, 0.05,
+    const radiusSlider = createSliderRow('Radiation', params.bloomRadius, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX, 0.05,
         (v) => {
             params.bloomRadius = v;
             if (raveEngine) { raveEngine.raveCurrent.bloomRadius = v; raveEngine.raveTarget.bloomRadius = v; }
@@ -409,6 +425,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     };
 
     guiControllers.updateModeDisplay = () => {
-        modeDisplay.innerHTML = `Mode: <span style="color: rgba(255,255,255,0.5);">${params.controlMode}</span>`;
+        switchBtnResult.btn.textContent = `Movement: ${params.controlMode}`;
+        //console.log('updateModeDisplay called, params.controlMode:', params.controlMode);
     };
 }

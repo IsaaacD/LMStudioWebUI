@@ -475,7 +475,7 @@ export async function createSparseScreen() {
 
     return {
         id: 'sparse',
-        name: 'Sparse Supernova',
+        name: 'Supernova',
         minDuration: MIN_DURATION,
         maxDuration: MAX_DURATION,
         weight: WEIGHT,

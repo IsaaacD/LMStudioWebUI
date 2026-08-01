@@ -13,16 +13,20 @@ import {
     todayAnchor
 } from './utils.js';
 
+function dailyValue(offset, min, max) {
+    return hashRange(todayAnchor() + offset, min, max);
+}
+
 export const defaultParams = {
-    speed: 1.5,
-    timeScale: 0.5,
-    bloomStrength: 0.09,
-    bloomRadius: 0.4,
-    foldIntensity: 1.0,
-    veinSpeed: 1.0,
+    speed: dailyValue(1, GUI_SPEED_MIN, GUI_SPEED_MAX),
+    timeScale: dailyValue(2, GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX),
+    bloomStrength: dailyValue(3, GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX),
+    bloomRadius: dailyValue(4, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX),
+    foldIntensity: dailyValue(5, GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX),
+    veinSpeed: dailyValue(6, GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX),
     colorA: dailyColor(1),
     colorB: dailyColor(2),
-    edgeContrast: GUI_EDGE_CONTRAST_MAX / 2,
+    edgeContrast: dailyValue(7, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX),
     paused: false,
     autoplay: true,
     controlMode: 'Auto',

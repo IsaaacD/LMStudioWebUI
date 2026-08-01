@@ -111,7 +111,7 @@ async function bootstrap() {
             params.autoplay = true;
             params.controlMode = 'Auto';
         }
-        if (isDebug && guiControllers.updateModeDisplay) guiControllers.updateModeDisplay();
+        //if (guiControllers) guiControllers.updateModeDisplay();
         updateStatusText(params.paused, params.raveMode, params.autoplay);
     };
 
@@ -133,7 +133,7 @@ async function bootstrap() {
     params.randomize = () => {
         randomizeParams(params);
         raveEngine.syncCurrent(params);
-        if (isDebug && guiControllers.updateDisplays) guiControllers.updateDisplays(params);
+        if (guiControllers.updateDisplays) guiControllers.updateDisplays(params);
     };
 
     const raveEngine = new RaveEngine(params);

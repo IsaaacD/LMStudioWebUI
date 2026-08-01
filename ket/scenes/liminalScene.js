@@ -416,7 +416,7 @@ export async function createLiminalScene() {
 
     return {
         id: 'liminal',
-        name: 'Liminal Corridor',
+        name: 'Corridor',
         minDuration: MIN_DURATION,
         maxDuration: MAX_DURATION,
         weight: WEIGHT,
