@@ -8,7 +8,7 @@ const SUPERNOVA_RING_COUNT = 5;
 const SUPERNOVA_EPOCH = 1751190000000;
 const SUPERNOVA_SEED = 42;
 const MIN_DURATION = 2;
-const MAX_DURATION = 10;
+const MAX_DURATION = 45;
 const SYNAPSE_MAX_DIST = 30;
 const RAIN_COUNT = 500;
 const AURORA_COUNT = 4;
@@ -17,7 +17,7 @@ const FLOATING_RING_COUNT = 8;
 const GRID_SIZE = 300;
 const STAR_COUNT = 2000;
 const STAR_FIELD_RADIUS = 400;
-
+const WEIGHT = 1;
 const _tempColor = new THREE.Color();
 const _vec3 = new THREE.Vector3();
 
@@ -478,6 +478,7 @@ export async function createSparseScreen() {
         name: 'Sparse Supernova',
         minDuration: MIN_DURATION,
         maxDuration: MAX_DURATION,
+        weight: WEIGHT,
         threeScene,
         defaultDuration: 10,
         geometries,

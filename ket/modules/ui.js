@@ -147,7 +147,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
             }
             const remaining = Math.max(0, maxDuration - elapsed);
             if (timerDisplay) {
-                timerDisplay.elapsed = remaining.toFixed(1) + 's';
+                timerDisplay.elapsed = elapsed.toFixed(1) + 's';
                 if (window._timerCtrl) window._timerCtrl.updateDisplay();
             }
             if (window._updateNextSwitchDisplay) {

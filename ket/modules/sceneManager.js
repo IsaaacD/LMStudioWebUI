@@ -58,17 +58,15 @@ export class SceneManager {
         const count = this.getSwitchCount();
         this.lastSwitchCount = count;
         this.timer.elapsed = (Date.now() - this.switchTimes[count]) / 1000;
+        let targetId;
         if (count % 2 === 0) {
-            this.activeIndex = this.rotation.indexOf(this.baselineSceneId);
-            if (this.activeIndex === -1) this.activeIndex = 0;
+            targetId = this.baselineSceneId;
         } else {
-            const nonBaselineIds = this.rotation.filter(id => id !== this.baselineSceneId);
-            if (nonBaselineIds.length > 0) {
-                const pickIndex = Math.floor(hashNumber(count) * nonBaselineIds.length);
-                this.activeIndex = this.rotation.indexOf(nonBaselineIds[pickIndex]);
-                if (this.activeIndex === -1) this.activeIndex = 0;
-            }
+            targetId = this._weightedPick(this.baselineSceneId);
+            if (targetId === this.baselineSceneId) targetId = this.rotation[0];
         }
+        this.activeIndex = this.rotation.indexOf(targetId);
+        if (this.activeIndex === -1) this.activeIndex = 0;
         const active = this.getActiveScene();
         if (active) {
             this._applyDuration(active);
@@ -80,6 +78,7 @@ export class SceneManager {
     registerScene(definition) {
         definition.minDuration = definition.minDuration ?? MIN_DURATION;
         definition.maxDuration = definition.maxDuration ?? MAX_DURATION;
+        definition.weight = definition.weight ?? 1;
         this.scenes.set(definition.id, definition);
         this.rotation.push(definition.id);
         if (this.scenes.size === 1) {
@@ -88,6 +87,24 @@ export class SceneManager {
                 this.durationOverrides.get(definition.id) ??
                 this.timeUntilNextSwitch();
         }
+    }
+
+    _weightedPick(excludeId) {
+        const candidates = this.rotation
+            .filter(id => id !== excludeId)
+            .map(id => {
+                const s = this.scenes.get(id);
+                return { id, weight: s?.weight ?? 1 };
+            });
+        if (candidates.length === 0) return this.rotation[0] ?? null;
+        if (candidates.length === 1) return candidates[0].id;
+        const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
+        let r = hashNumber(Date.now()) * totalWeight;
+        for (const c of candidates) {
+            r -= c.weight;
+            if (r <= 0) return c.id;
+        }
+        return candidates[candidates.length - 1].id;
     }
 
     getActiveScene() {
@@ -149,18 +166,16 @@ export class SceneManager {
     }
 
     switchToRandomOrBaseline() {
-        const count = this.getSwitchCount();
+        const currentId = this.rotation[this.activeIndex];
+        let targetId;
         if (this.isBaselineActive()) {
-            const nonBaselineIds = this.rotation.filter(id => id !== this.baselineSceneId);
-            if (nonBaselineIds.length === 0) {
-                this.switchToNext();
-                return;
-            }
-            const pickIndex = Math.floor(hashNumber(count) * nonBaselineIds.length);
-            this.switchTo(nonBaselineIds[pickIndex]);
+            targetId = this._weightedPick(this.baselineSceneId);
+            if (targetId === this.baselineSceneId) targetId = this._weightedPick(null);
         } else {
-            this.switchTo(this.baselineSceneId);
+            targetId = this.baselineSceneId;
         }
+        if (targetId === currentId) return;
+        this.switchTo(targetId);
     }
 
     setDuration(sceneId, seconds) {
@@ -184,12 +199,29 @@ export class SceneManager {
             this.lastSwitchCount = count;
             this.timer.elapsed = 0;
             this._applyDuration(this.getActiveScene());
-            return true;
+            return this._pickTarget();
         }
         this.timer.elapsed += dt;
         if (this.timer.elapsed >= this.timer.maxDuration) {
-            return true;
+            return this._pickTarget();
         }
-        return false;
+        return null;
+    }
+
+    _pickTarget() {
+        const currentId = this.rotation[this.activeIndex];
+        let targetId;
+        if (this.isBaselineActive()) {
+            targetId = this._weightedPick(this.baselineSceneId);
+            if (targetId === this.baselineSceneId) targetId = this._weightedPick(null);
+        } else {
+            targetId = this.baselineSceneId;
+        }
+        if (targetId === currentId) return null;
+        return targetId;
+    }
+
+    switchIfTarget(targetId) {
+        if (targetId) this.switchTo(targetId);
     }
 } 

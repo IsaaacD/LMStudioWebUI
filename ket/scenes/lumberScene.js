@@ -16,7 +16,7 @@ const DEBRIS_COUNT = 60;
 const SPARK_BURST_MAX = 30;
 const MIN_DURATION = 2;
 const MAX_DURATION = 6;
-
+const WEIGHT = 1;
 function hr(n) {
     return hashNumber(LUMBER_SEED + n);
 }
@@ -277,6 +277,7 @@ export async function createLumberScene() {
         name: 'Lumber',
         minDuration: MIN_DURATION,
         maxDuration: MAX_DURATION,
+        weight: WEIGHT,
         threeScene,
         defaultDuration: 45,
         geometries: lumberPieces,

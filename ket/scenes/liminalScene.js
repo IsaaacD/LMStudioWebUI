@@ -16,6 +16,9 @@ const LIGHT_ACTIVE_RADIUS_SQ = LIGHT_ACTIVE_RADIUS * LIGHT_ACTIVE_RADIUS;
 const EXIT_ACTIVE_RADIUS_SQ = (LIGHT_ACTIVE_RADIUS * 1.5) * (LIGHT_ACTIVE_RADIUS * 1.5);
 const LIGHT_POOL_SIZE = 6;
 const OPACITY_EPSILON = 0.03;
+const MIN_DURATION = 2;
+const MAX_DURATION = 50;
+const WEIGHT = 2;
 
 const _tempColor = new THREE.Color();
 const _quat = new THREE.Quaternion();
@@ -414,8 +417,9 @@ export async function createLiminalScene() {
     return {
         id: 'liminal',
         name: 'Liminal Corridor',
-        minDuration: 30,
-        maxDuration: 90,
+        minDuration: MIN_DURATION,
+        maxDuration: MAX_DURATION,
+        weight: WEIGHT,
         threeScene,
         defaultDuration: 45,
         curve,

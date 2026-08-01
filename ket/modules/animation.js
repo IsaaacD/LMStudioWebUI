@@ -89,8 +89,11 @@ export class AnimationLoop {
         const effectiveTime = rawTime * activeParams.timeScale;
 
         if (this.transitionEffect.isIdle()) {
-            if (this.sceneManager.update(dt) || this.params.forceNextScene) {
+            const target = this.sceneManager.update(dt);
+            if (target || this.params.forceNextScene) {
                 this.params.forceNextScene = false;
+                this._pendingSceneTarget = target;
+                this._forceSceneSwitch = !target;
                 this.transitionEffect.start();
             }
         } else {
@@ -98,7 +101,13 @@ export class AnimationLoop {
         }
 
         if (this.transitionEffect.consumeSwap()) {
-            this.sceneManager.switchToRandomOrBaseline();
+            if (this._forceSceneSwitch) {
+                this.sceneManager.switchToRandomOrBaseline();
+                this._forceSceneSwitch = false;
+            } else {
+                this.sceneManager.switchIfTarget(this._pendingSceneTarget);
+            }
+            this._pendingSceneTarget = null;
         }
 
         const activeScene = this.sceneManager.getActiveScene();
