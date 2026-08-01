@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { hashNumber } from '../modules/utils.js';
+import { hashNumber, normalizeColor } from '../modules/utils.js';
 
 const SEGMENT_COUNT = 150;
 const SEGMENT_DEPTH = 5;
@@ -17,7 +17,7 @@ const EXIT_ACTIVE_RADIUS_SQ = (LIGHT_ACTIVE_RADIUS * 1.5) * (LIGHT_ACTIVE_RADIUS
 const LIGHT_POOL_SIZE = 6;
 const OPACITY_EPSILON = 0.03;
 const MIN_DURATION = 2;
-const MAX_DURATION = 50;
+const MAX_DURATION = 20;
 const WEIGHT = 2;
 
 const _tempColor = new THREE.Color();
@@ -482,6 +482,13 @@ export async function createLiminalScene() {
             cameraFillLight.position.y = camera.position.y - 0.5;
             cameraFillLight.position.z = camera.position.z - 3;
 
+            if (activeParams && activeParams.colorA) {
+                cameraLight.color.lerp(_tempColor.set(normalizeColor(activeParams.colorA)), 0.02);
+            }
+            if (activeParams && activeParams.colorB) {
+                cameraFillLight.color.lerp(_tempColor.set(normalizeColor(activeParams.colorB)), 0.02);
+            }
+
             const cx = camera.position.x;
             const cy = camera.position.y;
             const cz = camera.position.z;
@@ -551,6 +558,10 @@ export async function createLiminalScene() {
                         : 0;
                     pl.intensity = Math.max(0.2, baseIntensity + flickerFast + flickerSlow + randomDrop);
                     pl.position.set(ld.wx, ld.lightY, ld.wz);
+                    if (activeParams && activeParams.colorA && activeParams.colorB) {
+                        const blend = (Math.sin(effectiveTime * 0.15 + ld.segIdx * 0.5) * 0.5 + 0.5);
+                        pl.color.lerpColors(_tempColor.set(normalizeColor(activeParams.colorA)), _tempColor.set(normalizeColor(activeParams.colorB)), blend);
+                    }
                 } else {
                     pl.intensity = 0;
                 }

@@ -110,11 +110,11 @@ export class SceneManager {
         let duration;
         const override = this.durationOverrides.get(next.id);
         if (override !== undefined) {
-            duration = override;
+            duration = Math.max(next.minDuration, Math.min(next.maxDuration, override));
         } else {
             duration = this.timeUntilNextSwitch();
         }
-        this.timer.maxDuration = Math.max(next.minDuration, Math.min(next.maxDuration, duration));
+        this.timer.maxDuration = duration;
     }
 
     switchTo(targetId) {
