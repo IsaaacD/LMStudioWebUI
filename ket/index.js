@@ -121,7 +121,7 @@ async function bootstrap() {
             raveEngine.syncCurrent(params);
             raveEngine.pickTargets();
         }
-        if (isDebug && guiControllers.updateRaveToggle) guiControllers.updateRaveToggle();
+        if (guiControllers.updateRaveToggle) guiControllers.updateRaveToggle();
         updateStatusText(params.paused, params.raveMode, params.autoplay);
     };
 
@@ -139,9 +139,9 @@ async function bootstrap() {
     const raveEngine = new RaveEngine(params);
 
     const guiControllers = {};
-    if (isDebug) {
-        initGUI(params, guiControllers, sceneManager, raveEngine);
-    }
+    //if (isDebug) {
+    initGUI(params, guiControllers, sceneManager, raveEngine);
+    //}
 
     initTouchControls(params);
 
