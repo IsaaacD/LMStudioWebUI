@@ -209,13 +209,19 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
 
     tab.addEventListener('click', togglePanel);
 
+    const pauseBtnResult = createToggleButton('Pause', params.paused, (e) => {
+        params.togglePause();
+        console.log(e);
+    }, 'Pause or resume the animation loop', tooltipEl);
+    content.appendChild(pauseBtnResult.element);
+
     // --- Mode display ---
     const modeDisplay = createDisabledText('Mode', params.controlMode,
         'Current control mode: Auto (autopilot) or Manual (WASD)', tooltipEl);
     content.appendChild(modeDisplay);
 
     // --- Switch button ---
-    const switchBtnResult = createButton('Switch Auto/Manual', () => {
+    const switchBtnResult = createButton('Switch Mode', () => {
         params.switchMode();
         modeDisplay.innerHTML = `Mode: <span style="color: rgba(255,255,255,0.5);">${params.controlMode}</span>`;
     }, 'Toggle between automatic flight and manual WASD controls', tooltipEl);
@@ -246,11 +252,6 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         },
         'Global time multiplier — affects animation speed and shader effects', tooltipEl);
     movFolder.body.appendChild(timeSlider.row);
-
-    const pauseBtnResult = createToggleButton('Pause / Resume', params.paused, () => {
-        params.togglePause();
-    }, 'Pause or resume the animation loop', tooltipEl);
-    movFolder.body.appendChild(pauseBtnResult.element);
 
     // --- Visuals folder ---
     const visFolder = createFolder('VISUALS', 'Visual effect controls', tooltipEl);
