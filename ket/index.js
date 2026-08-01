@@ -106,20 +106,22 @@ async function bootstrap() {
     params.switchMode = () => {
         if (params.controlMode === 'Auto') {
             params.autoplay = false;
-            params.raveMode = false;
             params.controlMode = 'Manual';
-        } else if (params.controlMode === 'Manual') {
-            params.autoplay = false;
-            params.raveMode = true;
-            params.controlMode = 'Rave';
-            raveEngine.pickTargets();
-            //raveEngine.raveNextTime = clock.getElapsedTime() + 1 + Math.random() * 2;
         } else {
             params.autoplay = true;
-            params.raveMode = false;
             params.controlMode = 'Auto';
         }
         if (isDebug && guiControllers.updateModeDisplay) guiControllers.updateModeDisplay();
+        updateStatusText(params.paused, params.raveMode, params.autoplay);
+    };
+
+    params.toggleRaveMode = () => {
+        params.raveMode = !params.raveMode;
+        if (params.raveMode) {
+            raveEngine.syncCurrent(params);
+            raveEngine.pickTargets();
+        }
+        if (isDebug && guiControllers.updateRaveToggle) guiControllers.updateRaveToggle();
         updateStatusText(params.paused, params.raveMode, params.autoplay);
     };
 

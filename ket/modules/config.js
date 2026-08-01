@@ -10,7 +10,8 @@ import {
     normalizeColor,
     GUI_BLOOM_STRENGTH_MIN,
     GUI_BLOOM_STRENGTH_MAX,
-    hashRange
+    hashRange,
+    todayAnchor
 } from './utils.js';
 
 export const defaultParams = {
@@ -20,14 +21,14 @@ export const defaultParams = {
     bloomRadius: 0.4,
     foldIntensity: 1.0,
     veinSpeed: 1.0,
-    colorA: '#ff0055',
-    colorB: '#00ccff',
+    colorA: dailyColor(1),
+    colorB: dailyColor(2),
     edgeContrast: GUI_EDGE_CONTRAST_MAX / 2,
     paused: false,
     autoplay: true,
     autoplaySpeed: 3.0,
-    controlMode: 'Rave',
-    raveMode: true,
+    controlMode: 'Auto',
+    raveMode: false,
     sceneDurationCity: 45,
     sceneDurationTest: 10,
     forceNextScene: false,
@@ -36,6 +37,14 @@ export const defaultParams = {
 
 function _seed() {
     return Math.floor(Date.now() / 2400);
+}
+
+function dailyColor(offset) {
+    const base = todayAnchor();
+    const hue = hashRange(base + offset, 0, 360);
+    const sat = hashRange(base + offset + 1000, 60, 100);
+    const lit = hashRange(base + offset + 2000, 40, 70);
+    return '#' + new THREE.Color(`hsl(${hue}, ${sat}%, ${lit}%)`).getHexString();
 }
 
 export function randomizeParams(params) {
@@ -66,8 +75,11 @@ export function updateStatusText(paused, raveMode, autoplay) {
     if (paused) {
         statusEl.innerText = "PAUSED";
         statusEl.style.color = "#ff0055";
+    } else if (raveMode && autoplay) {
+        statusEl.innerText = "RAVE + AUTOPILOT";
+        statusEl.style.color = "#ff00ff";
     } else if (raveMode) {
-        statusEl.innerText = "RAVE";
+        statusEl.innerText = "RAVE + MANUAL";
         statusEl.style.color = "#ff00ff";
     } else if (autoplay) {
         statusEl.innerText = "AUTOPILOT";

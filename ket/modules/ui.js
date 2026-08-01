@@ -204,7 +204,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
             content.style.opacity = '1';
             content.style.padding = '10px 14px';
             arrowIcon.style.transform = 'rotate(0deg)';
-            container.style.maxHeight = '2000px';
+            container.style.maxHeight = '100%';
         }
     };
 
@@ -227,6 +227,23 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         modeDisplay.innerHTML = `Mode: <span style="color: rgba(255,255,255,0.5);">${params.controlMode}</span>`;
     }, 'Toggle between automatic flight and manual WASD controls', tooltipEl);
     content.appendChild(switchBtnResult.element);
+
+    // --- Rave toggle ---
+    const raveBtnResult = createToggleButton(params.raveMode ? 'Rave: ON' : 'Rave: OFF', params.raveMode, () => {
+        params.toggleRaveMode();
+    }, 'Toggle rave mode — auto-randomizes visual parameters (works in any control mode)', tooltipEl);
+    content.appendChild(raveBtnResult.element);
+
+    guiControllers.updateRaveToggle = () => {
+        raveBtnResult.btn.textContent = params.raveMode ? 'Rave: ON' : 'Rave: OFF';
+        if (params.raveMode) {
+            raveBtnResult.btn.style.borderColor = 'rgba(255, 0, 85, 0.4)';
+            raveBtnResult.btn.style.background = 'rgba(255, 0, 85, 0.12)';
+        } else {
+            raveBtnResult.btn.style.borderColor = '';
+            raveBtnResult.btn.style.background = '';
+        }
+    };
 
     // --- Movement folder ---
     const movFolder = createFolder('MOVEMENT', 'Movement and timing controls', tooltipEl);
