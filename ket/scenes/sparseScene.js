@@ -736,6 +736,7 @@ export async function createSparseScreen() {
             gridMat.uniforms.uColor2.value.copy(_tempColor);
             gridMat.needsUpdate = true;
             gridMesh.position.x = camera.position.x;
+            gridMesh.position.y = camera.position.y - 25;
             gridMesh.position.z = camera.position.z;
 
             // Particle rain
