@@ -321,8 +321,9 @@ export class WebRTCManager {
             line-height: 1.6;
             max-width: 280px;
             overflow: hidden;
-            transition: max-height 0.35s ease;
+            transition: max-height 0.35s ease, max-width 0.35s ease;
             max-height: 40px;
+            max-width: 60px;
         `;
 
         const tab = document.createElement('div');
@@ -376,8 +377,10 @@ export class WebRTCManager {
                     content.style.maxHeight = '0px';
                 });
                 container.style.maxHeight = '40px';
+                container.style.maxWidth = '60px';
             } else {
                 if (!contentHeight) contentHeight = 600;
+                container.style.maxWidth = '280px';
                 content.style.maxHeight = contentHeight + 'px';
                 content.style.opacity = '1';
                 content.style.padding = '12px 16px';
