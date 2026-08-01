@@ -79,9 +79,9 @@ async function bootstrap() {
     const cityScene = await createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial);
     const sparseScene = await createSparseScreen();
     const lumberScene = await createLumberScene();
-    sceneManager.registerScene(cityScene);
+    //sceneManager.registerScene(cityScene);
     sceneManager.registerScene(sparseScene);
-    sceneManager.registerScene(lumberScene);
+    //sceneManager.registerScene(lumberScene);
 
     const initialScene = sceneManager.resolveInitialScene();
 

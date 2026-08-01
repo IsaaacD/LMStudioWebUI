@@ -14,6 +14,14 @@ const ASSET_MANIFEST = [
     { id: 'shader-heart-f', type: 'shader', path: './shaders/heart.frag' },
     { id: 'shader-wood-v', type: 'shader', path: './shaders/wood.vert' },
     { id: 'shader-wood-f', type: 'shader', path: './shaders/wood.frag' },
+    // Sparse scene shaders
+    { id: 'shader-sparse-float-v', type: 'shader', path: './shaders/sparse-float.vert' },
+    { id: 'shader-sparse-float-f', type: 'shader', path: './shaders/sparse-float.frag' },
+    { id: 'shader-sparse-grid-v', type: 'shader', path: './shaders/sparse-grid.vert' },
+    { id: 'shader-sparse-grid-f', type: 'shader', path: './shaders/sparse-grid.frag' },
+    { id: 'shader-sparse-aurora-v', type: 'shader', path: './shaders/sparse-aurora.vert' },
+    { id: 'shader-sparse-aurora-f', type: 'shader', path: './shaders/sparse-aurora.frag' },
+    { id: 'shader-wood-crack-f', type: 'shader', path: './shaders/wood-crack.frag' },
     // Shaders: postprocessing
     { id: 'shader-sorbel-v', type: 'shader', path: './shaders/sorbel.vert' },
     { id: 'shader-sorbel-f', type: 'shader', path: './shaders/sorbel.frag' },
