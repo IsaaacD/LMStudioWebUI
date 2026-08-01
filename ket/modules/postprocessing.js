@@ -65,6 +65,74 @@ export class PostProcessor {
         this.composer.addPass(this.pixelationPass);
     }
 
+    async initGrainPass() {
+        if (this.grainPass) return;
+        const grainShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uIntensity": { value: 0.04 },
+                "uTime": { value: 0 }
+            },
+            vertexShader: await loadShader('./shaders/liminal-grain.vert'),
+            fragmentShader: await loadShader('./shaders/liminal-grain.frag')
+        };
+        this.grainPass = new ShaderPass(grainShader);
+        this.composer.addPass(this.grainPass);
+    }
+
+    async initVignettePass() {
+        if (this.vignettePass) return;
+        const vignetteShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uDarkness": { value: 0.7 }
+            },
+            vertexShader: await loadShader('./shaders/liminal-vignette.vert'),
+            fragmentShader: await loadShader('./shaders/liminal-vignette.frag')
+        };
+        this.vignettePass = new ShaderPass(vignetteShader);
+        this.composer.addPass(this.vignettePass);
+    }
+
+    async initChromaticAberrationPass() {
+        if (this.chromaPass) return;
+        const chromaShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uAmount": { value: 0.002 }
+            },
+            vertexShader: await loadShader('./shaders/liminal-chroma.vert'),
+            fragmentShader: await loadShader('./shaders/liminal-chroma.frag')
+        };
+        this.chromaPass = new ShaderPass(chromaShader);
+        this.composer.addPass(this.chromaPass);
+    }
+
+    async initScanlinePass() {
+        if (this.scanlinePass) return;
+        const scanlineShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uIntensity": { value: 0.03 },
+                "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: await loadShader('./shaders/liminal-scanline.vert'),
+            fragmentShader: await loadShader('./shaders/liminal-scanline.frag')
+        };
+        this.scanlinePass = new ShaderPass(scanlineShader);
+        this.composer.addPass(this.scanlinePass);
+    }
+
+    removeLiminalPasses() {
+        const passesToRemove = ['grainPass', 'vignettePass', 'chromaPass', 'scanlinePass'];
+        for (const key of passesToRemove) {
+            if (this[key]) {
+                this.composer.removePass(this[key]);
+                this[key] = null;
+            }
+        }
+    }
+
     setScene(threeScene) {
         this.renderPass.scene = threeScene;
     }
@@ -79,11 +147,14 @@ export class PostProcessor {
         this.fadeOverlay.style.opacity = String(alpha);
     }
 
-    update(activeParams) {
+    update(activeParams, effectiveTime) {
         this.bloomPass.strength = activeParams.bloomStrength;
         this.bloomPass.radius = activeParams.bloomRadius;
         if (this.edgePass) {
             this.edgePass.uniforms['edgeStrength'].value = activeParams.edgeContrast;
+        }
+        if (this.grainPass) {
+            this.grainPass.uniforms['uTime'].value = effectiveTime || 0;
         }
     }
 
@@ -101,6 +172,9 @@ export class PostProcessor {
         }
         if (this.pixelationPass) {
             this.pixelationPass.uniforms.uResolution.value.set(width, height);
+        }
+        if (this.scanlinePass) {
+            this.scanlinePass.uniforms.uResolution.value.set(width, height);
         }
     }
 }

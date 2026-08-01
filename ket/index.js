@@ -25,6 +25,7 @@ import { WebRTCManager } from './modules/webrtc.js';
 import { createCityScene } from './scenes/cityScene.js';
 import { createSparseScreen } from './scenes/sparseScene.js';
 import { createLumberScene } from './scenes/lumberScene.js'
+import { createLiminalScene } from './scenes/liminalScene.js'
 
 import { loadAllAssets, setProgressCallback } from './modules/loader.js';
 
@@ -79,9 +80,11 @@ async function bootstrap() {
     const cityScene = await createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial);
     const sparseScene = await createSparseScreen();
     const lumberScene = await createLumberScene();
+    const liminalScene = await createLiminalScene();
     sceneManager.registerScene(cityScene);
     sceneManager.registerScene(sparseScene);
     sceneManager.registerScene(lumberScene);
+    sceneManager.registerScene(liminalScene);
 
     const initialScene = sceneManager.resolveInitialScene();
 
@@ -90,6 +93,7 @@ async function bootstrap() {
     const clock = getClock();
 
     postProcessor = new PostProcessor(renderer, initialScene.threeScene, camera);
+    sceneManager.composer = postProcessor;
     await postProcessor.initEdgePass();
     await postProcessor.initPixelationPass();
 

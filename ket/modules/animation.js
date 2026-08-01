@@ -110,7 +110,7 @@ export class AnimationLoop {
         this.composer.setPixelationSharpness(this.transitionEffect.getPixelationSharpness());
         this.composer.setFadeOverlayAlpha(this.transitionEffect.getOverlayAlpha());
 
-        this.composer.update(activeParams);
+        this.composer.update(activeParams, effectiveTime);
 
         if (this.teleportPauseTimer > 0) {
             this.teleportPauseTimer -= dt;

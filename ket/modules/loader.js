@@ -22,6 +22,15 @@ const ASSET_MANIFEST = [
     { id: 'shader-sparse-aurora-v', type: 'shader', path: './shaders/sparse-aurora.vert' },
     { id: 'shader-sparse-aurora-f', type: 'shader', path: './shaders/sparse-aurora.frag' },
     { id: 'shader-wood-crack-f', type: 'shader', path: './shaders/wood-crack.frag' },
+    // Liminal scene shaders
+    { id: 'shader-liminal-grain-v', type: 'shader', path: './shaders/liminal-grain.vert' },
+    { id: 'shader-liminal-grain-f', type: 'shader', path: './shaders/liminal-grain.frag' },
+    { id: 'shader-liminal-vignette-v', type: 'shader', path: './shaders/liminal-vignette.vert' },
+    { id: 'shader-liminal-vignette-f', type: 'shader', path: './shaders/liminal-vignette.frag' },
+    { id: 'shader-liminal-chroma-v', type: 'shader', path: './shaders/liminal-chroma.vert' },
+    { id: 'shader-liminal-chroma-f', type: 'shader', path: './shaders/liminal-chroma.frag' },
+    { id: 'shader-liminal-scanline-v', type: 'shader', path: './shaders/liminal-scanline.vert' },
+    { id: 'shader-liminal-scanline-f', type: 'shader', path: './shaders/liminal-scanline.frag' },
     // Shaders: postprocessing
     { id: 'shader-sorbel-v', type: 'shader', path: './shaders/sorbel.vert' },
     { id: 'shader-sorbel-f', type: 'shader', path: './shaders/sorbel.frag' },

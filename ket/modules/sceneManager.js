@@ -14,6 +14,7 @@ export class SceneManager {
         this.switchTimes = [];
         this.anchoredDate = null;
         this.lastSwitchCount = 0;
+        this.composer = null;
         this.rebuild();
         this.lastSwitchCount = this.getSwitchCount();
     }
@@ -71,7 +72,7 @@ export class SceneManager {
         const active = this.getActiveScene();
         if (active) {
             this._applyDuration(active);
-            if (active.onEnter) active.onEnter();
+            if (active.onEnter) active.onEnter(this.composer);
         }
         return active;
     }
@@ -113,7 +114,7 @@ export class SceneManager {
     switchTo(targetId) {
         const prev = this.getActiveScene();
         if (prev && prev.onExit) {
-            prev.onExit();
+            prev.onExit(this.composer);
         }
         this.activeIndex = this.rotation.indexOf(targetId);
         if (this.activeIndex === -1) {
@@ -125,7 +126,7 @@ export class SceneManager {
             this.timer.elapsed = 0;
             this._applyDuration(next);
             if (next.onEnter) {
-                next.onEnter();
+                next.onEnter(this.composer);
             }
         }
     }
@@ -135,14 +136,14 @@ export class SceneManager {
         this.activeIndex = (this.activeIndex + 1) % this.rotation.length;
         const next = this.getActiveScene();
         if (prev && prev.onExit) {
-            prev.onExit();
+            prev.onExit(this.composer);
         }
         if (next) {
             this.lastSwitchCount = this.getSwitchCount();
             this.timer.elapsed = 0;
             this._applyDuration(next);
             if (next.onEnter) {
-                next.onEnter();
+                next.onEnter(this.composer);
             }
         }
     }
