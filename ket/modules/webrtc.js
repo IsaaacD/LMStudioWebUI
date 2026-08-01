@@ -335,6 +335,7 @@ export class WebRTCManager {
             justify-content: center;
             padding: 8px 16px;
             cursor: pointer;
+            overflow: hidden;
             border-bottom: 1px solid rgba(0, 204, 255, 0.15);
             background: rgba(5, 0, 20, 0.8);
         `;
@@ -357,7 +358,8 @@ export class WebRTCManager {
         content.style.cssText = `
             padding: 0 16px;
             max-height: 0px;
-            overflow-y: auto;
+            overflow-y: hidden;
+            overflow-x: hidden; 
             opacity: 0;
             transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
         `;
