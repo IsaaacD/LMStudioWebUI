@@ -102,7 +102,7 @@ export class AnimationLoop {
 
         if (this.transitionEffect.consumeSwap()) {
             if (this._forceSceneSwitch) {
-                this.sceneManager.switchToRandomOrBaseline();
+                this.sceneManager.switchToRandom();
                 this._forceSceneSwitch = false;
             } else {
                 this.sceneManager.switchIfTarget(this._pendingSceneTarget);

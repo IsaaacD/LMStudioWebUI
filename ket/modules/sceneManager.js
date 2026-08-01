@@ -11,7 +11,8 @@ export class SceneManager {
         this.timer = { elapsed: 0, maxDuration: 45 };
         this.durationOverrides = new Map();
         this.switchTimes = [];
-        this._pickCache = { count: -1, target: null };
+        this._nextPickSeed = 0;
+        this.useSequential = false;
         this.anchoredDate = null;
         this.lastSwitchCount = 0;
         this.composer = null;
@@ -153,12 +154,10 @@ export class SceneManager {
         }
     }
 
-    switchToRandomOrBaseline() {
-        const count = this.getSwitchCount();
-        const currentId = this.rotation[this.activeIndex];
-        const targetId = this._weightedPick(count);
-        if (targetId === currentId) return;
-        this.switchTo(targetId);
+    switchToRandom() {
+        this._nextPickSeed++;
+        const target = this._pickTarget();
+        if (target) this.switchTo(target);
     }
 
     setDuration(sceneId, seconds) {
@@ -181,23 +180,31 @@ export class SceneManager {
         if (count > this.lastSwitchCount) {
             this.lastSwitchCount = count;
             this.timer.elapsed = 0;
+            this._nextPickSeed = count;
             this._applyDuration(this.getActiveScene());
-            return this._pickTarget(count);
+            return this._pickTarget();
         }
         this.timer.elapsed += dt;
         if (this.timer.elapsed >= this.timer.maxDuration) {
-            return this._pickTarget(count);
+            this._nextPickSeed++;
+            const target = this._pickTarget();
+            if (target) return target;
+            this.timer.elapsed = 0;
         }
         return null;
     }
 
-    _pickTarget(count) {
-        if (this._pickCache.count !== count) {
-            const targetId = this._weightedPick(count);
-            const currentId = this.rotation[this.activeIndex];
-            this._pickCache = { count, target: (targetId === currentId) ? null : targetId };
+    _pickTarget() {
+        let targetId;
+        if (this.useSequential) {
+            const nextIndex = (this.activeIndex + 1) % this.rotation.length;
+            targetId = this.rotation[nextIndex];
+        } else {
+            targetId = this._weightedPick(this._nextPickSeed);
         }
-        return this._pickCache.target;
+        const currentId = this.rotation[this.activeIndex];
+        if (targetId === currentId) return null;
+        return targetId;
     }
 
     switchIfTarget(targetId) {
