@@ -105,17 +105,18 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         const sceneFolder = gui.addFolder('Scenes');
 
         sceneInfo = { name: 'loading...' };
-        sceneFolder.add(sceneInfo, 'name').name('Current Scene').disable();
+        const sceneInfoCtrl = sceneFolder.add(sceneInfo, 'name').name('Current Scene').disable();
+        window._sceneInfoCtrl = sceneInfoCtrl;
 
-        const cityDuration = { value: sceneManager.getDuration('city') || 45 };
-        const cityDurCtrl = sceneFolder.add(cityDuration, 'value', 5, 120, 1).name('City Duration (s)');
-        addInfoIcon(cityDurCtrl.domElement, 'Time before auto-switching from city scene');
-        cityDurCtrl.onChange((v) => sceneManager.setDuration('city', v));
+        // const cityDuration = { value: sceneManager.getDuration('city') || 45 };
+        // const cityDurCtrl = sceneFolder.add(cityDuration, 'value', 5, 120, 1).name('City Duration (s)');
+        // addInfoIcon(cityDurCtrl.domElement, 'Time before auto-switching from city scene');
+        // cityDurCtrl.onChange((v) => sceneManager.setDuration('city', v));
 
-        const testDuration = { value: sceneManager.getDuration('test') || 10 };
-        const testDurCtrl = sceneFolder.add(testDuration, 'value', 3, 60, 1).name('Test Duration (s)');
-        addInfoIcon(testDurCtrl.domElement, 'Time before auto-switching from test scene');
-        testDurCtrl.onChange((v) => sceneManager.setDuration('test', v));
+        // const testDuration = { value: sceneManager.getDuration('test') || 10 };
+        // const testDurCtrl = sceneFolder.add(testDuration, 'value', 3, 60, 1).name('Test Duration (s)');
+        // addInfoIcon(testDurCtrl.domElement, 'Time before auto-switching from test scene');
+        // testDurCtrl.onChange((v) => sceneManager.setDuration('test', v));
 
         const nextSceneBtn = {
             'Next Scene': () => {
@@ -126,7 +127,13 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         addInfoIcon(nextSceneCtrl.domElement, 'Manually trigger transition to next scene');
 
         timerDisplay = { elapsed: '0s' };
-        sceneFolder.add(timerDisplay, 'elapsed').name('Timer').disable();
+        const timerCtrl = sceneFolder.add(timerDisplay, 'elapsed').name('Timer').disable();
+
+        const nextSwitchDisplay = { next: '0s' };
+        const nextSwitchCtrl = sceneFolder.add(nextSwitchDisplay, 'next').name('Next Switch').disable();
+        window._updateNextSwitchDisplay = nextSwitchDisplay;
+        window._nextSwitchCtrl = nextSwitchCtrl;
+        window._timerCtrl = timerCtrl;
 
         sceneFolder.close();
     }
@@ -136,10 +143,16 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
             const active = sceneManager.getActiveScene();
             if (active) {
                 sceneInfo.name = active.name;
+                if (window._sceneInfoCtrl) window._sceneInfoCtrl.updateDisplay();
             }
             const remaining = Math.max(0, maxDuration - elapsed);
             if (timerDisplay) {
                 timerDisplay.elapsed = remaining.toFixed(1) + 's';
+                if (window._timerCtrl) window._timerCtrl.updateDisplay();
+            }
+            if (window._updateNextSwitchDisplay) {
+                window._updateNextSwitchDisplay.next = sceneManager.timeUntilNextSwitch().toFixed(1) + 's';
+                if (window._nextSwitchCtrl) window._nextSwitchCtrl.updateDisplay();
             }
         }
     };

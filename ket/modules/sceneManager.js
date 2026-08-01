@@ -47,7 +47,7 @@ export class SceneManager {
         return Math.max(0, lo - 1);
     }
 
-    _timeUntilNextSwitch() {
+    timeUntilNextSwitch() {
         const count = this.getSwitchCount();
         const nextTime = this.switchTimes[count + 1];
         return Math.max(0, (nextTime - Date.now()) / 1000);
@@ -85,7 +85,7 @@ export class SceneManager {
             this.baselineSceneId = definition.id;
             this.timer.maxDuration =
                 this.durationOverrides.get(definition.id) ??
-                this._timeUntilNextSwitch();
+                this.timeUntilNextSwitch();
         }
     }
 
@@ -105,7 +105,7 @@ export class SceneManager {
         if (override !== undefined) {
             duration = override;
         } else {
-            duration = this._timeUntilNextSwitch();
+            duration = this.timeUntilNextSwitch();
         }
         this.timer.maxDuration = Math.max(next.minDuration, Math.min(next.maxDuration, duration));
     }
@@ -122,6 +122,7 @@ export class SceneManager {
         const next = this.getActiveScene();
         if (next) {
             this.lastSwitchCount = this.getSwitchCount();
+            this.timer.elapsed = 0;
             this._applyDuration(next);
             if (next.onEnter) {
                 next.onEnter();
@@ -138,6 +139,7 @@ export class SceneManager {
         }
         if (next) {
             this.lastSwitchCount = this.getSwitchCount();
+            this.timer.elapsed = 0;
             this._applyDuration(next);
             if (next.onEnter) {
                 next.onEnter();
