@@ -154,10 +154,7 @@ function isTouchOnGui(touch) {
 }
 
 function handleTouchStart(e, params) {
-    if (params.paused || params.autoplay) {
-        if (!params.raveMode)
-            return;
-    }
+    if (params.paused) return;
     if (e.changedTouches.length > 0 && isTouchOnGui(e.changedTouches[0])) return;
     e.preventDefault();
 
@@ -186,7 +183,7 @@ function handleTouchStart(e, params) {
 }
 
 function handleTouchMove(e, params) {
-    if (params.paused || params.autoplay && !params.raveMode) return;
+    if (params.paused) return;
     for (const touch of e.changedTouches) {
         if (isTouchOnGui(touch)) return;
     }
