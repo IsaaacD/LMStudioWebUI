@@ -173,6 +173,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     const tooltipEl = createTooltip();
 
     const container = document.createElement('div');
+    container.className = 'gui-panel';
     container.id = 'debug-panel';
 
     // Tab

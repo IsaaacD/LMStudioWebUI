@@ -53,27 +53,9 @@ function showToast(message, color, onFollowClick) {
 
     const toast = document.createElement('div');
     toast.id = 'teleport-toast';
-    toast.classList = 'gui';
+    toast.className = 'gui-toast';
     toast.textContent = message;
-    toast.style.cssText = `
-        position: fixed;
-        top: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: ${color};
-        color: #000;
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
-        font-weight: bold;
-        letter-spacing: 0.1em;
-        padding: 10px 24px;
-        border-radius: 6px;
-        z-index: 10000;
-        cursor: pointer;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        user-select: none;
-    `;
+    toast.style.background = color;
 
     document.body.appendChild(toast);
     onFollowClick();
@@ -85,11 +67,6 @@ function showToast(message, color, onFollowClick) {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
     };
-
-    // toast.addEventListener('click', () => {
-    //     if (onFollowClick) onFollowClick();
-    //     dismiss();
-    // });
 
     setTimeout(() => dismiss(), 3000);
 }
@@ -181,99 +158,39 @@ export class WebRTCManager {
         }
 
         const overlay = document.createElement('div');
-        overlay.classList = 'gui';
+        overlay.className = 'gui-splash';
         overlay.id = 'online-splash';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 100001;
-            transition: opacity 1s ease;
-        `;
 
         const title = document.createElement('div');
-
+        title.className = 'gui-splash-title';
         title.textContent = 'ONLINE MODE';
-        title.style.cssText = `
-            font-family: 'Courier New', monospace;
-            font-size: clamp(18px, 4vw, 36px);
-            color: #fff;
-            text-shadow: 0 0 10px #ff0055, 0 0 30px #ff0055, 0 0 60px #00ccff;
-            letter-spacing: 0.3em;
-            margin-bottom: 40px;
-        `;
         overlay.appendChild(title);
 
         const form = document.createElement('div');
-        form.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-        `;
+        form.className = 'gui-splash-form';
 
         const nameInput = document.createElement('input');
         nameInput.type = 'text';
+        nameInput.className = 'gui-splash-input';
         nameInput.placeholder = 'username';
         nameInput.value = savedName || '';
         nameInput.maxLength = 16;
-        nameInput.style.cssText = `
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 204, 255, 0.3);
-            border-radius: 6px;
-            padding: 10px 16px;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            text-align: center;
-            outline: none;
-            width: 240px;
-        `;
         form.appendChild(nameInput);
 
         const colorLabel = document.createElement('div');
+        colorLabel.className = 'gui-splash-label';
         colorLabel.textContent = 'YOUR COLOR';
-        colorLabel.style.cssText = `
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 0.2em;
-        `;
         form.appendChild(colorLabel);
 
         const colorPicker = document.createElement('input');
         colorPicker.type = 'color';
+        colorPicker.className = 'gui-splash-color';
         colorPicker.value = this.userColor;
-        colorPicker.style.cssText = `
-            width: 60px;
-            height: 30px;
-            border: 1px solid rgba(0, 204, 255, 0.3);
-            border-radius: 4px;
-            background: transparent;
-            cursor: pointer;
-            padding: 0;
-        `;
         form.appendChild(colorPicker);
 
         const joinBtn = document.createElement('button');
+        joinBtn.className = 'gui-splash-btn';
         joinBtn.textContent = 'JOIN';
-        joinBtn.style.cssText = `
-            margin-top: 12px;
-            background: rgba(0, 204, 255, 0.15);
-            border: 1px solid rgba(0, 204, 255, 0.4);
-            border-radius: 6px;
-            padding: 10px 32px;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            letter-spacing: 0.2em;
-            cursor: pointer;
-        `;
         form.appendChild(joinBtn);
 
         overlay.appendChild(form);
@@ -300,69 +217,22 @@ export class WebRTCManager {
 
     createUI() {
         const container = document.createElement('div');
-        container.classList = 'gui';
+        container.className = 'gui-panel';
         container.id = 'webrtc-panel';
-        container.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            letter-spacing: 0.15em;
-            background: rgba(5, 0, 20, 0.6);
-            border-radius: 6px;
-            border: 1px solid rgba(0, 204, 255, 0.15);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            pointer-events: auto;
-            z-index: 99990;
-            user-select: none;
-            line-height: 1.6;
-            max-width: 280px;
-            overflow: hidden;
-            transition: max-height 0.35s ease, max-width 0.35s ease;
-            max-height: 40px;
-            max-width: 60px;
-        `;
 
         const tab = document.createElement('div');
+        tab.className = 'gui-tab';
         tab.id = 'webrtc-tab';
-        tab.classList = 'gui';
-        tab.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 16px;
-            cursor: pointer;
-            overflow: hidden;
-            border-bottom: 1px solid rgba(0, 204, 255, 0.15);
-            background: rgba(5, 0, 20, 0.8);
-        `;
 
         const arrowIcon = document.createElement('span');
+        arrowIcon.className = 'gui-tab-arrow';
         arrowIcon.id = 'webrtc-tab-arrow';
         arrowIcon.textContent = '▲';
-        arrowIcon.style.cssText = `
-            font-size: 10px;
-            color: rgba(0, 204, 255, 0.7);
-            transition: transform 0.35s ease;
-            display: inline-block;
-            transform: rotate(180deg);
-        `;
         tab.appendChild(arrowIcon);
 
         const content = document.createElement('div');
+        content.className = 'gui-content';
         content.id = 'webrtc-content';
-        content.classList = 'gui';
-        content.style.cssText = `
-            padding: 0 16px;
-            max-height: 0px;
-            overflow-y: hidden;
-            overflow-x: hidden; 
-            opacity: 0;
-            transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
-        `;
 
         let isCollapsed = true;
         let contentHeight = null;
@@ -404,70 +274,35 @@ export class WebRTCManager {
         if (isOnlineMode) {
             const nameEl = document.createElement('div');
             nameEl.id = 'webrtc-name';
-            nameEl.style.cssText = `
-                margin-top: 4px;
-                font-size: 11px;
-                color: rgba(255, 255, 255, 0.5);
-            `;
+            nameEl.className = 'gui-info-text-highlight';
             nameEl.innerHTML = `<span style="color: ${this.userColor};">${this.username}</span>`;
             content.appendChild(nameEl);
 
             const posEl = document.createElement('div');
             posEl.id = 'webrtc-pos';
-            posEl.style.cssText = `
-                margin-top: 4px;
-                font-size: 10px;
-                color: rgba(255, 255, 255, 0.3);
-                letter-spacing: 0.1em;
-            `;
+            posEl.className = 'gui-info-text';
             posEl.textContent = 'POS: 0, 0, 0';
             content.appendChild(posEl);
 
             const osEl = document.createElement('div');
             osEl.id = 'webrtc-orient-speed';
-            osEl.style.cssText = `
-                margin-top: 4px;
-                font-size: 10px;
-                color: rgba(255, 255, 255, 0.3);
-                letter-spacing: 0.1em;
-            `;
+            osEl.className = 'gui-info-text';
             osEl.textContent = 'ORIENT: 0.000 rad/s';
             content.appendChild(osEl);
         }
 
         const idRow = document.createElement('div');
-        idRow.style.cssText = `
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        `;
+        idRow.className = 'gui-id-row';
 
         const idEl = document.createElement('div');
         idEl.id = 'webrtc-id';
-        idEl.style.cssText = `
-            flex: 1;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            word-break: break-all;
-        `;
+        idEl.className = 'gui-id-text';
         idEl.innerHTML = 'YOUR ID: <span style="color: rgba(255,255,255,0.6);">connecting...</span>';
         idRow.appendChild(idEl);
 
         const copyBtn = document.createElement('button');
+        copyBtn.className = 'gui-btn-small';
         copyBtn.textContent = 'COPY';
-        copyBtn.style.cssText = `
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 204, 255, 0.2);
-            border-radius: 4px;
-            padding: 2px 8px;
-            color: rgba(255, 255, 255, 0.5);
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-        `;
         copyBtn.addEventListener('click', () => {
             if (this.userId) {
                 navigator.clipboard.writeText(this.userId).then(() => {
@@ -479,19 +314,8 @@ export class WebRTCManager {
         idRow.appendChild(copyBtn);
 
         const shareBtn = document.createElement('button');
+        shareBtn.className = 'gui-btn-small';
         shareBtn.textContent = 'SHARE';
-        shareBtn.style.cssText = `
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 204, 255, 0.2);
-            border-radius: 4px;
-            padding: 2px 8px;
-            color: rgba(255, 255, 255, 0.5);
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-        `;
         shareBtn.addEventListener('click', () => {
             if (this.userId) {
                 const base = window.location.origin + window.location.pathname;
@@ -505,57 +329,20 @@ export class WebRTCManager {
         idRow.appendChild(shareBtn);
 
         const qrBtn = document.createElement('button');
+        qrBtn.className = 'gui-btn-small';
         qrBtn.textContent = 'QR';
-        qrBtn.style.cssText = `
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 204, 255, 0.2);
-            border-radius: 4px;
-            padding: 2px 8px;
-            color: rgba(255, 255, 255, 0.5);
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-        `;
         qrBtn.addEventListener('click', () => {
             if (this.userId) {
                 const base = window.location.origin + window.location.pathname;
                 const shareUrl = `${base}?online=true&joinId=${this.userId}`;
                 try {
                     const qrCanvas = createQRCanvas(shareUrl, Math.min(500, window.innerWidth - 80));
+                    qrCanvas.className = 'gui-qr-canvas';
                     const overlay = document.createElement('div');
-                    overlay.style.cssText = `
-                        position: fixed;
-                        top: 0; left: 0;
-                        width: 100%; height: 100%;
-                        background: rgba(0, 0, 0, 0.45);
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        z-index: 100002;
-                    `;
-                    qrCanvas.style.cssText = `
-                        width:80%;
-                        max-width:20em;
-                        height:auto;
-                        border-radius: 8px;
-                    `;
+                    overlay.className = 'gui-qr-overlay';
                     const closeBtn = document.createElement('button');
+                    closeBtn.className = 'gui-qr-close';
                     closeBtn.textContent = '✕';
-                    closeBtn.classList = 'gui';
-                    closeBtn.style.cssText = `
-                        position: fixed;
-                        top: 20px; right: 20px;
-                        background: rgba(255, 255, 255, 0.1);
-                        border: 1px solid rgba(255, 255, 255, 0.3);
-                        border-radius: 50%;
-                        width: 40px; height: 40px;
-                        color: #fff;
-                        font-size: 18px;
-                        cursor: pointer;
-                        z-index: 100003;
-                    `;
                     closeBtn.addEventListener('click', () => overlay.remove());
                     overlay.appendChild(qrCanvas);
                     overlay.appendChild(closeBtn);
@@ -569,40 +356,16 @@ export class WebRTCManager {
         content.appendChild(idRow);
 
         const inputRow = document.createElement('div');
-        inputRow.style.cssText = `
-            margin-top: 10px;
-            display: flex;
-            gap: 6px;
-        `;
+        inputRow.className = 'gui-input-row';
 
         this.inputEl = document.createElement('input');
         this.inputEl.type = 'text';
+        this.inputEl.className = 'gui-input';
         this.inputEl.placeholder = 'paste peer ID';
-        this.inputEl.style.cssText = `
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 204, 255, 0.2);
-            border-radius: 4px;
-            padding: 4px 8px;
-            color: rgba(255, 255, 255, 0.8);
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            outline: none;
-        `;
 
         const connectBtn = document.createElement('button');
+        connectBtn.className = 'gui-btn-connect';
         connectBtn.textContent = 'CONNECT';
-        connectBtn.style.cssText = `
-            background: rgba(0, 204, 255, 0.15);
-            border: 1px solid rgba(0, 204, 255, 0.3);
-            border-radius: 4px;
-            padding: 4px 10px;
-            color: rgba(255, 255, 255, 0.7);
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
-            cursor: pointer;
-            white-space: nowrap;
-        `;
 
         connectBtn.addEventListener('click', () => {
             const peerId = this.inputEl.value.trim();
@@ -623,21 +386,9 @@ export class WebRTCManager {
         if (isOnlineMode) {
             const teleportBtn = document.createElement('button');
             teleportBtn.id = 'teleport-btn';
+            teleportBtn.className = 'gui-btn-teleport';
             teleportBtn.textContent = 'TELEPORT TO RANDO';
             teleportBtn.disabled = true;
-            teleportBtn.style.cssText = `
-                margin-top: 10px;
-                width: 100%;
-                background: rgba(255, 0, 85, 0.15);
-                border: 1px solid rgba(255, 0, 85, 0.3);
-                border-radius: 4px;
-                padding: 6px 10px;
-                color: rgba(255, 255, 255, 0.7);
-                font-family: 'Courier New', monospace;
-                font-size: 10px;
-                letter-spacing: 0.15em;
-                cursor: pointer;
-            `;
             teleportBtn.addEventListener('click', () => {
                 this.teleportToRandomPeer();
             });
@@ -782,25 +533,7 @@ export class WebRTCManager {
         if (!isDebugMode) return;
         const panel = document.createElement('div');
         panel.id = 'webrtc-debug';
-        panel.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            letter-spacing: 0.1em;
-            background: rgba(5, 0, 20, 0.7);
-            border-radius: 6px;
-            border: 1px solid rgba(255, 0, 85, 0.3);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 99990;
-            user-select: none;
-            padding: 10px 14px;
-            line-height: 1.7;
-            min-width: 180px;
-        `;
+        panel.className = 'gui-debug-panel';
         panel.innerHTML = `
             <div style="color: rgba(255,0,85,0.8); font-weight: bold; margin-bottom: 4px;">DEBUG</div>
             <div>SENT: <span id="webrtc-debug-sent" style="color: #00ccff;">0 (0 B)</span></div>
