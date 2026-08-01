@@ -8,7 +8,7 @@ import { normalizeColor } from '../modules/utils.js';
 const _tempColor = new THREE.Color();
 const MIN_DURATION = 10;
 const MAX_DURATION = MIN_DURATION * 2;
-const WEIGHT = 9;
+const WEIGHT = 3;
 
 export async function createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial) {
     const threeScene = new THREE.Scene();
