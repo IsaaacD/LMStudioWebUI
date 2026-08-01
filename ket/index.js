@@ -96,6 +96,10 @@ async function bootstrap() {
     sceneManager.composer = postProcessor;
     await postProcessor.initEdgePass();
     await postProcessor.initPixelationPass();
+    await postProcessor.initChromaticAberrationPass();
+    await postProcessor.initGrainPass();
+    await postProcessor.initScanlinePass();
+    await postProcessor.initVignettePass();
 
     const transitionEffect = new TransitionEffect();
 

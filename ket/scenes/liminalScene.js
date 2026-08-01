@@ -412,7 +412,6 @@ export async function createLiminalScene() {
     }
 
     const cameraProgress = { t: 0 };
-    let addedPostPasses = false;
 
     return {
         id: 'liminal',
@@ -430,23 +429,13 @@ export async function createLiminalScene() {
         cameraFillLight,
         lightPool,
         cameraProgress,
-        addedPostPasses,
 
-        onEnter(composer) {
-            if (composer && !this.addedPostPasses) {
-                this.addedPostPasses = true;
-                if (composer.initGrainPass) composer.initGrainPass();
-                if (composer.initVignettePass) composer.initVignettePass();
-                if (composer.initChromaticAberrationPass) composer.initChromaticAberrationPass();
-                if (composer.initScanlinePass) composer.initScanlinePass();
-            }
+        onEnter() {
         },
 
-        onExit(composer) {
-            this.addedPostPasses = false;
+        onExit() {
             for (const pl of this.lightPool) pl.intensity = 0;
             for (const ed of this.exitData) ed.signLight.intensity = 0;
-            if (composer && composer.removeLiminalPasses) composer.removeLiminalPasses();
         },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {

@@ -155,6 +155,17 @@ export class PostProcessor {
         }
         if (this.grainPass) {
             this.grainPass.uniforms['uTime'].value = effectiveTime || 0;
+            this.grainPass.uniforms['uIntensity'].value = 0.03 + activeParams.foldIntensity * 0.02;
+        }
+        if (this.chromaPass) {
+            const t = effectiveTime || 0;
+            const glitch = Math.sin(t * 1.7) * 0.5 + Math.sin(t * 3.3) * 0.3 + Math.sin(t * 7.1) * 0.2;
+            this.chromaPass.uniforms['uAmount'].value = 0.002 + activeParams.foldIntensity * 0.003 * (0.5 + glitch * 0.5);
+        }
+        if (this.scanlinePass) {
+            const t = effectiveTime || 0;
+            const pulse = Math.sin(t * 2.3) * 0.5 + 0.5;
+            this.scanlinePass.uniforms['uIntensity'].value = 0.02 + activeParams.foldIntensity * 0.015 * (0.5 + pulse * 0.5);
         }
     }
 
