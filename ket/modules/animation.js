@@ -170,7 +170,7 @@ export class AnimationLoop {
                 this.handleFollowControl(followData.position, dt, activeParams);
             }
         } else {
-            const useManual = this.teleportPauseTimer > 0 || (!this.params.autoplay && !inAutoplayDelay && !this.params.raveMode) || (this.params.raveMode && (isMoving || this.controls.pointerLocked));
+            const useManual = this.teleportPauseTimer > 0 || isMoving || (!this.params.autoplay && !this.params.raveMode) || (this.params.raveMode && this.controls.pointerLocked);
 
             if (useManual) {
                 this.controls.applyManualControl(this.camera, this.params.speed * 0.5, joystickState, dt);
@@ -179,7 +179,7 @@ export class AnimationLoop {
             }
         }
 
-        if (isMoving && this.params.raveMode) {
+        if (isMoving) {
             this.wasUserMoving = true;
         }
 
@@ -196,7 +196,7 @@ export class AnimationLoop {
     }
 
     handleAutoControl(activeParams, dt, speedMult) {
-        if (this.wasUserMoving && this.params.raveMode) {
+        if (this.wasUserMoving) {
             this.autoAngle += 0.005 * activeParams.timeScale;
             const baseX = Math.sin(this.autoAngle) * (8 + Math.sin(this.autoAngle * 0.7) * 5);
             const baseY = Math.cos(this.autoAngle * 0.5) * 3 + 2;
