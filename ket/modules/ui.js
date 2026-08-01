@@ -1,7 +1,6 @@
 import {
     TOOLTIP_OFFSET_PX,
     GUI_SPEED_MIN, GUI_SPEED_MAX,
-    GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
     GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
     GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX,
     GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
@@ -250,20 +249,12 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     content.appendChild(movFolder.header);
     content.appendChild(movFolder.body);
 
-    const speedSlider = createSliderRow('Flight Speed', params.speed, GUI_SPEED_MIN, GUI_SPEED_MAX, 0.1,
+    const speedSlider = createSliderRow('Speed', params.speed, GUI_SPEED_MIN, GUI_SPEED_MAX, 0.1,
         (v) => { params.speed = v; },
-        'Movement speed in manual mode (WASD keys)', tooltipEl);
+        'Movement speed (WASD keys/touch/auto)', tooltipEl);
     movFolder.body.appendChild(speedSlider.row);
 
-    const autoSpeedSlider = createSliderRow('Auto Speed', params.autoplaySpeed, GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX, 0.1,
-        (v) => {
-            params.autoplaySpeed = v;
-            if (raveEngine) { raveEngine.raveCurrent.autoplaySpeed = v; raveEngine.raveTarget.autoplaySpeed = v; }
-        },
-        'Forward speed of the camera in autopilot mode', tooltipEl);
-    movFolder.body.appendChild(autoSpeedSlider.row);
-
-    const timeSlider = createSliderRow('Time Dilation', params.timeScale, GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX, 0.05,
+    const timeSlider = createSliderRow('Dilation', params.timeScale, GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX, 0.05,
         (v) => {
             params.timeScale = v;
             if (raveEngine) { raveEngine.raveCurrent.timeScale = v; raveEngine.raveTarget.timeScale = v; }
@@ -276,7 +267,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     content.appendChild(visFolder.header);
     content.appendChild(visFolder.body);
 
-    const bloomSlider = createSliderRow('Bloom Glow', params.bloomStrength, GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX, 0.01,
+    const bloomSlider = createSliderRow('Glow', params.bloomStrength, GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX, 0.01,
         (v) => {
             params.bloomStrength = v;
             if (raveEngine) { raveEngine.raveCurrent.bloomStrength = v; raveEngine.raveTarget.bloomStrength = v; }
@@ -284,7 +275,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         'Intensity of the bloom post-processing glow effect', tooltipEl);
     visFolder.body.appendChild(bloomSlider.row);
 
-    const radiusSlider = createSliderRow('Glow Radius', params.bloomRadius, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX, 0.05,
+    const radiusSlider = createSliderRow('Glow Rad', params.bloomRadius, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX, 0.05,
         (v) => {
             params.bloomRadius = v;
             if (raveEngine) { raveEngine.raveCurrent.bloomRadius = v; raveEngine.raveTarget.bloomRadius = v; }
@@ -308,7 +299,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         'Secondary accent color for terrain and walls', tooltipEl);
     visFolder.body.appendChild(colorBRow.row);
 
-    const edgeSlider = createSliderRow('Outline Strength', params.edgeContrast, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX, 0.005,
+    const edgeSlider = createSliderRow('Outline', params.edgeContrast, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX, 0.005,
         (v) => {
             params.edgeContrast = v;
             if (raveEngine) { raveEngine.raveCurrent.edgeContrast = v; raveEngine.raveTarget.edgeContrast = v; }
@@ -320,8 +311,6 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         params.randomize();
         speedSlider.valSpan.textContent = params.speed.toFixed(2);
         speedSlider.input.value = params.speed;
-        autoSpeedSlider.valSpan.textContent = params.autoplaySpeed.toFixed(2);
-        autoSpeedSlider.input.value = params.autoplaySpeed;
         timeSlider.valSpan.textContent = params.timeScale.toFixed(2);
         timeSlider.input.value = params.timeScale;
         bloomSlider.valSpan.textContent = params.bloomStrength.toFixed(2);
@@ -413,8 +402,6 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         edgeSlider.input.value = p.edgeContrast;
         radiusSlider.valSpan.textContent = p.bloomRadius.toFixed(2);
         radiusSlider.input.value = p.bloomRadius;
-        autoSpeedSlider.valSpan.textContent = p.autoplaySpeed.toFixed(2);
-        autoSpeedSlider.input.value = p.autoplaySpeed;
         timeSlider.valSpan.textContent = p.timeScale.toFixed(2);
         timeSlider.input.value = p.timeScale;
         colorARow.input.value = p.colorA;

@@ -81,7 +81,6 @@ export class AnimationLoop {
                 bloomRadius: this.params.bloomRadius,
                 foldIntensity: this.params.foldIntensity,
                 edgeContrast: this.params.edgeContrast,
-                autoplaySpeed: this.params.autoplaySpeed,
                 colorA: normalizeColor(this.params.colorA, 'animation:112'),
                 colorB: this.params.colorB
             };
@@ -218,7 +217,7 @@ export class AnimationLoop {
         const autoR = 8 + Math.sin(this.autoAngle * 0.7) * 5;
         const targetX = Math.sin(this.autoAngle) * autoR + this.autoOffsetX;
         const targetY = Math.cos(this.autoAngle * 0.5) * 3 + 2 + this.autoOffsetY;
-        const targetZ = this.camera.position.z - activeParams.autoplaySpeed * speedMult;
+        const targetZ = this.camera.position.z - this.params.speed * speedMult;
 
         this.camera.position.x += (targetX - this.camera.position.x) * 0.02;
         this.camera.position.y += (targetY - this.camera.position.y) * 0.02;

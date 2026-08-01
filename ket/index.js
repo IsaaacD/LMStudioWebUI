@@ -167,7 +167,7 @@ async function bootstrap() {
     });
 
     animationLoop.onTimerUpdate = (elapsed, maxDuration) => {
-        if (isDebug && window._updateSceneGui) window._updateSceneGui(elapsed, maxDuration);
+        if (window._updateSceneGui) window._updateSceneGui(elapsed, maxDuration);
     };
 
     if (webrtcManager) webrtcManager.setAnimationLoop(animationLoop);

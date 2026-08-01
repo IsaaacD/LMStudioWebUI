@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
     GUI_SPEED_MIN, GUI_SPEED_MAX,
-    GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
     GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
     GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX,
     GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
@@ -26,7 +25,6 @@ export const defaultParams = {
     edgeContrast: GUI_EDGE_CONTRAST_MAX / 2,
     paused: false,
     autoplay: true,
-    autoplaySpeed: 3.0,
     controlMode: 'Auto',
     raveMode: false,
     sceneDurationCity: 45,
@@ -55,7 +53,6 @@ export function randomizeParams(params) {
     params.veinSpeed = hashRange(s + 4, GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX);
     params.bloomStrength = hashRange(s + 5, GUI_BLOOM_STRENGTH_MIN, GUI_BLOOM_STRENGTH_MAX);
     params.bloomRadius = hashRange(s + 6, GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX);
-    params.autoplaySpeed = hashRange(s + 7, GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX);
     params.timeScale = hashRange(s + 8, GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX);
     const hueA = hashRange(s + 9, 0, 360);
     const satA = hashRange(s + 10, 60, 100);

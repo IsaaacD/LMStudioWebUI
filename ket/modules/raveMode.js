@@ -6,7 +6,6 @@ import {
     GUI_VEIN_SPEED_MIN, GUI_VEIN_SPEED_MAX,
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
     GUI_TIMESCALE_MIN, GUI_TIMESCALE_MAX,
-    GUI_AUTOPLAY_SPEED_MIN, GUI_AUTOPLAY_SPEED_MAX,
     normalizeColor,
 } from './utils.js';
 
@@ -22,7 +21,6 @@ export class RaveEngine {
             veinSpeed: params.veinSpeed,
             edgeContrast: params.edgeContrast,
             timeScale: params.timeScale,
-            autoplaySpeed: params.autoplaySpeed,
             colorA: params.colorA,
             colorB: params.colorB,
             //particles: params.particles
@@ -38,7 +36,6 @@ export class RaveEngine {
         this.raveCurrent.veinSpeed = params.veinSpeed;
         this.raveCurrent.edgeContrast = params.edgeContrast;
         this.raveCurrent.timeScale = params.timeScale;
-        this.raveCurrent.autoplaySpeed = params.autoplaySpeed;
         this.raveCurrent.colorA = params.colorA;
         this.raveCurrent.colorB = params.colorB;
         //this.raveCurrent.particles = params.particles;
@@ -54,7 +51,6 @@ export class RaveEngine {
         // this.raveTarget.veinSpeed = GUI_VEIN_SPEED_MIN + Math.random() * (GUI_VEIN_SPEED_MAX - GUI_VEIN_SPEED_MIN);
         // this.raveTarget.edgeContrast = GUI_EDGE_CONTRAST_MIN + Math.random() * (GUI_EDGE_CONTRAST_MAX - GUI_EDGE_CONTRAST_MIN);
         // this.raveTarget.timeScale = GUI_TIMESCALE_MIN + Math.random() * (GUI_TIMESCALE_MAX - GUI_TIMESCALE_MIN);
-        // this.raveTarget.autoplaySpeed = GUI_AUTOPLAY_SPEED_MIN + Math.random() * (GUI_AUTOPLAY_SPEED_MAX - GUI_AUTOPLAY_SPEED_MIN);
         // this.raveTarget.colorA = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
         // this.raveTarget.colorB = new THREE.Color().setRGB(Math.random(), Math.random(), Math.random()).getHexString();//normalizeColor(Math.floor(Math.random() * 0xffffff), 'raveMode:39');
     }
@@ -67,7 +63,6 @@ export class RaveEngine {
         this.raveCurrent.veinSpeed += (this.raveTarget.veinSpeed - this.raveCurrent.veinSpeed) * l;
         this.raveCurrent.edgeContrast += (this.raveTarget.edgeContrast - this.raveCurrent.edgeContrast) * l;
         this.raveCurrent.timeScale += (this.raveTarget.timeScale - this.raveCurrent.timeScale) * l;
-        this.raveCurrent.autoplaySpeed += (this.raveTarget.autoplaySpeed - this.raveCurrent.autoplaySpeed) * l;
 
         this.raveTemp.set(normalizeColor(this.raveCurrent.colorA, 'raveMode:53'));
         this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorA, 'raveMode:54')), l);
@@ -93,7 +88,6 @@ export class RaveEngine {
             bloomRadius: this.raveCurrent.bloomRadius,
             foldIntensity: this.raveCurrent.foldIntensity,
             edgeContrast: this.raveCurrent.edgeContrast,
-            autoplaySpeed: this.raveCurrent.autoplaySpeed,
             colorA: this.raveCurrent.colorA,
             colorB: this.raveCurrent.colorB
         };
