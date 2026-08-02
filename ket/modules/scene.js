@@ -4,14 +4,30 @@ let camera = null;
 let renderer = null;
 let clock = null;
 
+const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+export function setPixelRatio(fidelity) {
+    if (!renderer) return;
+    switch (fidelity) {
+        case 'low':
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            break;
+        case 'medium':
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            break;
+        case 'high':
+            renderer.setPixelRatio(window.devicePixelRatio);
+            break;
+    }
+}
+
 export function initScene() {
     camera = new THREE.PerspectiveCamera(120, innerWidth / innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setSize(innerWidth, innerHeight);
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 1.5));
+    setPixelRatio(localStorage.getItem('fidelity') || (isMobile ? 'low' : 'high'));
     document.body.appendChild(renderer.domElement);
 
     clock = new THREE.Clock();

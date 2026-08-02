@@ -6,6 +6,7 @@ import {
     GUI_BLOOM_RADIUS_MIN, GUI_BLOOM_RADIUS_MAX,
     GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX,
 } from './utils.js';
+import { setPixelRatio } from './scene.js';
 
 function createTooltip() {
     const el = document.createElement('div');
@@ -328,6 +329,55 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         },
         'Intensity of the edge-detection outline effect', tooltipEl);
     visFolder.body.appendChild(edgeSlider.row);
+
+    // --- Fidelity button group ---
+    const mobileDetected = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const savedFidelity = localStorage.getItem('fidelity');
+    let currentFidelity = savedFidelity || (mobileDetected ? 'medium' : 'medium');
+    const fidelityLabels = ['low', 'high'];
+    const fidelityGroup = document.createElement('div');
+    fidelityGroup.className = 'gui-row';
+
+    const fidelityLabel = document.createElement('span');
+    fidelityLabel.className = 'gui-label';
+    fidelityLabel.textContent = 'Fidelity';
+    fidelityGroup.appendChild(fidelityLabel);
+
+    const fidelityButtonsContainer = document.createElement('div');
+    fidelityButtonsContainer.className = 'gui-row-right';
+    fidelityButtonsContainer.style.display = 'flex';
+    fidelityButtonsContainer.style.gap = '4px';
+    fidelityButtonsContainer.style.justifyContent = 'flex-end';
+
+    const fidelityBtns = [];
+    fidelityLabels.forEach((level) => {
+        const btn = document.createElement('button');
+        btn.className = 'gui-btn';
+        btn.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+        btn.style.flex = '1';
+        btn.style.padding = '4px 2px';
+        btn.style.fontSize = '11px';
+        if (level === currentFidelity) {
+            btn.style.borderColor = 'rgba(255, 0, 85, 0.4)';
+            btn.style.background = 'rgba(255, 0, 85, 0.12)';
+        }
+        btn.addEventListener('click', () => {
+            currentFidelity = level;
+            localStorage.setItem('fidelity', level);
+            setPixelRatio(level);
+            fidelityBtns.forEach((b) => {
+                b.style.borderColor = '';
+                b.style.background = '';
+            });
+            btn.style.borderColor = 'rgba(255, 0, 85, 0.4)';
+            btn.style.background = 'rgba(255, 0, 85, 0.12)';
+        });
+        fidelityButtonsContainer.appendChild(btn);
+        fidelityBtns.push(btn);
+    });
+
+    fidelityGroup.appendChild(fidelityButtonsContainer);
+    visFolder.body.appendChild(fidelityGroup);
 
     const randBtnResult = createButton('Randomize', () => {
         params.randomize();

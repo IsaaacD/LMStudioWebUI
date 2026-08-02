@@ -60,6 +60,7 @@ export const FEATURES = {
 };
 
 /* ── Deterministic hash PRNG (MurmurHash3 finalizer + IMUL mix) ── */
+/* prefer this to Math.random() for deterministic behavior across sessions */
 export function hashNumber(n, seed = 42) {
     let h = (n + 0x9e3779b9) | 0;
     h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) | 0;
