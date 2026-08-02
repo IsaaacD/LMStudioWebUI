@@ -27,8 +27,8 @@ export const AUDIO_INITIAL_VOLUME = 0.5;
 export const SPLASH_EXIT_DELAY_MS = 2000;
 
 /* ── GUI Slider Ranges ── */
-export const GUI_SPEED_MIN = 1;
-export const GUI_SPEED_MAX = 3;
+export const GUI_SPEED_MIN = 0.5;
+export const GUI_SPEED_MAX = 1.2;
 export const GUI_TIMESCALE_MIN = 0.1;
 export const GUI_TIMESCALE_MAX = 3;
 export const GUI_BLOOM_STRENGTH_MIN = 0.05;

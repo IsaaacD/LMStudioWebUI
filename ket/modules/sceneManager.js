@@ -11,7 +11,7 @@ export class SceneManager {
         this.timer = { elapsed: 0, maxDuration: 45 };
         this.durationOverrides = new Map();
         this.switchTimes = [];
-        this._nextPickSeed = 0;
+        this._nextPickSeed = Date.now();
         this.useSequential = false;
         this.anchoredDate = null;
         this.lastSwitchCount = 0;
@@ -205,7 +205,6 @@ export class SceneManager {
                 if (targetScene) this._applyDuration(targetScene);
                 return target;
             }
-            this.timer.elapsed = this.timer.elapsed - this.timer.maxDuration;
         }
         return null;
     }
@@ -219,7 +218,7 @@ export class SceneManager {
         } else {
             //let attempts = 0;
             //do {
-            targetId = this._weightedPick();
+            targetId = this._weightedPick(this._nextPickSeed);
             //   attempts++;
             // } while (targetId === currentId && attempts < this.rotation.length);
         }
