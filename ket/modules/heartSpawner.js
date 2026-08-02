@@ -13,6 +13,7 @@ const CIRCLE_RADIUS = 2.0;
 const CIRCLE_SEGMENTS = 48;
 
 const _tempColor = new THREE.Color();
+const _tempColor2 = new THREE.Color();
 
 export async function createHeartMaterial() {
     return new THREE.ShaderMaterial({
@@ -147,13 +148,10 @@ export class HeartSpawner {
             this.heartMaterial.uniforms.uAlpha.value = maxAlpha;
 
             const t = 0.5 + 0.5 * Math.sin(effectiveTime * 0.3 + dominantPhase);
-            _tempColor.lerpColors(
-                new THREE.Color(normalizeColor(colorA, 'heartSpawner:147')),
-                new THREE.Color(normalizeColor(colorB, 'heartSpawner:148')),
-                t
-            );
+            _tempColor.set(normalizeColor(colorA, 'heartSpawner:147'));
+            _tempColor2.set(normalizeColor(colorB, 'heartSpawner:148'));
+            _tempColor.lerp(_tempColor2, t);
             this.heartMaterial.uniforms.uColor.value.copy(_tempColor);
-            this.heartMaterial.needsUpdate = true;
         }
     }
 }

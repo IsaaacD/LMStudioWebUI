@@ -183,7 +183,6 @@ export class PrimitiveManager {
             this.sharedMaterial.uniforms.uColor1.value.copy(_tempColor);
             _tempColor.set(normalizeColor(colorB, 'primitives:184'));
             this.sharedMaterial.uniforms.uColor2.value.copy(_tempColor);
-            this.sharedMaterial.needsUpdate = true;
         }
     }
 }

@@ -10,7 +10,8 @@ export function initScene() {
 
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 1.5));
     document.body.appendChild(renderer.domElement);
 
     clock = new THREE.Clock();

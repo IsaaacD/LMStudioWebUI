@@ -45,7 +45,7 @@ export class PostProcessor {
         this.edgePass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
-                "resolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                "resolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) },
                 "edgeStrength": { value: 0.5 }
             },
             vertexShader: vert,
@@ -63,7 +63,7 @@ export class PostProcessor {
             uniforms: {
                 "tDiffuse": { value: null },
                 "uSharpness": { value: 1.0 },
-                "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                "uResolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) }
             },
             vertexShader: vert,
             fragmentShader: frag
@@ -133,7 +133,7 @@ export class PostProcessor {
             uniforms: {
                 "tDiffuse": { value: null },
                 "uIntensity": { value: 0.03 },
-                "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                "uResolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) }
             },
             vertexShader: vert,
             fragmentShader: frag
@@ -155,7 +155,7 @@ export class PostProcessor {
                 "uColorA": { value: new THREE.Color(defaultParams.colorA) },
                 "uColorB": { value: new THREE.Color(defaultParams.colorB) },
                 "uTime": { value: 0 },
-                "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                "uResolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) }
             },
             vertexShader: vert,
             fragmentShader: frag
@@ -220,15 +220,20 @@ export class PostProcessor {
         if (this._width === width && this._height === height) return;
         this._width = width;
         this._height = height;
-        this.composer.setSize(width, height);
+
+        const halfW = Math.floor(width / 2);
+        const halfH = Math.floor(height / 2);
+
+        this.composer.setSize(halfW, halfH);
+
         const eu = this._edgeU;
-        if (eu) eu.resolution.value.set(width, height);
+        if (eu) eu.resolution.value.set(halfW, halfH);
         const pu = this._pixelationU;
-        if (pu) pu.uResolution.value.set(width, height);
+        if (pu) pu.uResolution.value.set(halfW, halfH);
         const su = this._scanlineU;
-        if (su) su.uResolution.value.set(width, height);
+        if (su) su.uResolution.value.set(halfW, halfH);
         const mu = this._meltU;
-        if (mu) mu.uResolution.value.set(width, height);
+        if (mu) mu.uResolution.value.set(halfW, halfH);
     }
 
     captureSnapshot() {
@@ -248,12 +253,10 @@ export class PostProcessor {
             const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             this._copyScene = new THREE.Scene();
             this._copyScene.add(mesh);
-            this._copyScene.add(cam);
             this._copyMesh = mesh;
             this._copyCam = cam;
         }
         this._copyMesh.material.map = rt.texture;
-        this._copyMesh.material.needsUpdate = true;
         this.renderer.setRenderTarget(this._snapshotRT);
         this.renderer.render(this._copyScene, this._copyCam);
         this.renderer.setRenderTarget(null);
@@ -279,6 +282,10 @@ export class PostProcessor {
             mu.uRevealBlend.value = value;
             if (value >= 1) {
                 this.meltPass.enabled = false;
+                if (this._snapshotRT) {
+                    this._snapshotRT.dispose();
+                    this._snapshotRT = null;
+                }
             }
         }
     }

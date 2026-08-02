@@ -14,6 +14,7 @@ import { randomizeParams } from './config.js'
 export class RaveEngine {
     constructor(params) {
         this.raveTemp = new THREE.Color();
+        this.raveTemp2 = new THREE.Color();
         this.raveCurrent = {
             bloomStrength: params.bloomStrength,
             bloomRadius: params.bloomRadius,
@@ -65,11 +66,13 @@ export class RaveEngine {
         this.raveCurrent.timeScale += (this.raveTarget.timeScale - this.raveCurrent.timeScale) * l;
 
         this.raveTemp.set(normalizeColor(this.raveCurrent.colorA, 'raveMode:53'));
-        this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorA, 'raveMode:54')), l);
+        this.raveTemp2.set(normalizeColor(this.raveTarget.colorA, 'raveMode:54'));
+        this.raveTemp.lerp(this.raveTemp2, l);
         this.raveCurrent.colorA = '#' + this.raveTemp.getHexString();
 
         this.raveTemp.set(normalizeColor(this.raveCurrent.colorB));
-        this.raveTemp.lerp(new THREE.Color(normalizeColor(this.raveTarget.colorB, 'raveMode:58')), l);
+        this.raveTemp2.set(normalizeColor(this.raveTarget.colorB, 'raveMode:58'));
+        this.raveTemp.lerp(this.raveTemp2, l);
         this.raveCurrent.colorB = '#' + this.raveTemp.getHexString();
     }
 

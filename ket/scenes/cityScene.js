@@ -48,7 +48,6 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
             cityMaterial.uniforms.uColor1.value.copy(_tempColor);
             _tempColor.set(normalizeColor(activeParams.colorB, 'cityScene:44'));
             cityMaterial.uniforms.uColor2.value.copy(_tempColor);
-            cityMaterial.needsUpdate = true;
 
             wallMaterial.uniforms.uTime.value = effectiveTime;
             wallMaterial.uniforms.uFoldIntensity.value = activeParams.foldIntensity;
@@ -56,7 +55,6 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
             wallMaterial.uniforms.uColor1.value.copy(_tempColor);
             _tempColor.set(normalizeColor(activeParams.colorB, 'cityScene:52'));
             wallMaterial.uniforms.uColor2.value.copy(_tempColor);
-            wallMaterial.needsUpdate = true;
 
             tileManager.update(camera);
             primitiveManager.update(camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);

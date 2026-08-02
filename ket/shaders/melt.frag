@@ -74,9 +74,8 @@ void main() {
     vec4 newColor = texture2D(tDiffuse, warpedUv);
     vec4 frozenColor = texture2D(uFrozenTexture, warpedUv);
 
-    float dx = meltWarp(uv + vec2(0.001, 0.0), progress, uTime).x - meltWarp(uv - vec2(0.001, 0.0), progress, uTime).x;
-    float dy = meltWarp(uv + vec2(0.0, 0.001), progress, uTime).y - meltWarp(uv - vec2(0.0, 0.001), progress, uTime).y;
-    float glowIntensity = clamp(length(vec2(dx, dy)) * MELT_GLOW_SCALE, 0.0, MELT_GLOW_MAX);
+    float envelope = sin(progress * 3.14159265);
+    float glowIntensity = clamp(envelope * MELT_GLOW_MAX * 0.5 * (1.0 - uv.y), 0.0, MELT_GLOW_MAX);
 
     vec3 blended = mix(frozenColor.rgb, newColor.rgb, uRevealBlend);
 

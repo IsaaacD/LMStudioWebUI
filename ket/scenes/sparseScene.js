@@ -19,6 +19,7 @@ const STAR_COUNT = 2000;
 const STAR_FIELD_RADIUS = 400;
 const WEIGHT = 1;
 const _tempColor = new THREE.Color();
+const _tempColor2 = new THREE.Color();
 const _vec3 = new THREE.Vector3();
 
 export async function createSparseScreen() {
@@ -521,12 +522,12 @@ export async function createSparseScreen() {
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
             // Darkened space background — tinted subtly by colorA
-            const baseBg = new THREE.Color(0x020208);
+            _tempColor2.set(0x020208);
             if (activeParams && activeParams.colorA) {
                 _tempColor.set(normalizeColor(activeParams.colorA));
-                baseBg.lerp(_tempColor, 0.08);
+                _tempColor2.lerp(_tempColor, 0.08);
             }
-            threeScene.background = baseBg;
+            threeScene.background = _tempColor2;
             const fogColor = activeParams && activeParams.colorB ? normalizeColor(activeParams.colorB) : '#020208';
             threeScene.fog.color.set(fogColor);
             threeScene.fog.near = 200;
@@ -735,7 +736,6 @@ export async function createSparseScreen() {
             gridMat.uniforms.uColor1.value.copy(_tempColor);
             _tempColor.set(normalizeColor(activeParams && activeParams.colorB ? activeParams.colorB : '#00ccff'));
             gridMat.uniforms.uColor2.value.copy(_tempColor);
-            gridMat.needsUpdate = true;
             gridMesh.position.x = camera.position.x;
             gridMesh.position.y = camera.position.y - 25;
             gridMesh.position.z = camera.position.z;
