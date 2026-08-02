@@ -94,13 +94,17 @@ async function bootstrap() {
 
     postProcessor = new PostProcessor(renderer, initialScene.threeScene, camera);
     sceneManager.composer = postProcessor;
-    await postProcessor.initEdgePass();
-    await postProcessor.initPixelationPass();
-    await postProcessor.initChromaticAberrationPass();
-    await postProcessor.initGrainPass();
-    await postProcessor.initScanlinePass();
-    await postProcessor.initVignettePass();
-    await postProcessor.initMeltPass();
+    await Promise.all([
+        postProcessor.initEdgePass(),
+        postProcessor.initPixelationPass(),
+        postProcessor.initChromaticAberrationPass(),
+        postProcessor.initGrainPass(),
+        postProcessor.initScanlinePass(),
+        postProcessor.initVignettePass(),
+        postProcessor.initMeltPass()
+    ]);
+
+    postProcessor._cacheUniforms();
 
     const transitionEffect = new TransitionMelt();
 

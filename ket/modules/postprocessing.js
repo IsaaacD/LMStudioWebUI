@@ -38,164 +38,115 @@ export class PostProcessor {
     }
 
     async initEdgePass() {
-        const sobelEdgeShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/sorbel.vert'),
+            loadShader('./shaders/sorbel.frag')
+        ]);
+        this.edgePass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "resolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
                 "edgeStrength": { value: 0.5 }
             },
-            vertexShader: await loadShader('./shaders/sorbel.vert'),
-            fragmentShader: await loadShader('./shaders/sorbel.frag')
-        };
-
-        this.edgePass = new ShaderPass(sobelEdgeShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.composer.addPass(this.edgePass);
     }
 
     async initPixelationPass() {
-        const pixelateShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/pixelate.vert'),
+            loadShader('./shaders/pixelate.frag')
+        ]);
+        this.pixelationPass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "uSharpness": { value: 1.0 },
                 "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
             },
-            vertexShader: await loadShader('./shaders/pixelate.vert'),
-            fragmentShader: await loadShader('./shaders/pixelate.frag')
-        };
-
-        this.pixelationPass = new ShaderPass(pixelateShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.composer.addPass(this.pixelationPass);
     }
 
     async initGrainPass() {
         if (this.grainPass) return;
-        const grainShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/liminal-grain.vert'),
+            loadShader('./shaders/liminal-grain.frag')
+        ]);
+        this.grainPass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "uIntensity": { value: 0.04 },
                 "uTime": { value: 0 }
             },
-            vertexShader: await loadShader('./shaders/liminal-grain.vert'),
-            fragmentShader: await loadShader('./shaders/liminal-grain.frag')
-        };
-        this.grainPass = new ShaderPass(grainShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.composer.addPass(this.grainPass);
     }
 
     async initVignettePass() {
         if (this.vignettePass) return;
-        const vignetteShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/liminal-vignette.vert'),
+            loadShader('./shaders/liminal-vignette.frag')
+        ]);
+        this.vignettePass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "uDarkness": { value: 0.7 }
             },
-            vertexShader: await loadShader('./shaders/liminal-vignette.vert'),
-            fragmentShader: await loadShader('./shaders/liminal-vignette.frag')
-        };
-        this.vignettePass = new ShaderPass(vignetteShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.composer.addPass(this.vignettePass);
     }
 
     async initChromaticAberrationPass() {
         if (this.chromaPass) return;
-        const chromaShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/liminal-chroma.vert'),
+            loadShader('./shaders/liminal-chroma.frag')
+        ]);
+        this.chromaPass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "uAmount": { value: 0.002 }
             },
-            vertexShader: await loadShader('./shaders/liminal-chroma.vert'),
-            fragmentShader: await loadShader('./shaders/liminal-chroma.frag')
-        };
-        this.chromaPass = new ShaderPass(chromaShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.composer.addPass(this.chromaPass);
     }
 
     async initScanlinePass() {
         if (this.scanlinePass) return;
-        const scanlineShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/liminal-scanline.vert'),
+            loadShader('./shaders/liminal-scanline.frag')
+        ]);
+        this.scanlinePass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "uIntensity": { value: 0.03 },
                 "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
             },
-            vertexShader: await loadShader('./shaders/liminal-scanline.vert'),
-            fragmentShader: await loadShader('./shaders/liminal-scanline.frag')
-        };
-        this.scanlinePass = new ShaderPass(scanlineShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.composer.addPass(this.scanlinePass);
     }
 
-    removeLiminalPasses() {
-        const passesToRemove = ['grainPass', 'vignettePass', 'chromaPass', 'scanlinePass'];
-        for (const key of passesToRemove) {
-            if (this[key]) {
-                this.composer.removePass(this[key]);
-                this[key] = null;
-            }
-        }
-    }
-
-    setScene(threeScene) {
-        this.renderPass.scene = threeScene;
-    }
-
-    setPixelationSharpness(value) {
-        if (this.pixelationPass) {
-            this.pixelationPass.uniforms.uSharpness.value = value;
-        }
-    }
-
-    setFadeOverlayAlpha(alpha) {
-        this.fadeOverlay.style.opacity = String(alpha);
-    }
-
-    update(activeParams, effectiveTime) {
-        this.bloomPass.strength = activeParams.bloomStrength;
-        this.bloomPass.radius = activeParams.bloomRadius;
-        if (this.edgePass) {
-            this.edgePass.uniforms['edgeStrength'].value = activeParams.edgeContrast;
-        }
-        if (this.grainPass) {
-            this.grainPass.uniforms['uTime'].value = effectiveTime || 0;
-            this.grainPass.uniforms['uIntensity'].value = 0.03 + activeParams.foldIntensity * 0.02;
-        }
-        if (this.chromaPass) {
-            const t = effectiveTime || 0;
-            const glitch = Math.sin(t * 1.7) * 0.5 + Math.sin(t * 3.3) * 0.3 + Math.sin(t * 7.1) * 0.2;
-            this.chromaPass.uniforms['uAmount'].value = 0.002 + activeParams.foldIntensity * 0.003 * (0.5 + glitch * 0.5);
-        }
-        if (this.scanlinePass) {
-            const t = effectiveTime || 0;
-            const pulse = Math.sin(t * 2.3) * 0.5 + 0.5;
-            this.scanlinePass.uniforms['uIntensity'].value = 0.02 + activeParams.foldIntensity * 0.015 * (0.5 + pulse * 0.5);
-        }
-    }
-
-    render(scene) {
-        if (scene !== undefined) {
-            this.setScene(scene);
-        }
-        this.composer.render();
-    }
-
-    resize(width, height) {
-        this.composer.setSize(width, height);
-        if (this.edgePass) {
-            this.edgePass.uniforms['resolution'].value.set(width, height);
-        }
-        if (this.pixelationPass) {
-            this.pixelationPass.uniforms.uResolution.value.set(width, height);
-        }
-        if (this.scanlinePass) {
-            this.scanlinePass.uniforms.uResolution.value.set(width, height);
-        }
-        if (this.meltPass) {
-            this.meltPass.uniforms.uResolution.value.set(width, height);
-        }
-    }
-
     async initMeltPass() {
-        const meltShader = {
+        const [vert, frag] = await Promise.all([
+            loadShader('./shaders/melt.vert'),
+            loadShader('./shaders/melt.frag')
+        ]);
+        this.meltPass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
                 "uFrozenTexture": { value: null },
@@ -206,13 +157,78 @@ export class PostProcessor {
                 "uTime": { value: 0 },
                 "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
             },
-            vertexShader: await loadShader('./shaders/melt.vert'),
-            fragmentShader: await loadShader('./shaders/melt.frag')
-        };
-        this.meltPass = new ShaderPass(meltShader);
+            vertexShader: vert,
+            fragmentShader: frag
+        });
         this.meltPass.enabled = false;
         this.composer.addPass(this.meltPass);
         this._snapshotRT = null;
+    }
+
+    setScene(threeScene) {
+        this.renderPass.scene = threeScene;
+    }
+
+    setPixelationSharpness(value) {
+        const pu = this._pixelationU;
+        if (pu) pu.uSharpness.value = value;
+    }
+
+    setFadeOverlayAlpha(alpha) {
+        this.fadeOverlay.style.opacity = String(alpha);
+    }
+
+    update(activeParams, effectiveTime) {
+        this.bloomPass.strength = activeParams.bloomStrength;
+        this.bloomPass.radius = activeParams.bloomRadius;
+        const ep = this._edgeU;
+        if (ep) ep.edgeStrength.value = activeParams.edgeContrast;
+        const gp = this._grainU;
+        if (gp) {
+            gp.uTime.value = effectiveTime;
+            gp.uIntensity.value = 0.03 + activeParams.foldIntensity * 0.02;
+        }
+        const cp = this._chromaU;
+        if (cp) {
+            const glitch = Math.sin(effectiveTime * 1.7) * 0.5 + Math.sin(effectiveTime * 3.3) * 0.3 + Math.sin(effectiveTime * 7.1) * 0.2;
+            cp.uAmount.value = 0.002 + activeParams.foldIntensity * 0.003 * (0.5 + glitch * 0.5);
+        }
+        const sp = this._scanlineU;
+        if (sp) {
+            const pulse = Math.sin(effectiveTime * 2.3) * 0.5 + 0.5;
+            sp.uIntensity.value = 0.02 + activeParams.foldIntensity * 0.015 * (0.5 + pulse * 0.5);
+        }
+    }
+
+    _cacheUniforms() {
+        if (this.edgePass) this._edgeU = this.edgePass.uniforms;
+        if (this.pixelationPass) this._pixelationU = this.pixelationPass.uniforms;
+        if (this.grainPass) this._grainU = this.grainPass.uniforms;
+        if (this.chromaPass) this._chromaU = this.chromaPass.uniforms;
+        if (this.scanlinePass) this._scanlineU = this.scanlinePass.uniforms;
+        if (this.meltPass) this._meltU = this.meltPass.uniforms;
+    }
+
+    render(scene) {
+        if (scene !== undefined) {
+            this.setScene(scene);
+        }
+        this.composer.render();
+    }
+
+    resize(width, height) {
+        if (this._width === width && this._height === height) return;
+        this._width = width;
+        this._height = height;
+        this.composer.setSize(width, height);
+        const eu = this._edgeU;
+        if (eu) eu.resolution.value.set(width, height);
+        const pu = this._pixelationU;
+        if (pu) pu.uResolution.value.set(width, height);
+        const su = this._scanlineU;
+        if (su) su.uResolution.value.set(width, height);
+        const mu = this._meltU;
+        if (mu) mu.uResolution.value.set(width, height);
     }
 
     captureSnapshot() {
@@ -245,21 +261,22 @@ export class PostProcessor {
     }
 
     setMeltSnapshot(texture) {
-        if (this.meltPass && texture) {
-            this.meltPass.uniforms.uFrozenTexture.value = texture;
+        const mu = this._meltU;
+        if (mu && texture) {
+            mu.uFrozenTexture.value = texture;
             this.meltPass.enabled = true;
         }
     }
 
     setMeltProgress(progress) {
-        if (this.meltPass) {
-            this.meltPass.uniforms.uMeltProgress.value = progress;
-        }
+        const mu = this._meltU;
+        if (mu) mu.uMeltProgress.value = progress;
     }
 
     setRevealBlend(value) {
-        if (this.meltPass) {
-            this.meltPass.uniforms.uRevealBlend.value = value;
+        const mu = this._meltU;
+        if (mu) {
+            mu.uRevealBlend.value = value;
             if (value >= 1) {
                 this.meltPass.enabled = false;
             }
@@ -267,8 +284,9 @@ export class PostProcessor {
     }
 
     updateMeltTime(time) {
-        if (this.meltPass) {
-            this.meltPass.uniforms.uTime.value = time;
+        if (this.meltPass.enabled) {
+            const mu = this._meltU;
+            if (mu) mu.uTime.value = time;
         }
     }
 }

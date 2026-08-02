@@ -40,6 +40,18 @@ export class AnimationLoop {
         this.running = false;
     }
 
+    _updateMeltState(time) {
+        const te = this.transitionEffect;
+        if (te.isSnapshotReady()) {
+            this.composer.setMeltSnapshot(te.getSnapshot());
+        }
+        if (te.isMeltActive()) {
+            this.composer.setMeltProgress(te.getMeltProgress());
+            this.composer.setRevealBlend(te.getRevealBlend());
+        }
+        this.composer.updateMeltTime(time);
+    }
+
     pauseForTeleport(duration) {
         this.teleportPauseTimer = duration;
     }
@@ -53,6 +65,19 @@ export class AnimationLoop {
     stop() {
         this.running = false;
         if (this.frame) cancelAnimationFrame(this.frame);
+    }
+
+    _buildActiveParams() {
+        const p = this.params;
+        return {
+            timeScale: p.timeScale,
+            bloomStrength: p.bloomStrength,
+            bloomRadius: p.bloomRadius,
+            foldIntensity: p.foldIntensity,
+            edgeContrast: p.edgeContrast,
+            colorA: normalizeColor(p.colorA, 'animation:68'),
+            colorB: p.colorB
+        };
     }
 
     animate() {
@@ -75,15 +100,7 @@ export class AnimationLoop {
 
         const activeParams = this.params.raveMode
             ? this.raveEngine.getActiveParams(this.params)
-            : {
-                timeScale: this.params.timeScale,
-                bloomStrength: this.params.bloomStrength,
-                bloomRadius: this.params.bloomRadius,
-                foldIntensity: this.params.foldIntensity,
-                edgeContrast: this.params.edgeContrast,
-                colorA: normalizeColor(this.params.colorA, 'animation:112'),
-                colorB: this.params.colorB
-            };
+            : this._buildActiveParams();
 
         const effectiveTime = rawTime * activeParams.timeScale;
 
@@ -103,15 +120,7 @@ export class AnimationLoop {
             }
         }
 
-        if (this.transitionEffect.isMeltActive()) {
-            if (this.transitionEffect.isSnapshotReady()) {
-                const snapshot = this.transitionEffect.getSnapshot();
-                this.composer.setMeltSnapshot(snapshot);
-            }
-            this.composer.setMeltProgress(this.transitionEffect.getMeltProgress());
-            this.composer.setRevealBlend(this.transitionEffect.getRevealBlend());
-        }
-        this.composer.updateMeltTime(rawTime);
+        this._updateMeltState(rawTime);
 
         if (this.transitionEffect.isReadyToSwap()) {
             if (this._forceSceneSwitch) {
