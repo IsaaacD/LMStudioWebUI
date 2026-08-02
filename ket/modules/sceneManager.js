@@ -4,7 +4,7 @@ const MIN_DURATION = 15;
 const MAX_DURATION = 60;
 
 export class SceneManager {
-    constructor() {
+    constructor(options = {}) {
         this.scenes = new Map();
         this.rotation = [];
         this.activeIndex = 0;
@@ -16,6 +16,7 @@ export class SceneManager {
         this.anchoredDate = null;
         this.lastSwitchCount = 0;
         this.composer = null;
+        this.hashSeed = options.hashSeed ?? 42;
         this.rebuild();
         this.lastSwitchCount = this.getSwitchCount();
     }
@@ -30,7 +31,7 @@ export class SceneManager {
         const minDur = active?.minDuration ?? MIN_DURATION;
         const maxDur = active?.maxDuration ?? MAX_DURATION;
         while (t < end) {
-            t += deriveDuration(t, minDur, maxDur) * 1000;
+            t += deriveDuration(t, minDur, maxDur, this.hashSeed) * 1000;
             this.switchTimes.push(t);
         }
     }
@@ -81,7 +82,7 @@ export class SceneManager {
         if (this.scenes.size === 1) {
             this.timer.maxDuration =
                 this.durationOverrides.get(definition.id) ??
-                deriveDuration(todayAnchor(), definition.minDuration, definition.maxDuration);
+                deriveDuration(todayAnchor(), definition.minDuration, definition.maxDuration, this.hashSeed);
         }
     }
 
@@ -94,7 +95,7 @@ export class SceneManager {
             });
         if (candidates.length === 0) return this.rotation[0] ?? null;
         const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
-        let r = hashNumber(seed) * totalWeight;
+        let r = hashNumber(seed, this.hashSeed) * totalWeight;
         for (const c of candidates) {
             r -= c.weight;
             if (r <= 0) return c.id;
@@ -114,7 +115,7 @@ export class SceneManager {
         if (override !== undefined) {
             duration = Math.max(next.minDuration, Math.min(next.maxDuration, override));
         } else {
-            duration = deriveDuration(this.lastSwitchCount, next.minDuration, next.maxDuration);
+            duration = deriveDuration(this.lastSwitchCount, next.minDuration, next.maxDuration, this.hashSeed);
         }
         this.timer.maxDuration = duration;
     }

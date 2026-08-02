@@ -37,10 +37,6 @@ export const defaultParams = {
     //particles: false
 };
 
-function _seed() {
-    return Math.floor(Date.now() / 2400);
-}
-
 function dailyColor(offset) {
     const base = todayAnchor();
     const hue = hashRange(base + offset, 0, 360);
@@ -50,7 +46,7 @@ function dailyColor(offset) {
 }
 
 export function randomizeParams(params) {
-    const s = _seed();
+    const s = todayAnchor();
     params.speed = hashRange(s + 1, GUI_SPEED_MIN, GUI_SPEED_MAX);
     params.foldIntensity = hashRange(s + 2, GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX);
     params.edgeContrast = hashRange(s + 3, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX);

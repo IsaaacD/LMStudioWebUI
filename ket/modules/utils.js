@@ -60,11 +60,11 @@ export const FEATURES = {
 };
 
 /* ── Deterministic hash PRNG (MurmurHash3 finalizer + IMUL mix) ── */
-export function hashNumber(n) {
+export function hashNumber(n, seed = 42) {
     let h = (n + 0x9e3779b9) | 0;
     h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) | 0;
     h = Math.imul(h ^ (h >>> 13), 0x45d9f3b) | 0;
-    h = Math.imul(h ^ (h >>> _seed), 0x45d9f3b) | 0;
+    h = Math.imul(h ^ (h >>> (seed & 0x1f)), 0x45d9f3b) | 0;
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 export function todayAnchor() {
@@ -72,16 +72,16 @@ export function todayAnchor() {
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
-export function deriveDuration(seed, minDur, maxDur) {
-    return hashRange(seed, minDur, maxDur);
+export function deriveDuration(n, minDur, maxDur, seed = 42) {
+    return hashRange(n, minDur, maxDur, seed);
 }
 
-export function minMaxRange(min, max) {
-    return deriveDuration(todayAnchor(), min, max);
+export function minMaxRange(min, max, seed = 42) {
+    return deriveDuration(todayAnchor(), min, max, seed);
 }
 
-export function hashRange(seed, min, max) {
-    return min + hashNumber(seed) * (max - min);
+export function hashRange(n, min, max, seed = 42) {
+    return min + hashNumber(n, seed) * (max - min);
 }
 
 /* ── Seeded PRNG (mulberry32) ── */
