@@ -198,7 +198,7 @@ export class SceneManager {
             return this._pickTarget();
         }
         this.timer.elapsed += dt;
-        if (this.timer.elapsed >= this.timer.maxDuration) {
+        if (this.timeUntilNextSwitch() <= 0) {
             this.lastSwitchCount = this.getSwitchCount();
             this._nextPickSeed = this.lastSwitchCount;
             const target = this._pickTarget();
@@ -219,13 +219,10 @@ export class SceneManager {
             const nextIndex = (this.activeIndex + 1) % this.rotation.length;
             targetId = this.rotation[nextIndex];
         } else {
-            //let attempts = 0;
-            //do {
             targetId = this._weightedPick(this._nextPickSeed);
-            //   attempts++;
-            // } while (targetId === currentId && attempts < this.rotation.length);
         }
 
+        //if (targetId === currentId) return null;
         return targetId;
     }
 

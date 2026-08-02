@@ -26,6 +26,8 @@ const _mat4 = new THREE.Matrix4();
 const _scl = new THREE.Vector3();
 const _p3 = new THREE.Vector3();
 const _forwardDir = new THREE.Vector3(0, 0, -1);
+const _camPos = new THREE.Vector3();
+const _lookTarget = new THREE.Vector3();
 
 function mulberry32(a) {
     return function () {
@@ -223,7 +225,6 @@ function setInstanceMatrix(instancedMesh, index, position, quaternion, offset, s
     const arr = instancedMesh.instanceMatrix.array;
     const base = index * 16;
     for (let k = 0; k < 16; k++) arr[base + k] = _mat4.elements[k];
-    instancedMesh.instanceMatrix.needsUpdate = true;
 }
 
 export async function createLiminalScene() {
@@ -358,13 +359,14 @@ export async function createLiminalScene() {
             threeScene.add(fixture);
 
             lightData.push({
-                fixtureMat, segIdx: i,
+                fixture, fixtureMat, segIdx: i,
                 wx: pos.x, wy: pos.y, wz: pos.z,
                 lightY: pos.y + effectiveH - 0.5,
                 freq: 2.3 + hashNumber(i * 17 + 1) * 4,
                 phase: hashNumber(i * 19 + 3) * Math.PI * 2,
                 flickerChance: hashNumber(i * 23 + 5),
                 _prevOpacity: 0,
+                _intensity: 0,
             });
         }
 
@@ -387,11 +389,19 @@ export async function createLiminalScene() {
             threeScene.add(signLight);
 
             exitData.push({
-                signMat, signLight, segIdx: i,
+                sign, signMat, signLight, segIdx: i,
                 wx: pos.x, wy: pos.y, wz: pos.z,
                 _prevOpacity: 0,
                 _prevIntensity: 0,
             });
+        }
+    }
+
+    ceilInstanced.instanceMatrix.needsUpdate = true;
+    floorInstanced.instanceMatrix.needsUpdate = true;
+    for (const arr of [wallInstLeft, wallInstRight, endWallInst]) {
+        for (const mesh of arr) {
+            if (mesh) mesh.instanceMatrix.needsUpdate = true;
         }
     }
 
@@ -429,6 +439,8 @@ export async function createLiminalScene() {
         cameraFillLight,
         lightPool,
         cameraProgress,
+        _activeIndices: new Array(LIGHT_POOL_SIZE).fill(-1),
+        _activeDistSq: new Array(LIGHT_POOL_SIZE).fill(Infinity),
 
         onEnter() {
         },
@@ -444,20 +456,37 @@ export async function createLiminalScene() {
             if (cameraProgress.t > 1) cameraProgress.t -= 1;
 
             const t = cameraProgress.t;
-            const sampled = sampleCurveCache(curveCache, t);
-            const lookSampled = sampleCurveCache(curveCache, (t + 0.015) % 1);
+            const tF = t * SEGMENT_COUNT;
+            const tI = Math.floor(tF);
+            const tFrac = tF - tI;
+            const ta = curveCache[Math.min(tI, SEGMENT_COUNT)];
+            const tb = curveCache[Math.min(tI + 1, SEGMENT_COUNT)];
+            _camPos.set(
+                ta.pos.x + (tb.pos.x - ta.pos.x) * tFrac,
+                CAMERA_HEIGHT,
+                ta.pos.z + (tb.pos.z - ta.pos.z) * tFrac
+            );
+            camera.position.copy(_camPos);
 
-            camera.position.copy(sampled.pos);
-            camera.position.y = CAMERA_HEIGHT;
+            const lT = ((t + 0.015) % 1) * SEGMENT_COUNT;
+            const lI = Math.floor(lT);
+            const lFrac = lT - lI;
+            const la = curveCache[Math.min(lI, SEGMENT_COUNT)];
+            const lb = curveCache[Math.min(lI + 1, SEGMENT_COUNT)];
+            _lookTarget.set(
+                la.pos.x + (lb.pos.x - la.pos.x) * lFrac,
+                la.pos.y + (lb.pos.y - la.pos.y) * lFrac + CAMERA_HEIGHT * 0.7,
+                la.pos.z + (lb.pos.z - la.pos.z) * lFrac
+            );
 
             const swayX = Math.sin(effectiveTime * 0.7) * 0.2;
             const swayY = Math.sin(effectiveTime * 0.5) * 0.1;
             const swayZ = Math.sin(effectiveTime * 0.3) * 0.08;
 
             camera.lookAt(
-                lookSampled.pos.x + swayX,
-                lookSampled.pos.y + CAMERA_HEIGHT * 0.7 + swayY,
-                lookSampled.pos.z + swayZ
+                _lookTarget.x + swayX,
+                _lookTarget.y + swayY,
+                _lookTarget.z + swayZ
             );
 
             const fovOsc = Math.sin(effectiveTime / FOV_CYCLE * Math.PI * 2) * FOV_SWING;
@@ -482,8 +511,12 @@ export async function createLiminalScene() {
             const cy = camera.position.y;
             const cz = camera.position.z;
 
-            const activeIndices = new Array(LIGHT_POOL_SIZE).fill(-1);
-            const activeDistSq = new Array(LIGHT_POOL_SIZE).fill(Infinity);
+            const activeIndices = this._activeIndices;
+            const activeDistSq = this._activeDistSq;
+            for (let p = 0; p < LIGHT_POOL_SIZE; p++) {
+                activeIndices[p] = -1;
+                activeDistSq[p] = Infinity;
+            }
 
             for (let i = 0; i < lightData.length; i++) {
                 const ld = lightData[i];
@@ -502,19 +535,19 @@ export async function createLiminalScene() {
                         ? (Math.sin(effectiveTime * 11.3 + ld.segIdx * 7) > 0.92 ? -0.5 : 0)
                         : 0;
                     const intensity = Math.max(0.2, baseIntensity + flickerFast + flickerSlow + randomDrop);
+                    ld._intensity = intensity;
                     const targetOpacity = Math.min(1, 0.4 + intensity / 6 * 0.7);
 
                     if (Math.abs(targetOpacity - ld._prevOpacity) > OPACITY_EPSILON) {
                         ld.fixtureMat.opacity = targetOpacity;
                         ld._prevOpacity = targetOpacity;
                     }
+                    ld.fixture.visible = true;
 
                     let bestPoolSlot = -1;
-                    let bestPoolDist = Infinity;
                     for (let p = 0; p < LIGHT_POOL_SIZE; p++) {
                         if (activeDistSq[p] > distSq) {
                             bestPoolSlot = p;
-                            bestPoolDist = distSq;
                         }
                     }
                     if (bestPoolSlot >= 0) {
@@ -522,6 +555,7 @@ export async function createLiminalScene() {
                         activeDistSq[bestPoolSlot] = distSq;
                     }
                 } else {
+                    ld.fixture.visible = false;
                     if (Math.abs(ld._prevOpacity) > OPACITY_EPSILON) {
                         ld.fixtureMat.opacity = 0;
                         ld._prevOpacity = 0;
@@ -529,25 +563,14 @@ export async function createLiminalScene() {
                 }
             }
 
+            const hasColors = activeParams && activeParams.colorA && activeParams.colorB;
             for (let p = 0; p < LIGHT_POOL_SIZE; p++) {
                 const pl = lightPool[p];
                 if (activeIndices[p] >= 0) {
                     const ld = lightData[activeIndices[p]];
-                    const dx = ld.wx - cx;
-                    const dy = ld.wy - cy;
-                    const dz = ld.wz - cz;
-                    const distSq = dx * dx + dy * dy + dz * dz;
-                    const dist = Math.sqrt(distSq);
-                    const proximity = 1.0 - (dist / LIGHT_ACTIVE_RADIUS);
-                    const baseIntensity = 6 * proximity;
-                    const flickerFast = Math.sin(effectiveTime * ld.freq + ld.phase) * 0.2;
-                    const flickerSlow = Math.sin(effectiveTime * 0.37 + ld.phase * 2.3) * 0.15;
-                    const randomDrop = ld.flickerChance > 0.8
-                        ? (Math.sin(effectiveTime * 11.3 + ld.segIdx * 7) > 0.92 ? -0.5 : 0)
-                        : 0;
-                    pl.intensity = Math.max(0.2, baseIntensity + flickerFast + flickerSlow + randomDrop);
+                    pl.intensity = ld._intensity;
                     pl.position.set(ld.wx, ld.lightY, ld.wz);
-                    if (activeParams && activeParams.colorA && activeParams.colorB) {
+                    if (hasColors) {
                         const blend = (Math.sin(effectiveTime * 0.15 + ld.segIdx * 0.5) * 0.5 + 0.5);
                         pl.color.lerpColors(_tempColor.set(normalizeColor(activeParams.colorA)), _tempColor.set(normalizeColor(activeParams.colorB)), blend);
                     }
@@ -573,7 +596,9 @@ export async function createLiminalScene() {
                         ed.signLight.intensity = targetIntensity;
                         ed._prevIntensity = targetIntensity;
                     }
+                    ed.sign.visible = true;
                 } else {
+                    ed.sign.visible = false;
                     if (Math.abs(ed._prevOpacity) > OPACITY_EPSILON) {
                         ed.signMat.opacity = 0;
                         ed._prevOpacity = 0;
