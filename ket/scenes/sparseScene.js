@@ -196,6 +196,7 @@ export async function createSparseScreen() {
     }
     instancedFloaters.instanceMatrix.needsUpdate = true;
     instancedFloaters.instanceColor.needsUpdate = true;
+    instancedFloaters.frustumCulled = false;
     threeScene.add(instancedFloaters);
 
     // Ghost trails — single Points system instead of 150 Mesh objects
