@@ -358,11 +358,12 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         sceneNameEl = createDisabledText('Current Scene', sceneInfo.name, null, null);
         sceneFolder.body.appendChild(sceneNameEl);
 
-        sequentialToggle = { value: false };
-        const seqBtnResult = createToggleButton('Sequential: OFF', false, () => {
+        sequentialToggle = { value: true };
+        const seqBtnResult = createToggleButton('Auto Switch: ON', true, () => {
             sequentialToggle.value = !sequentialToggle.value;
             sceneManager.useSequential = sequentialToggle.value;
-            seqBtnResult.btn.textContent = `Sequential: ${sequentialToggle.value ? 'ON' : 'OFF'}`;
+            sceneManager.timerPaused = !sequentialToggle.value;
+            seqBtnResult.btn.textContent = `Auto Switch: ${sequentialToggle.value ? 'ON' : 'OFF'}`;
             if (sequentialToggle.value) {
                 seqBtnResult.btn.style.borderColor = 'rgba(0, 204, 255, 0.5)';
                 seqBtnResult.btn.style.background = 'rgba(0, 204, 255, 0.2)';
@@ -399,8 +400,13 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
                 timerEl.innerHTML = `Timer: <span style="color: rgba(255,255,255,0.5);">${elapsed.toFixed(1)}s</span>`;
             }
             if (nextSwitchDisplay && nextSwitchEl) {
-                nextSwitchDisplay.next = sceneManager.timeUntilNextSwitch().toFixed(1) + 's';
-                nextSwitchEl.innerHTML = `Next Switch: <span style="color: rgba(255,255,255,0.5);">${sceneManager.timeUntilNextSwitch().toFixed(1)}s</span>`;
+                if (sceneManager.timerPaused) {
+                    nextSwitchDisplay.next = 'paused';
+                    nextSwitchEl.innerHTML = `Next Switch: <span style="color: rgba(255,255,255,0.5);">paused</span>`;
+                } else {
+                    nextSwitchDisplay.next = sceneManager.timeUntilNextSwitch().toFixed(1) + 's';
+                    nextSwitchEl.innerHTML = `Next Switch: <span style="color: rgba(255,255,255,0.5);">${sceneManager.timeUntilNextSwitch().toFixed(1)}s</span>`;
+                }
             }
         }
     };

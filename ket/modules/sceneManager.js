@@ -13,6 +13,7 @@ export class SceneManager {
         this.switchTimes = [];
         this._nextPickSeed = Date.now();
         this.useSequential = false;
+        this.timerPaused = false;
         this.anchoredDate = null;
         this.lastSwitchCount = 0;
         this.composer = null;
@@ -158,6 +159,7 @@ export class SceneManager {
     }
 
     switchToRandom() {
+        if (this.timerPaused) this._nextPickSeed = Date.now();
         const target = this._pickTarget();
         if (target) this.switchTo(target);
     }
@@ -187,6 +189,7 @@ export class SceneManager {
 
     update(dt) {
         this.rebuild();
+        if (this.timerPaused) return null;
         const count = this.getSwitchCount();
         if (count > this.lastSwitchCount) {
             this.lastSwitchCount = count;
