@@ -34,6 +34,7 @@ export const defaultParams = {
     sceneDurationCity: 45,
     sceneDurationTest: 10,
     forceNextScene: false,
+    forceNextOrdered: false,
     //particles: false
 };
 

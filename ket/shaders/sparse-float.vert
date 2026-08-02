@@ -4,6 +4,7 @@ varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
 varying float vDisplacement;
+varying vec3 vInstanceColor;
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -55,8 +56,9 @@ float snoise(vec3 v) {
 void main() {
     vUv = uv;
     vNormal = normalMatrix * normal;
+    vInstanceColor = instanceColor;
 
-    vec3 wavePos = position;
+    vec3 wavePos = position.xyz;
 
     float breathe = sin(uTime * 0.8) * 0.5 + 0.5;
     float n = snoise(vec3(wavePos * 2.0 + uTime * 0.5));

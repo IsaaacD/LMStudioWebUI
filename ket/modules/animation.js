@@ -106,10 +106,14 @@ export class AnimationLoop {
 
         if (this.transitionEffect.isIdle()) {
             const target = this.sceneManager.update(dt);
-            if (target || this.params.forceNextScene) {
+            const wantOrdered = this.params.forceNextOrdered;
+            const wantRandom = this.params.forceNextScene;
+            if (target || wantRandom || wantOrdered) {
                 this.params.forceNextScene = false;
+                this.params.forceNextOrdered = false;
                 this._pendingSceneTarget = target;
                 this._forceSceneSwitch = !target;
+                this._forceSceneOrdered = wantOrdered;
                 this.transitionEffect.start();
             }
         } else {
@@ -124,7 +128,12 @@ export class AnimationLoop {
 
         if (this.transitionEffect.isReadyToSwap()) {
             if (this._forceSceneSwitch) {
-                this.sceneManager.switchToRandom();
+                if (this._forceSceneOrdered) {
+                    this.sceneManager.switchToNext();
+                    this._forceSceneOrdered = false;
+                } else {
+                    this.sceneManager.switchToRandom();
+                }
                 this._forceSceneSwitch = false;
             } else {
                 this.sceneManager.switchIfTarget(this._pendingSceneTarget);

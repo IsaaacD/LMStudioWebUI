@@ -148,18 +148,15 @@ export async function createSparseScreen() {
     const auroraVert = await loadShader('./shaders/sparse-aurora.vert');
     const auroraFrag = await loadShader('./shaders/sparse-aurora.frag');
 
-    // Shared shader material for ALL floaters (single draw call via InstancedMesh)
-    const floaterMaterial = new THREE.ShaderMaterial({
-        vertexShader: floatVert,
-        fragmentShader: floatFrag,
-        uniforms: {
-            uTime: { value: 0 },
-            uColor1: { value: new THREE.Color(0xff0055) },
-            uColor2: { value: new THREE.Color(0x00ccff) },
-            uMorph: { value: 0.4 },
-            uPulse: { value: 0 },
-        },
+    // Shared material for ALL floaters — glowing glass spheres
+    const floaterMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveIntensity: 3,
         transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
     });
 
     // Instanced floaters — 1 draw call instead of 50
@@ -172,7 +169,8 @@ export async function createSparseScreen() {
         const y = (Math.random() - 0.5) * 60;
         const z = (Math.random() - 0.5) * 100;
         _dummy.position.set(x, y, z);
-        _dummy.scale.setScalar(0.5 + Math.random() * 2);
+        const scale = 0.5 + Math.random() * 2;
+        _dummy.scale.setScalar(scale);
         _dummy.updateMatrix();
         instancedFloaters.setMatrixAt(i, _dummy.matrix);
         instancedFloaters.setColorAt(i, new THREE.Color().setHSL(Math.random(), 0.8, 0.5));
@@ -182,6 +180,8 @@ export async function createSparseScreen() {
             rxs: (Math.random() - 0.5) * 2,
             rys: (Math.random() - 0.5) * 2,
             rzs: (Math.random() - 0.5) * 2,
+            scale,
+            colorT: Math.random(),
             bobSpeed: 0.3 + Math.random() * 1.5,
             bobPhase: Math.random() * Math.PI * 2,
             bobAmp: 1 + Math.random() * 3,
@@ -643,6 +643,10 @@ export async function createSparseScreen() {
             const sny = supernovaGroup.position.y;
             const snz = supernovaGroup.position.z;
 
+            const cA = activeParams && activeParams.colorA ? normalizeColor(activeParams.colorA) : '#ff0055';
+            const cB = activeParams && activeParams.colorB ? normalizeColor(activeParams.colorB) : '#00ccff';
+            _trailBaseColor.set(cB);
+
             for (let i = 0; i < FLOATER_COUNT; i++) {
                 const ud = floaterData[i];
 
@@ -672,8 +676,14 @@ export async function createSparseScreen() {
 
                 _dummy.position.copy(_fpos);
                 _dummy.rotation.set(ud.rx, ud.ry, ud.rz);
+                _dummy.scale.setScalar(ud.scale);
                 _dummy.updateMatrix();
                 instancedFloaters.setMatrixAt(i, _dummy.matrix);
+
+                // Blend colorA -> colorB per instance
+                _tempColor.set(cA);
+                _tempColor.lerp(_trailBaseColor, ud.colorT);
+                instancedFloaters.setColorAt(i, _tempColor);
 
                 // Position history — plain objects, no Vector3.clone()
                 if (!ud.history) ud.history = [];
@@ -681,9 +691,12 @@ export async function createSparseScreen() {
                 if (ud.history.length > 6) ud.history.pop();
             }
             instancedFloaters.instanceMatrix.needsUpdate = true;
+            instancedFloaters.instanceColor.needsUpdate = true;
 
-            // Shared uniform updated once per frame
-            floaterMaterial.uniforms.uTime.value = effectiveTime;
+            // Update material emissive to blend colorA + colorB
+            _tempColor2.set(cA);
+            _tempColor2.lerp(_trailBaseColor, 0.5);
+            floaterMaterial.emissive.copy(_tempColor2);
 
             // --- Ghost trails via Points (1 draw call, no GC) ---
             const tPosArr = trailGeo.attributes.position.array;

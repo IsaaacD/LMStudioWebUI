@@ -6,25 +6,38 @@ varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
 varying float vDisplacement;
+varying vec3 vInstanceColor;
 
 void main() {
     float t = sin(uTime * 0.3 + vDisplacement * 3.0) * 0.5 + 0.5;
-    vec3 baseColor = mix(uColor1, uColor2, t);
+    vec3 uniformBlend = mix(uColor1, uColor2, t);
 
+    // Strong per-instance color
+    vec3 baseColor = vInstanceColor * 2.0;
+
+    // Fresnel rim glow
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
-    float fresnel = pow(1.0 - abs(dot(normalize(vNormal), viewDir)), 3.0);
-    baseColor += fresnel * uColor2 * 0.8;
+    vec3 norm = normalize(vNormal);
+    float fresnel = pow(1.0 - abs(dot(norm, viewDir)), 2.5);
+    baseColor += fresnel * vInstanceColor * 2.5;
 
-    float pulse = sin(uTime * 2.5) * 0.5 + 0.5;
-    baseColor += pulse * uPulse * 0.2;
+    // Pulsing inner glow
+    float pulse = sin(uTime * 2.0 + vDisplacement * 5.0) * 0.5 + 0.5;
+    baseColor += pulse * 0.6;
 
-    float vein = sin(vUv.x * 15.0 + uTime * 1.5) * sin(vUv.y * 15.0 - uTime);
-    vein = smoothstep(0.5, 0.9, vein * 0.5 + 0.5);
-    baseColor = mix(baseColor, vec3(1.0), vein * 0.15);
+    // Vein highlight
+    float vein = sin(vUv.x * 12.0 + uTime * 1.5) * sin(vUv.y * 12.0 - uTime);
+    vein = smoothstep(0.6, 0.9, vein * 0.5 + 0.5);
+    baseColor += vein * 0.4;
 
+    // Opaque enough to see, slight transparency for depth
+    float alpha = mix(0.75, 1.0, fresnel);
+
+    // Distance fog
     float dist = length(vWorldPosition - cameraPosition);
-    float fogFactor = smoothstep(80.0, 200.0, dist);
-    vec3 fogged = mix(baseColor, vec3(0.0), fogFactor);
+    float fogFactor = smoothstep(100.0, 250.0, dist);
+    vec3 fogged = mix(baseColor, vec3(0.02, 0.02, 0.08), fogFactor);
+    alpha *= (1.0 - fogFactor);
 
-    gl_FragColor = vec4(fogged, 0.9);
+    gl_FragColor = vec4(fogged, alpha);
 }

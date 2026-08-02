@@ -128,7 +128,7 @@ function createText(text, tooltip, tooltipEl) {
     return el;
 }
 
-function createFolder(title, tooltip, tooltipEl) {
+function createFolder(title, tooltip, tooltipEl, collapsed = true) {
     const header = document.createElement('div');
     header.className = 'gui-folder-header';
 
@@ -145,7 +145,6 @@ function createFolder(title, tooltip, tooltipEl) {
 
     const body = document.createElement('div');
     body.className = 'gui-folder-body';
-    let collapsed = true;
 
     header.addEventListener('click', () => {
         collapsed = !collapsed;
@@ -157,7 +156,12 @@ function createFolder(title, tooltip, tooltipEl) {
         arrow.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(90deg)';
     });
 
-    arrow.style.transform = 'rotate(0deg)';
+    arrow.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(90deg)';
+    if (collapsed) {
+        body.classList.remove('expanded');
+    } else {
+        body.classList.add('expanded');
+    }
 
     return { header, body, collapsed };
 }
@@ -223,13 +227,15 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     };
 
     tab.addEventListener('click', togglePanel);
-    const modeDisplay = createText('Settings', 'Current control mode: Auto (autopilot) or Manual (WASD)', tooltipEl);
-    content.appendChild(modeDisplay);
+    const settingsFolder = createFolder('General', 'General settings for the trip.', tooltipEl, false);
+    //settingsFolder.body.classList.add('expanded');
+    content.appendChild(settingsFolder.header);
+    content.appendChild(settingsFolder.body);
     const pauseBtnResult = createToggleButton('Pause', params.paused, (e) => {
         params.togglePause();
         console.log(e);
     }, 'Pause or resume the animation loop', tooltipEl);
-    content.appendChild(pauseBtnResult.element);
+    settingsFolder.body.appendChild(pauseBtnResult.element);
 
     // --- Mode display ---
     // const modeDisplay = createDisabledText('Mode', params.controlMode,
@@ -241,13 +247,13 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         params.switchMode();
         switchBtnResult.btn.textContent = `Movement: ${params.controlMode}`;
     }, 'Toggle between automatic flight and manual WASD controls', tooltipEl);
-    content.appendChild(switchBtnResult.element);
+    settingsFolder.body.appendChild(switchBtnResult.element);
 
     // --- Rave toggle ---
     const raveBtnResult = createToggleButton(params.raveMode ? 'Rave: ON' : 'Rave: OFF', params.raveMode, () => {
         params.toggleRaveMode();
     }, 'Toggle rave mode — auto-randomizes visual parameters (works in any control mode)', tooltipEl);
-    content.appendChild(raveBtnResult.element);
+    settingsFolder.body.appendChild(raveBtnResult.element);
 
     guiControllers.updateRaveToggle = () => {
         raveBtnResult.btn.textContent = params.raveMode ? 'Rave: ON' : 'Rave: OFF';
@@ -375,7 +381,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         sceneFolder.body.appendChild(seqBtnResult.element);
 
         const nextSceneBtnResult = createButton('Next Scene', () => {
-            params.forceNextScene = true;
+            params.forceNextOrdered = true;
         }, 'Manually trigger transition to next scene', tooltipEl);
         sceneFolder.body.appendChild(nextSceneBtnResult.element);
 
