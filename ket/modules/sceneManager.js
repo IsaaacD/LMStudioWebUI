@@ -92,7 +92,8 @@ export class SceneManager {
                 const s = this.scenes.get(id);
                 const w = s?.weight ?? 1;
                 return { id, weight: w ?? 0 };
-            });
+            })
+            .filter(c => !excludeId || c.id !== excludeId);
         if (candidates.length === 0) return this.rotation[0] ?? null;
         const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
         let r = hashNumber(seed, this.hashSeed) * totalWeight;
@@ -115,7 +116,7 @@ export class SceneManager {
         if (override !== undefined) {
             duration = Math.max(next.minDuration, Math.min(next.maxDuration, override));
         } else {
-            duration = deriveDuration(this.lastSwitchCount, next.minDuration, next.maxDuration, this.hashSeed);
+            duration = deriveDuration(this.switchTimes[this.lastSwitchCount], next.minDuration, next.maxDuration, this.hashSeed);
         }
         this.timer.maxDuration = duration;
     }
@@ -158,7 +159,6 @@ export class SceneManager {
     }
 
     switchToRandom() {
-        this._nextPickSeed++;
         const target = this._pickTarget();
         if (target) this.switchTo(target);
     }
@@ -197,7 +197,6 @@ export class SceneManager {
         }
         this.timer.elapsed += dt;
         if (this.timer.elapsed >= this.timer.maxDuration) {
-            this._nextPickSeed++;
             const target = this._pickTarget();
             if (target) {
                 this.timer.elapsed = 0;
@@ -217,7 +216,7 @@ export class SceneManager {
             const nextIndex = (this.activeIndex + 1) % this.rotation.length;
             targetId = this.rotation[nextIndex];
         } else {
-            targetId = this._weightedPick(this._nextPickSeed, currentId);
+            targetId = this._weightedPick(this._nextPickSeed++, currentId);
         }
         if (targetId === currentId) return null;
         return targetId;
