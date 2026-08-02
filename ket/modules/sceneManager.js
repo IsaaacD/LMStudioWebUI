@@ -86,15 +86,14 @@ export class SceneManager {
         }
     }
 
-    _weightedPick(seed, excludeId) {
+    _weightedPick(seed = Date.now()) {
         const candidates = this.rotation
             .map(id => {
                 const s = this.scenes.get(id);
                 const w = s?.weight ?? 1;
-                return { id, weight: w ?? 0 };
-            })
-            .filter(c => !excludeId || c.id !== excludeId);
-        if (candidates.length === 0) return this.rotation[0] ?? null;
+                return { id, weight: w };
+            });
+        if (candidates.length === 0) return null;
         const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
         let r = hashNumber(seed, this.hashSeed) * totalWeight;
         for (const c of candidates) {
@@ -218,9 +217,13 @@ export class SceneManager {
             const nextIndex = (this.activeIndex + 1) % this.rotation.length;
             targetId = this.rotation[nextIndex];
         } else {
-            targetId = this._weightedPick(this._nextPickSeed++, currentId);
+            //let attempts = 0;
+            //do {
+            targetId = this._weightedPick();
+            //   attempts++;
+            // } while (targetId === currentId && attempts < this.rotation.length);
         }
-        if (targetId === currentId) return null;
+
         return targetId;
     }
 
