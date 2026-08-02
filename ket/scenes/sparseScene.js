@@ -424,11 +424,12 @@ export async function createSparseScreen() {
     supernovaGroup.position.set(0, -5, -supernovaDist);
     threeScene.add(supernovaGroup);
 
-    const coreGeo = new THREE.SphereGeometry(3, 32, 32);
+    const coreGeo = new THREE.SphereGeometry(5, 32, 32);
     const coreMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.9,
+        opacity: 1,
+        fog: false,
     });
     const core = new THREE.Mesh(coreGeo, coreMat);
     supernovaGroup.add(core);
@@ -436,13 +437,14 @@ export async function createSparseScreen() {
     const glowColors = [0xff4400, 0xff8800, 0xffcc00, 0xffffff];
     const glowLayers = [];
     glowColors.forEach((col, i) => {
-        const r = 5 + i * 4;
+        const r = 8 + i * 5;
         const g = new THREE.SphereGeometry(r, 16, 16);
         const m = new THREE.MeshBasicMaterial({
             color: col,
             transparent: true,
-            opacity: 0.15 - i * 0.02,
+            opacity: 0.25 - i * 0.03,
             side: THREE.BackSide,
+            fog: false,
         });
         const mesh = new THREE.Mesh(g, m);
         supernovaGroup.add(mesh);
@@ -451,11 +453,12 @@ export async function createSparseScreen() {
 
     const rings = [];
     for (let i = 0; i < SUPERNOVA_RING_COUNT; i++) {
-        const ringGeo = new THREE.TorusGeometry(8 + i * 3, 0.15, 8, 64);
+        const ringGeo = new THREE.TorusGeometry(8 + i * 3, 0.2, 8, 64);
         const ringMat = new THREE.MeshBasicMaterial({
             color: 0xff6600,
             transparent: true,
             opacity: 0,
+            fog: false,
         });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.userData = {
@@ -486,12 +489,13 @@ export async function createSparseScreen() {
 
     const particleMat = new THREE.PointsMaterial({
         color: 0xff8844,
-        size: 1.5,
+        size: 3,
         transparent: true,
         opacity: 0.7,
-        sizeAttenuation: true,
+        sizeAttenuation: false,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
+        fog: false,
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     supernovaGroup.add(particles);
@@ -624,13 +628,13 @@ export async function createSparseScreen() {
             glowLayers.forEach((layer, i) => {
                 const s = 1 + Math.sin(t * (2 + i) + h(10 + i) * Math.PI * 2) * 0.3 * intensity;
                 layer.scale.setScalar(s);
-                layer.material.opacity = (0.1 + intensity * 0.15) * (1 - i * 0.15);
+                layer.material.opacity = (0.2 + intensity * 0.25) * (1 - i * 0.15);
             });
 
             rings.forEach((ring, i) => {
                 const p = (Math.sin(t * 1.5 + h(20 + i) * Math.PI * 2) * 0.5 + 0.5);
                 ring.scale.setScalar(1 + p * 2);
-                ring.material.opacity = (1 - p) * 0.6 * buildUp;
+                ring.material.opacity = (1 - p) * 0.9 * buildUp;
                 ring.material.color.setHSL(0.08 - p * 0.05, 1, 0.5 + p * 0.3);
             });
 
@@ -644,8 +648,8 @@ export async function createSparseScreen() {
                 posArr[i * 3 + 2] = Math.cos(pd.phi) * dist;
             }
             particles.geometry.attributes.position.needsUpdate = true;
-            particleMat.opacity = 0.5 * buildUp;
-            particleMat.color.setHSL(0.07 + pulse * 0.03, 1, 0.4 + intensity * 0.4);
+            particleMat.opacity = 0.7 * buildUp;
+            particleMat.color.setHSL(0.07 + pulse * 0.03, 1, 0.5 + intensity * 0.5);
 
             supernovaLight.intensity = intensity * 15 * buildUp;
             supernovaLight.color.setHSL(0.06 + pulse * 0.04, 1, 0.5);
