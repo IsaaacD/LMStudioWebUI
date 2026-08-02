@@ -197,6 +197,8 @@ export class SceneManager {
         }
         this.timer.elapsed += dt;
         if (this.timer.elapsed >= this.timer.maxDuration) {
+            this.lastSwitchCount = this.getSwitchCount();
+            this._nextPickSeed = this.lastSwitchCount;
             const target = this._pickTarget();
             if (target) {
                 this.timer.elapsed = 0;
