@@ -2,8 +2,8 @@ export class TransitionMelt {
     constructor() {
         this.phase = 'idle';
         this.elapsed = 0;
-        this.freezeDuration = 0.15;
-        this.transitionDuration = 1.2;
+        this.freezeDuration = 0.2;
+        this.transitionDuration = 2.0;
         this.meltProgress = 0;
         this.revealBlend = 0;
         this.needSwap = false;
@@ -11,7 +11,7 @@ export class TransitionMelt {
         this._snapshot = null;
         this._swapConsumed = false;
         this.cooldown = 0;
-        this.cooldownDuration = 0.8;
+        this.cooldownDuration = 1.0;
     }
 
     start() {
