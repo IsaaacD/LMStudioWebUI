@@ -26,9 +26,9 @@ export class SceneManager {
         this.switchTimes = [anchor];
         let t = anchor;
         const end = anchor + 86400000;
-        const first = this.scenes.values().next().value;
-        const minDur = first?.minDuration ?? MIN_DURATION;
-        const maxDur = first?.maxDuration ?? MAX_DURATION;
+        const active = this.getActiveScene();
+        const minDur = active?.minDuration ?? MIN_DURATION;
+        const maxDur = active?.maxDuration ?? MAX_DURATION;
         while (t < end) {
             t += deriveDuration(t, minDur, maxDur) * 1000;
             this.switchTimes.push(t);
@@ -55,6 +55,8 @@ export class SceneManager {
         return Math.max(0, (nextTime - Date.now()) / 1000);
     }
 
+
+
     resolveInitialScene() {
         const count = this.getSwitchCount();
         this.lastSwitchCount = count;
@@ -79,19 +81,18 @@ export class SceneManager {
         if (this.scenes.size === 1) {
             this.timer.maxDuration =
                 this.durationOverrides.get(definition.id) ??
-                this.timeUntilNextSwitch();
+                deriveDuration(todayAnchor(), definition.minDuration, definition.maxDuration);
         }
     }
 
     _weightedPick(seed, excludeId) {
         const candidates = this.rotation
-            .filter(id => id !== excludeId)
             .map(id => {
                 const s = this.scenes.get(id);
-                return { id, weight: s?.weight ?? 1 };
+                const w = s?.weight ?? 1;
+                return { id, weight: w ?? 0 };
             });
         if (candidates.length === 0) return this.rotation[0] ?? null;
-        if (candidates.length === 1) return candidates[0].id;
         const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
         let r = hashNumber(seed) * totalWeight;
         for (const c of candidates) {
@@ -102,6 +103,7 @@ export class SceneManager {
     }
 
     getActiveScene() {
+        //const activeId = this.scenes.values().next().value;
         const activeId = this.rotation[this.activeIndex];
         return this.scenes.get(activeId);
     }
@@ -112,7 +114,7 @@ export class SceneManager {
         if (override !== undefined) {
             duration = Math.max(next.minDuration, Math.min(next.maxDuration, override));
         } else {
-            duration = this.timeUntilNextSwitch();
+            duration = deriveDuration(this.lastSwitchCount, next.minDuration, next.maxDuration);
         }
         this.timer.maxDuration = duration;
     }
@@ -174,6 +176,15 @@ export class SceneManager {
         return Math.max(scene?.minDuration, Math.min(scene?.maxDuration, duration));
     }
 
+    syncSwitchCount() {
+        this.rebuild();
+        this.lastSwitchCount = this.getSwitchCount();
+    }
+
+    advanceTimer(dt) {
+        this.timer.elapsed += dt;
+    }
+
     update(dt) {
         this.rebuild();
         const count = this.getSwitchCount();
@@ -181,28 +192,32 @@ export class SceneManager {
             this.lastSwitchCount = count;
             this.timer.elapsed = 0;
             this._nextPickSeed = count;
-            this._applyDuration(this.getActiveScene());
             return this._pickTarget();
         }
         this.timer.elapsed += dt;
         if (this.timer.elapsed >= this.timer.maxDuration) {
             this._nextPickSeed++;
             const target = this._pickTarget();
-            if (target) return target;
-            this.timer.elapsed = 0;
+            if (target) {
+                this.timer.elapsed = 0;
+                const targetScene = this.scenes.get(target);
+                if (targetScene) this._applyDuration(targetScene);
+                return target;
+            }
+            this.timer.elapsed = this.timer.elapsed - this.timer.maxDuration;
         }
         return null;
     }
 
     _pickTarget() {
+        const currentId = this.rotation[this.activeIndex];
         let targetId;
         if (this.useSequential) {
             const nextIndex = (this.activeIndex + 1) % this.rotation.length;
             targetId = this.rotation[nextIndex];
         } else {
-            targetId = this._weightedPick(this._nextPickSeed);
+            targetId = this._weightedPick(this._nextPickSeed, currentId);
         }
-        const currentId = this.rotation[this.activeIndex];
         if (targetId === currentId) return null;
         return targetId;
     }

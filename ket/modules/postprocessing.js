@@ -4,9 +4,11 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { loadShader } from './utils.js';
+import { defaultParams } from './config.js';
 
 export class PostProcessor {
     constructor(renderer, scene, camera) {
+        this.renderer = renderer;
         this.composer = new EffectComposer(renderer);
         this.renderPass = new RenderPass(scene, camera);
         this.composer.addPass(this.renderPass);
@@ -186,6 +188,87 @@ export class PostProcessor {
         }
         if (this.scanlinePass) {
             this.scanlinePass.uniforms.uResolution.value.set(width, height);
+        }
+        if (this.meltPass) {
+            this.meltPass.uniforms.uResolution.value.set(width, height);
+        }
+    }
+
+    async initMeltPass() {
+        const meltShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uFrozenTexture": { value: null },
+                "uMeltProgress": { value: 0 },
+                "uRevealBlend": { value: 0 },
+                "uColorA": { value: new THREE.Color(defaultParams.colorA) },
+                "uColorB": { value: new THREE.Color(defaultParams.colorB) },
+                "uTime": { value: 0 },
+                "uResolution": { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            },
+            vertexShader: await loadShader('./shaders/melt.vert'),
+            fragmentShader: await loadShader('./shaders/melt.frag')
+        };
+        this.meltPass = new ShaderPass(meltShader);
+        this.meltPass.enabled = false;
+        this.composer.addPass(this.meltPass);
+        this._snapshotRT = null;
+    }
+
+    captureSnapshot() {
+        if (!this.renderer) return null;
+        const rt = this.composer.writeBuffer;
+        if (!rt || !rt.texture) return null;
+        if (!this._snapshotRT) {
+            this._snapshotRT = new THREE.WebGLRenderTarget(
+                rt.width, rt.height,
+                { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat }
+            );
+        }
+        if (!this._copyScene) {
+            const geo = new THREE.PlaneGeometry(2, 2);
+            const mat = new THREE.MeshBasicMaterial({ map: null });
+            const mesh = new THREE.Mesh(geo, mat);
+            const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            this._copyScene = new THREE.Scene();
+            this._copyScene.add(mesh);
+            this._copyScene.add(cam);
+            this._copyMesh = mesh;
+            this._copyCam = cam;
+        }
+        this._copyMesh.material.map = rt.texture;
+        this._copyMesh.material.needsUpdate = true;
+        this.renderer.setRenderTarget(this._snapshotRT);
+        this.renderer.render(this._copyScene, this._copyCam);
+        this.renderer.setRenderTarget(null);
+        return this._snapshotRT.texture;
+    }
+
+    setMeltSnapshot(texture) {
+        if (this.meltPass && texture) {
+            this.meltPass.uniforms.uFrozenTexture.value = texture;
+            this.meltPass.enabled = true;
+        }
+    }
+
+    setMeltProgress(progress) {
+        if (this.meltPass) {
+            this.meltPass.uniforms.uMeltProgress.value = progress;
+        }
+    }
+
+    setRevealBlend(value) {
+        if (this.meltPass) {
+            this.meltPass.uniforms.uRevealBlend.value = value;
+            if (value >= 1) {
+                this.meltPass.enabled = false;
+            }
+        }
+    }
+
+    updateMeltTime(time) {
+        if (this.meltPass) {
+            this.meltPass.uniforms.uTime.value = time;
         }
     }
 }

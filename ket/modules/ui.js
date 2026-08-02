@@ -379,7 +379,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         sceneFolder.body.appendChild(nextSceneBtnResult.element);
 
         timerDisplay = { elapsed: '0s' };
-        timerEl = createDisabledText('Timer', '0s', null, null);
+        timerEl = createDisabledText('Elapsed', '0s', null, null);
         sceneFolder.body.appendChild(timerEl);
 
         nextSwitchDisplay = { next: '0s' };

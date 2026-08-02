@@ -18,7 +18,7 @@ import { RaveEngine } from './modules/raveMode.js';
 import { initGUI } from './modules/ui.js';
 import { AnimationLoop } from './modules/animation.js';
 import { SceneManager } from './modules/sceneManager.js';
-import { TransitionEffect } from './modules/transition.js';
+import { TransitionMelt } from './modules/transitionMelt.js';
 import { FPSCounter } from './modules/fpsCounter.js';
 import { WebRTCManager } from './modules/webrtc.js';
 
@@ -100,8 +100,9 @@ async function bootstrap() {
     await postProcessor.initGrainPass();
     await postProcessor.initScanlinePass();
     await postProcessor.initVignettePass();
+    await postProcessor.initMeltPass();
 
-    const transitionEffect = new TransitionEffect();
+    const transitionEffect = new TransitionMelt();
 
     params = { ...defaultParams };
 

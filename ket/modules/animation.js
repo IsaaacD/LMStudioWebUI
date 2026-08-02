@@ -96,10 +96,24 @@ export class AnimationLoop {
                 this.transitionEffect.start();
             }
         } else {
-            this.transitionEffect.update(dt);
+            this.sceneManager.advanceTimer(dt);
+            const finished = this.transitionEffect.update(dt);
+            if (finished) {
+                this.sceneManager.syncSwitchCount();
+            }
         }
 
-        if (this.transitionEffect.consumeSwap()) {
+        if (this.transitionEffect.isMeltActive()) {
+            if (this.transitionEffect.isSnapshotReady()) {
+                const snapshot = this.transitionEffect.getSnapshot();
+                this.composer.setMeltSnapshot(snapshot);
+            }
+            this.composer.setMeltProgress(this.transitionEffect.getMeltProgress());
+            this.composer.setRevealBlend(this.transitionEffect.getRevealBlend());
+        }
+        this.composer.updateMeltTime(rawTime);
+
+        if (this.transitionEffect.isReadyToSwap()) {
             if (this._forceSceneSwitch) {
                 this.sceneManager.switchToRandom();
                 this._forceSceneSwitch = false;
@@ -107,16 +121,14 @@ export class AnimationLoop {
                 this.sceneManager.switchIfTarget(this._pendingSceneTarget);
             }
             this._pendingSceneTarget = null;
+            this.transitionEffect.consumeSwap();
         }
 
         const activeScene = this.sceneManager.getActiveScene();
 
-        if (activeScene && activeScene.onUpdate) {
+        if (activeScene && activeScene.onUpdate && !this.transitionEffect.isFreezing()) {
             activeScene.onUpdate(this.camera, effectiveTime, dt, activeParams);
         }
-
-        this.composer.setPixelationSharpness(this.transitionEffect.getPixelationSharpness());
-        this.composer.setFadeOverlayAlpha(this.transitionEffect.getOverlayAlpha());
 
         this.composer.update(activeParams, effectiveTime);
 
@@ -188,6 +200,13 @@ export class AnimationLoop {
 
         if (activeScene) {
             this.composer.render(activeScene.threeScene);
+        }
+
+        if (this.transitionEffect.isMeltActive() && !this.transitionEffect.isSnapshotReady()) {
+            const snapshot = this.composer.captureSnapshot();
+            if (snapshot) {
+                this.transitionEffect.setSnapshot(snapshot);
+            }
         }
 
         if (this.onTimerUpdate) {
