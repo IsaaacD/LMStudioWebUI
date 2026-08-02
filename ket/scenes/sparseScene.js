@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { normalizeColor, hashNumber, loadShader, minMaxRange } from '../modules/utils.js';
+import { normalizeColor, hashNumber, loadShader } from '../modules/utils.js';
 
 const FLOATER_COUNT = 50;
-const RECYCLE_DIST_SQ = 600 * 600;
 const SUPERNOVA_PARTICLE_COUNT = 300;
 const SUPERNOVA_RING_COUNT = 5;
 const SUPERNOVA_EPOCH = 1751190000000;
@@ -20,14 +19,14 @@ const STAR_FIELD_RADIUS = 400;
 const WEIGHT = 1;
 const _tempColor = new THREE.Color();
 const _tempColor2 = new THREE.Color();
-const _vec3 = new THREE.Vector3();
+const _dummy = new THREE.Object3D();
 
 export async function createSparseScreen() {
     const threeScene = new THREE.Scene();
     threeScene.background = new THREE.Color(0x020208);
     threeScene.fog = new THREE.FogExp2(0x020208, 0.004);
 
-    // Starfield — distant particles on a sphere shell
+    // Starfield
     const starGeo = new THREE.BufferGeometry();
     const starPositions = new Float32Array(STAR_COUNT * 3);
     const starColors = new Float32Array(STAR_COUNT * 3);
@@ -74,12 +73,11 @@ export async function createSparseScreen() {
     const starfield = new THREE.Points(starGeo, starMat);
     threeScene.add(starfield);
 
-    // Distant sun-like point light
+    // Sun
     const sunLight = new THREE.DirectionalLight(0xaaccff, 0.6);
     sunLight.position.set(100, 80, -200);
     threeScene.add(sunLight);
 
-    // Generate a radial glow texture for the sun sprite
     const sunCanvas = document.createElement('canvas');
     sunCanvas.width = 128;
     sunCanvas.height = 128;
@@ -93,7 +91,6 @@ export async function createSparseScreen() {
     sunCtx.fillRect(0, 0, 128, 128);
     const sunTexture = new THREE.CanvasTexture(sunCanvas);
 
-    // Sun lens flare proxy — bright sprite
     const sunSpriteMat = new THREE.SpriteMaterial({
         map: sunTexture,
         transparent: true,
@@ -106,7 +103,6 @@ export async function createSparseScreen() {
     sunSprite.scale.set(80, 80, 1);
     threeScene.add(sunSprite);
 
-    // Small bright core sphere for the sun
     const sunCoreGeo = new THREE.SphereGeometry(3, 16, 16);
     const sunCoreMat = new THREE.MeshBasicMaterial({
         color: 0xeeeeff,
@@ -115,12 +111,11 @@ export async function createSparseScreen() {
     sunCore.position.copy(sunLight.position);
     threeScene.add(sunCore);
 
-    // Secondary dim light from opposite side
+    // Dim light
     const dimLight = new THREE.DirectionalLight(0x331144, 0.2);
     dimLight.position.set(-80, -60, 150);
     threeScene.add(dimLight);
 
-    // Dim nebula glow sprite for the secondary light
     const dimCanvas = document.createElement('canvas');
     dimCanvas.width = 128;
     dimCanvas.height = 128;
@@ -145,7 +140,7 @@ export async function createSparseScreen() {
     dimSprite.scale.set(60, 60, 1);
     threeScene.add(dimSprite);
 
-    // Load shader sources
+    // Load shaders
     const floatVert = await loadShader('./shaders/sparse-float.vert');
     const floatFrag = await loadShader('./shaders/sparse-float.frag');
     const gridVert = await loadShader('./shaders/sparse-grid.vert');
@@ -153,7 +148,7 @@ export async function createSparseScreen() {
     const auroraVert = await loadShader('./shaders/sparse-aurora.vert');
     const auroraFrag = await loadShader('./shaders/sparse-aurora.frag');
 
-    // Shared shader material for floaters with vertex displacement
+    // Shared shader material for ALL floaters (single draw call via InstancedMesh)
     const floaterMaterial = new THREE.ShaderMaterial({
         vertexShader: floatVert,
         fragmentShader: floatFrag,
@@ -167,72 +162,86 @@ export async function createSparseScreen() {
         transparent: true,
     });
 
-    // Geometries with shader-based morphing
-    const geometries = [];
+    // Instanced floaters — 1 draw call instead of 50
+    const floaterGeometry = new THREE.IcosahedronGeometry(1, 2);
+    const instancedFloaters = new THREE.InstancedMesh(floaterGeometry, floaterMaterial, FLOATER_COUNT);
+    const floaterData = [];
+
     for (let i = 0; i < FLOATER_COUNT; i++) {
-        const geo = new THREE.IcosahedronGeometry(
-            0.5 + Math.random() * 2,
-            2
-        );
-        const mat = floaterMaterial.clone();
-        mat.uniforms.uColor1.value = new THREE.Color().setHSL(Math.random(), 0.8, 0.5);
-        mat.uniforms.uColor2.value = new THREE.Color().setHSL(Math.random(), 0.9, 0.5);
-        mat.uniforms.uMorph.value = 0.2 + Math.random() * 0.5;
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(
-            (Math.random() - 0.5) * 100,
-            (Math.random() - 0.5) * 60,
-            (Math.random() - 0.5) * 100
-        );
-        const orbitRadius = 15 + Math.random() * 35;
-        mesh.userData = {
-            rotSpeed: new THREE.Vector3(
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2
-            ),
+        const x = (Math.random() - 0.5) * 100;
+        const y = (Math.random() - 0.5) * 60;
+        const z = (Math.random() - 0.5) * 100;
+        _dummy.position.set(x, y, z);
+        _dummy.scale.setScalar(0.5 + Math.random() * 2);
+        _dummy.updateMatrix();
+        instancedFloaters.setMatrixAt(i, _dummy.matrix);
+        instancedFloaters.setColorAt(i, new THREE.Color().setHSL(Math.random(), 0.8, 0.5));
+
+        floaterData.push({
+            rx: 0, ry: 0, rz: 0,
+            rxs: (Math.random() - 0.5) * 2,
+            rys: (Math.random() - 0.5) * 2,
+            rzs: (Math.random() - 0.5) * 2,
             bobSpeed: 0.3 + Math.random() * 1.5,
             bobPhase: Math.random() * Math.PI * 2,
             bobAmp: 1 + Math.random() * 3,
-            baseY: mesh.position.y,
-            orbitRadius,
-            orbitAngle: Math.atan2(mesh.position.z, mesh.position.x),
+            orbitRadius: 15 + Math.random() * 35,
+            orbitAngle: Math.atan2(z, x),
             orbitSpeed: (0.2 + Math.random() * 0.5) * (Math.random() < 0.5 ? 1 : -1),
-            orbitYOffset: mesh.position.y,
+            orbitYOffset: y,
             shockwaveOffset: 0,
             shockwaveColor: 0,
-        };
-        threeScene.add(mesh);
-        geometries.push(mesh);
+            history: [],
+        });
     }
+    instancedFloaters.instanceMatrix.needsUpdate = true;
+    instancedFloaters.instanceColor.needsUpdate = true;
+    threeScene.add(instancedFloaters);
 
-    // Ghost trails for each floater
-    const ghostTrails = [];
-    for (let i = 0; i < FLOATER_COUNT; i++) {
-        const trails = [];
-        for (let j = 0; j < TRAIL_COUNT_PER_FLOATER; j++) {
-            const geo = new THREE.IcosahedronGeometry(
-                geometries[i].geometry.parameters.radius * (1 - (j + 1) * 0.2),
-                1
-            );
-            const mat = new THREE.MeshBasicMaterial({
-                color: geometries[i].material.uniforms.uColor1.value.clone(),
-                transparent: true,
-                opacity: 0,
-                wireframe: true,
-            });
-            const ghost = new THREE.Mesh(geo, mat);
-            ghost.visible = false;
-            ghost.userData = {
-                parentIdx: i,
-                trailIdx: j,
-                history: [],
-            };
-            threeScene.add(ghost);
-            trails.push(ghost);
-        }
-        ghostTrails.push(trails);
+    // Ghost trails — single Points system instead of 150 Mesh objects
+    const totalTrails = FLOATER_COUNT * TRAIL_COUNT_PER_FLOATER;
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPositions = new Float32Array(totalTrails * 3);
+    const trailSizes = new Float32Array(totalTrails);
+    const trailOpacities = new Float32Array(totalTrails);
+    for (let i = 0; i < totalTrails; i++) {
+        trailSizes[i] = 1.5;
+        trailOpacities[i] = 0;
     }
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    trailGeo.setAttribute('size', new THREE.BufferAttribute(trailSizes, 1));
+    trailGeo.setAttribute('aOpacity', new THREE.BufferAttribute(trailOpacities, 1));
+
+    const trailVert = `
+        attribute float aOpacity;
+        attribute float size;
+        varying float vOpacity;
+        void main() {
+            vOpacity = aOpacity;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = size * (200.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    `;
+    const trailFrag = `
+        varying float vOpacity;
+        void main() {
+            if (vOpacity < 0.01) discard;
+            float d = length(gl_PointCoord - vec2(0.5));
+            if (d > 0.5) discard;
+            float alpha = smoothstep(0.5, 0.1, d) * vOpacity;
+            gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+        }
+    `;
+    const trailMat = new THREE.ShaderMaterial({
+        vertexShader: trailVert,
+        fragmentShader: trailFrag,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+    });
+    const trailPoints = new THREE.Points(trailGeo, trailMat);
+    threeScene.add(trailPoints);
 
     // Synapse network lines
     const synapseMaxLines = FLOATER_COUNT * 3;
@@ -292,7 +301,7 @@ export async function createSparseScreen() {
     }
     threeScene.add(auroraGroup);
 
-    // Warp grid floor
+    // Warp grid floor — reduced from 80x80 to 40x40 (6400 -> 1600 tris)
     const gridMat = new THREE.ShaderMaterial({
         vertexShader: gridVert,
         fragmentShader: gridFrag,
@@ -306,7 +315,7 @@ export async function createSparseScreen() {
         side: THREE.DoubleSide,
         depthWrite: false,
     });
-    const gridGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE, 80, 80);
+    const gridGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE, 40, 40);
     const gridMesh = new THREE.Mesh(gridGeo, gridMat);
     gridMesh.rotation.x = -Math.PI / 2;
     gridMesh.position.y = -25;
@@ -359,11 +368,10 @@ export async function createSparseScreen() {
             (Math.random() - 0.5) * 80
         );
         ring.userData = {
-            rotSpeed: new THREE.Vector3(
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2,
-                (Math.random() - 0.5) * 2
-            ),
+            rx: 0, ry: 0, rz: 0,
+            rxs: (Math.random() - 0.5) * 2,
+            rys: (Math.random() - 0.5) * 2,
+            rzs: (Math.random() - 0.5) * 2,
             orbitRadius: 20 + Math.random() * 30,
             orbitAngle: Math.random() * Math.PI * 2,
             orbitSpeed: (0.1 + Math.random() * 0.3) * (Math.random() < 0.5 ? 1 : -1),
@@ -389,7 +397,7 @@ export async function createSparseScreen() {
     const ambientLight = new THREE.AmbientLight(0x222222);
     threeScene.add(ambientLight);
 
-    // Supernova on the horizon
+    // Supernova
     const supernovaGroup = new THREE.Group();
     const supernovaDist = 120;
     supernovaGroup.position.set(0, -5, -supernovaDist);
@@ -471,8 +479,15 @@ export async function createSparseScreen() {
     supernovaLight.position.copy(supernovaGroup.position);
     threeScene.add(supernovaLight);
 
-    // Ghost trail position history buffer
-    const trailHistoryWindow = 6;
+    // Reusable temp objects to avoid GC
+    const _fpos = new THREE.Vector3();
+    const _frot = new THREE.Quaternion();
+    const _trailBaseColor = new THREE.Color();
+
+    // Closure-scoped state for onUpdate (can't reference the method by name)
+    let synapseFrameCounter = 0;
+    let lastColorA = '';
+    let lastColorB = '';
 
     return {
         id: 'sparse',
@@ -482,7 +497,8 @@ export async function createSparseScreen() {
         weight: WEIGHT,
         threeScene,
         defaultDuration: 10,
-        geometries,
+        instancedFloaters,
+        floaterData,
         light1,
         light2,
         supernovaGroup,
@@ -504,7 +520,8 @@ export async function createSparseScreen() {
         dimSprite,
         dimSpriteMat,
         floaterMaterial,
-        ghostTrails,
+        trailPoints,
+        trailGeo,
         synapseLines,
         synapseGeo,
         auroraGroup,
@@ -521,7 +538,7 @@ export async function createSparseScreen() {
         onExit() { },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
-            // Darkened space background — tinted subtly by colorA
+            // Background tint
             _tempColor2.set(0x020208);
             if (activeParams && activeParams.colorA) {
                 _tempColor.set(normalizeColor(activeParams.colorA));
@@ -542,7 +559,7 @@ export async function createSparseScreen() {
             starGeo.attributes.size.needsUpdate = true;
             starfield.position.copy(camera.position);
 
-            // Sun follows camera at fixed offset
+            // Sun follows camera
             sunLight.position.set(
                 camera.position.x + 100,
                 camera.position.y + 80,
@@ -571,7 +588,7 @@ export async function createSparseScreen() {
             light2.position.x = Math.cos(effectiveTime * 0.3) * 20;
             light2.position.z = Math.sin(effectiveTime * 0.3) * 20;
 
-            // Supernova animation — synced across all instances via wall clock + hash
+            // Supernova animation
             const t = (Date.now() - SUPERNOVA_EPOCH) / 1000;
             const h = (idx) => hashNumber(SUPERNOVA_SEED + idx);
             const pulse = Math.sin(t * 3 + h(1) * Math.PI * 2) * 0.5 + 0.5;
@@ -616,109 +633,134 @@ export async function createSparseScreen() {
             supernovaGroup.position.z = camera.position.z - supernovaDist;
             supernovaLight.position.copy(supernovaGroup.position);
 
-            // Shockwave ripple value for floaters
             const shockwavePulse = Math.max(0, Math.sin(t * 1.2) * intensity);
 
-            // Update floaters with shader uniforms
-            for (const mesh of geometries) {
-                const ud = mesh.userData;
+            // --- Update floaters (InstancedMesh, no GC allocations) ---
+            const cx = camera.position.x;
+            const cy = camera.position.y;
+            const cz = camera.position.z;
+            const snx = supernovaGroup.position.x;
+            const sny = supernovaGroup.position.y;
+            const snz = supernovaGroup.position.z;
 
-                mesh.rotation.x += ud.rotSpeed.x * dt;
-                mesh.rotation.y += ud.rotSpeed.y * dt;
-                mesh.rotation.z += ud.rotSpeed.z * dt;
+            for (let i = 0; i < FLOATER_COUNT; i++) {
+                const ud = floaterData[i];
+
+                ud.rx += ud.rxs * dt;
+                ud.ry += ud.rys * dt;
+                ud.rz += ud.rzs * dt;
 
                 ud.orbitAngle += ud.orbitSpeed * dt;
 
-                mesh.position.x = camera.position.x + Math.cos(ud.orbitAngle) * ud.orbitRadius;
-                mesh.position.z = camera.position.z + Math.sin(ud.orbitAngle) * ud.orbitRadius;
-                mesh.position.y = camera.position.y + ud.orbitYOffset + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
+                _fpos.x = cx + Math.cos(ud.orbitAngle) * ud.orbitRadius;
+                _fpos.z = cz + Math.sin(ud.orbitAngle) * ud.orbitRadius;
+                _fpos.y = cy + ud.orbitYOffset + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
 
-                // Shockwave ripple effect on floaters
+                // Shockwave without distanceTo() allocation
                 ud.shockwaveOffset *= 0.95;
                 if (shockwavePulse > 0.3) {
-                    const distToSupernova = mesh.position.distanceTo(supernovaGroup.position);
+                    const sx = _fpos.x - snx;
+                    const sy = _fpos.y - sny;
+                    const sz = _fpos.z - snz;
+                    const distToSupernova = Math.sqrt(sx * sx + sy * sy + sz * sz);
                     const waveDelay = distToSupernova * 0.02;
                     const waveHit = Math.max(0, Math.sin(t * 1.2 - waveDelay));
                     ud.shockwaveOffset = waveHit * shockwavePulse * 2;
                     ud.shockwaveColor = waveHit * shockwavePulse;
                 }
-                mesh.position.y += ud.shockwaveOffset;
+                _fpos.y += ud.shockwaveOffset;
 
-                // Update shader uniforms
-                mesh.material.uniforms.uTime.value = effectiveTime;
-                mesh.material.uniforms.uPulse.value = ud.shockwaveColor;
+                _dummy.position.copy(_fpos);
+                _dummy.rotation.set(ud.rx, ud.ry, ud.rz);
+                _dummy.updateMatrix();
+                instancedFloaters.setMatrixAt(i, _dummy.matrix);
 
-                // Shift colors during shockwave
-                if (ud.shockwaveColor > 0.1) {
-                    _tempColor.setHSL(0.06 + pulse * 0.04, 1, 0.5 + ud.shockwaveColor * 0.5);
-                    mesh.material.uniforms.uColor1.value.lerp(_tempColor, 0.1);
-                }
+                // Position history — plain objects, no Vector3.clone()
+                if (!ud.history) ud.history = [];
+                ud.history.unshift({ x: _fpos.x, y: _fpos.y, z: _fpos.z });
+                if (ud.history.length > 6) ud.history.pop();
             }
+            instancedFloaters.instanceMatrix.needsUpdate = true;
 
-            // Ghost trails
+            // Shared uniform updated once per frame
+            floaterMaterial.uniforms.uTime.value = effectiveTime;
+
+            // --- Ghost trails via Points (1 draw call, no GC) ---
+            const tPosArr = trailGeo.attributes.position.array;
+            const tOpArr = trailGeo.attributes.aOpacity.array;
             for (let i = 0; i < FLOATER_COUNT; i++) {
-                const parent = geometries[i];
-                if (!parent.userData._posHistory) parent.userData._posHistory = [];
-
-                parent.userData._posHistory.unshift(parent.position.clone());
-                if (parent.userData._posHistory.length > trailHistoryWindow) {
-                    parent.userData._posHistory.pop();
-                }
-
+                const ud = floaterData[i];
                 for (let j = 0; j < TRAIL_COUNT_PER_FLOATER; j++) {
-                    const ghost = ghostTrails[i][j];
+                    const ti = i * TRAIL_COUNT_PER_FLOATER + j;
                     const historyIdx = (j + 1) * 2;
-                    if (historyIdx < parent.userData._posHistory.length) {
-                        ghost.position.copy(parent.userData._posHistory[historyIdx]);
-                        ghost.visible = true;
-                        ghost.material.opacity = 0.15 * (1 - j / TRAIL_COUNT_PER_FLOATER);
-                        ghost.rotation.copy(parent.rotation);
-                        const scaleFade = 1 - (j + 1) * 0.2;
-                        ghost.scale.setScalar(scaleFade);
+                    if (ud.history && historyIdx < ud.history.length) {
+                        const hp = ud.history[historyIdx];
+                        tPosArr[ti * 3] = hp.x;
+                        tPosArr[ti * 3 + 1] = hp.y;
+                        tPosArr[ti * 3 + 2] = hp.z;
+                        tOpArr[ti] = 0.15 * (1 - j / TRAIL_COUNT_PER_FLOATER);
                     } else {
-                        ghost.visible = false;
+                        tOpArr[ti] = 0;
                     }
                 }
             }
+            trailGeo.attributes.position.needsUpdate = true;
+            trailGeo.attributes.aOpacity.needsUpdate = true;
 
-            // Synapse network lines
-            let lineCount = 0;
+            // --- Synapse network (throttled to every 2 frames) ---
+            synapseFrameCounter++;
+            if (synapseFrameCounter % 2 === 0) {
+                let lineCount = 0;
+                const maxDistSq = SYNAPSE_MAX_DIST * SYNAPSE_MAX_DIST;
+
+                for (let i = 0; i < FLOATER_COUNT && lineCount < synapseMaxLines; i++) {
+                    const udi = floaterData[i];
+                    if (!udi.history) continue;
+                    const px = udi.history[0]?.x;
+                    const py = udi.history[0]?.y;
+                    const pz = udi.history[0]?.z;
+                    if (px == null) continue;
+
+                    for (let j = i + 1; j < FLOATER_COUNT && lineCount < synapseMaxLines; j++) {
+                        const udj = floaterData[j];
+                        if (!udj.history) continue;
+                        const jx = udj.history[0].x;
+                        const jy = udj.history[0].y;
+                        const jz = udj.history[0].z;
+
+                        const dx = px - jx, dy = py - jy, dz = pz - jz;
+                        if (dx * dx + dy * dy + dz * dz < maxDistSq) {
+                            const idx = lineCount * 6;
+                            synapsePositions[idx] = px;
+                            synapsePositions[idx + 1] = py;
+                            synapsePositions[idx + 2] = pz;
+                            synapsePositions[idx + 3] = jx;
+                            synapsePositions[idx + 4] = jy;
+                            synapsePositions[idx + 5] = jz;
+
+                            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                            const fade = 1 - dist / SYNAPSE_MAX_DIST;
+                            const firePulse = Math.sin(effectiveTime * 5 + i * 0.5 + j * 0.3) * 0.5 + 0.5;
+                            const brightness = fade * (0.3 + firePulse * 0.7);
+
+                            _tempColor.setHSL(h1, 0.9, brightness);
+                            synapseColors[idx] = _tempColor.r;
+                            synapseColors[idx + 1] = _tempColor.g;
+                            synapseColors[idx + 2] = _tempColor.b;
+                            _tempColor.setHSL(h2, 0.9, brightness);
+                            synapseColors[idx + 3] = _tempColor.r;
+                            synapseColors[idx + 4] = _tempColor.g;
+                            synapseColors[idx + 5] = _tempColor.b;
+
+                            lineCount++;
+                        }
+                    }
+                }
+                synapseGeo.setDrawRange(0, lineCount * 2);
+                synapseGeo.attributes.position.needsUpdate = true;
+                synapseGeo.attributes.color.needsUpdate = true;
+            }
             const synapsePulse = Math.sin(effectiveTime * 2) * 0.5 + 0.5;
-            for (let i = 0; i < geometries.length && lineCount < synapseMaxLines; i++) {
-                for (let j = i + 1; j < geometries.length && lineCount < synapseMaxLines; j++) {
-                    const dx = geometries[i].position.x - geometries[j].position.x;
-                    const dy = geometries[i].position.y - geometries[j].position.y;
-                    const dz = geometries[i].position.z - geometries[j].position.z;
-                    const distSq = dx * dx + dy * dy + dz * dz;
-                    if (distSq < SYNAPSE_MAX_DIST * SYNAPSE_MAX_DIST) {
-                        const idx = lineCount * 6;
-                        synapsePositions[idx] = geometries[i].position.x;
-                        synapsePositions[idx + 1] = geometries[i].position.y;
-                        synapsePositions[idx + 2] = geometries[i].position.z;
-                        synapsePositions[idx + 3] = geometries[j].position.x;
-                        synapsePositions[idx + 4] = geometries[j].position.y;
-                        synapsePositions[idx + 5] = geometries[j].position.z;
-
-                        const fade = 1 - Math.sqrt(distSq) / SYNAPSE_MAX_DIST;
-                        const firePulse = Math.sin(effectiveTime * 5 + i * 0.5 + j * 0.3) * 0.5 + 0.5;
-                        const brightness = fade * (0.3 + firePulse * 0.7);
-
-                        _tempColor.setHSL(h1, 0.9, brightness);
-                        synapseColors[idx] = _tempColor.r;
-                        synapseColors[idx + 1] = _tempColor.g;
-                        synapseColors[idx + 2] = _tempColor.b;
-                        _tempColor.setHSL(h2, 0.9, brightness);
-                        synapseColors[idx + 3] = _tempColor.r;
-                        synapseColors[idx + 4] = _tempColor.g;
-                        synapseColors[idx + 5] = _tempColor.b;
-
-                        lineCount++;
-                    }
-                }
-            }
-            synapseGeo.setDrawRange(0, lineCount * 2);
-            synapseGeo.attributes.position.needsUpdate = true;
-            synapseGeo.attributes.color.needsUpdate = true;
             synapseMat.opacity = 0.3 + synapsePulse * 0.4;
 
             // Aurora curtains
@@ -730,12 +772,20 @@ export async function createSparseScreen() {
             auroraGroup.position.x = camera.position.x;
             auroraGroup.position.z = camera.position.z;
 
-            // Warp grid floor
+            // Warp grid floor — cached color normalization
             gridMat.uniforms.uTime.value = effectiveTime;
-            _tempColor.set(normalizeColor(activeParams && activeParams.colorA ? activeParams.colorA : '#ff0055'));
-            gridMat.uniforms.uColor1.value.copy(_tempColor);
-            _tempColor.set(normalizeColor(activeParams && activeParams.colorB ? activeParams.colorB : '#00ccff'));
-            gridMat.uniforms.uColor2.value.copy(_tempColor);
+            const ca = activeParams && activeParams.colorA ? activeParams.colorA : '#ff0055';
+            const cb = activeParams && activeParams.colorB ? activeParams.colorB : '#00ccff';
+            if (lastColorA !== ca) {
+                _tempColor.set(normalizeColor(ca));
+                gridMat.uniforms.uColor1.value.copy(_tempColor);
+                lastColorA = ca;
+            }
+            if (lastColorB !== cb) {
+                _tempColor.set(normalizeColor(cb));
+                gridMat.uniforms.uColor2.value.copy(_tempColor);
+                lastColorB = cb;
+            }
             gridMesh.position.x = camera.position.x;
             gridMesh.position.y = camera.position.y - 25;
             gridMesh.position.z = camera.position.z;
@@ -748,8 +798,8 @@ export async function createSparseScreen() {
 
                 if (rainPosArr[i * 3 + 1] < -30) {
                     rainPosArr[i * 3 + 1] = 50 + Math.random() * 30;
-                    rainPosArr[i * 3] = camera.position.x + (Math.random() - 0.5) * 200;
-                    rainPosArr[i * 3 + 2] = camera.position.z + (Math.random() - 0.5) * 200;
+                    rainPosArr[i * 3] = cx + (Math.random() - 0.5) * 200;
+                    rainPosArr[i * 3 + 2] = cz + (Math.random() - 0.5) * 200;
                 }
             }
             rainParticles.geometry.attributes.position.needsUpdate = true;
@@ -758,14 +808,18 @@ export async function createSparseScreen() {
             // Floating rings
             floatingRings.forEach((ring) => {
                 const ud = ring.userData;
-                ring.rotation.x += ud.rotSpeed.x * dt;
-                ring.rotation.y += ud.rotSpeed.y * dt;
-                ring.rotation.z += ud.rotSpeed.z * dt;
+                ud.rx += ud.rxs * dt;
+                ud.ry += ud.rys * dt;
+                ud.rz += ud.rzs * dt;
 
                 ud.orbitAngle += ud.orbitSpeed * dt;
-                ring.position.x = camera.position.x + Math.cos(ud.orbitAngle) * ud.orbitRadius;
-                ring.position.z = camera.position.z + Math.sin(ud.orbitAngle) * ud.orbitRadius;
-                ring.position.y = camera.position.y + ud.orbitYOffset + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
+                ring.position.x = cx + Math.cos(ud.orbitAngle) * ud.orbitRadius;
+                ring.position.z = cz + Math.sin(ud.orbitAngle) * ud.orbitRadius;
+                ring.position.y = cy + ud.orbitYOffset + Math.sin(effectiveTime * ud.bobSpeed + ud.bobPhase) * ud.bobAmp;
+
+                ring.rotation.x = ud.rx;
+                ring.rotation.y = ud.ry;
+                ring.rotation.z = ud.rz;
 
                 const ringPulse = Math.sin(effectiveTime * 1.5 + ud.pulsePhase) * 0.5 + 0.5;
                 ring.material.opacity = 0.2 + ringPulse * 0.5;

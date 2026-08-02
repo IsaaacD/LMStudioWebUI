@@ -59,11 +59,9 @@ void main() {
     vec3 wavePos = position;
 
     float breathe = sin(uTime * 0.8) * 0.5 + 0.5;
-    float n1 = snoise(vec3(wavePos * 3.0 + uTime * 0.6));
-    float n2 = snoise(vec3(wavePos * 5.0 - uTime * 0.4 + 100.0));
-    float n3 = snoise(vec3(wavePos * 1.5 + uTime * 1.2 + 200.0));
+    float n = snoise(vec3(wavePos * 2.0 + uTime * 0.5));
 
-    float displacement = (n1 * 0.5 + n2 * 0.3 + n3 * 0.2) * uMorph * (0.5 + breathe * 0.5);
+    float displacement = n * uMorph * (0.5 + breathe * 0.5);
     wavePos += normal * displacement;
 
     float twist = sin(uTime * 0.3 + wavePos.y * 2.0) * uMorph * 0.2;
