@@ -24,7 +24,7 @@ const _dummy = new THREE.Object3D();
 export async function createSparseScreen() {
     const threeScene = new THREE.Scene();
     threeScene.background = new THREE.Color(0x020208);
-    threeScene.fog = new THREE.FogExp2(0x020208, 0.004);
+    threeScene.fog = new THREE.FogExp2(0x020208, 0.002);
 
     // Starfield
     const starGeo = new THREE.BufferGeometry();
@@ -51,7 +51,7 @@ export async function createSparseScreen() {
         starColors[i * 3] = _tempColor.r;
         starColors[i * 3 + 1] = _tempColor.g;
         starColors[i * 3 + 2] = _tempColor.b;
-        starSizes[i] = 0.3 + Math.random() * 1.5;
+        starSizes[i] = 0.5 + Math.random() * 2.5;
         starData.push({
             twinkleSpeed: 0.5 + Math.random() * 3,
             twinklePhase: Math.random() * Math.PI * 2,
@@ -62,7 +62,7 @@ export async function createSparseScreen() {
     starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
     starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
     const starMat = new THREE.PointsMaterial({
-        size: 1.2,
+        size: 2.0,
         vertexColors: true,
         transparent: true,
         opacity: 0.8,
@@ -244,22 +244,42 @@ export async function createSparseScreen() {
     const trailPoints = new THREE.Points(trailGeo, trailMat);
     threeScene.add(trailPoints);
 
-    // Synapse network lines
+    // Synapse network — Points scattered along line segments for thick soft glow
     const synapseMaxLines = FLOATER_COUNT * 3;
-    const synapsePositions = new Float32Array(synapseMaxLines * 6);
-    const synapseColors = new Float32Array(synapseMaxLines * 6);
+    const synapsePointsPerLine = 10;
+    const synapseMaxPoints = synapseMaxLines * synapsePointsPerLine;
+    const synapsePositions = new Float32Array(synapseMaxPoints * 3);
+    const synapseColors = new Float32Array(synapseMaxPoints * 3);
     const synapseGeo = new THREE.BufferGeometry();
     synapseGeo.setAttribute('position', new THREE.BufferAttribute(synapsePositions, 3));
     synapseGeo.setAttribute('color', new THREE.BufferAttribute(synapseColors, 3));
     synapseGeo.setDrawRange(0, 0);
-    const synapseMat = new THREE.LineBasicMaterial({
-        vertexColors: true,
+    const synapseMat = new THREE.ShaderMaterial({
+        vertexShader: `
+            attribute vec3 color;
+            varying vec3 vColor;
+            void main() {
+                vColor = color;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                gl_PointSize = 3.0 * (200.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vColor;
+            void main() {
+                float d = length(gl_PointCoord - vec2(0.5));
+                if (d > 0.5) discard;
+                gl_FragColor = vec4(vColor, 0.2);
+            }
+        `,
         transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
         depthWrite: false,
     });
-    const synapseLines = new THREE.LineSegments(synapseGeo, synapseMat);
+    const synapseLines = new THREE.Points(synapseGeo, synapseMat);
+    synapseLines.frustumCulled = false;
+    synapseLines.renderOrder = -1;
     threeScene.add(synapseLines);
 
     // Aurora curtains
@@ -486,7 +506,7 @@ export async function createSparseScreen() {
     const _trailBaseColor = new THREE.Color();
 
     // Closure-scoped state for onUpdate (can't reference the method by name)
-    let synapseFrameCounter = 0;
+    const floaterAnchor = new THREE.Vector3();
     let lastColorA = '';
     let lastColorB = '';
 
@@ -637,9 +657,11 @@ export async function createSparseScreen() {
             const shockwavePulse = Math.max(0, Math.sin(t * 1.2) * intensity);
 
             // --- Update floaters (InstancedMesh, no GC allocations) ---
-            const cx = camera.position.x;
-            const cy = camera.position.y;
-            const cz = camera.position.z;
+            if (floaterAnchor.lengthSq() === 0) floaterAnchor.copy(camera.position);
+            floaterAnchor.lerp(camera.position, Math.min(1, dt * 2.5));
+            const cx = floaterAnchor.x;
+            const cy = floaterAnchor.y;
+            const cz = floaterAnchor.z;
             const snx = supernovaGroup.position.x;
             const sny = supernovaGroup.position.y;
             const snz = supernovaGroup.position.z;
@@ -721,61 +743,47 @@ export async function createSparseScreen() {
             trailGeo.attributes.position.needsUpdate = true;
             trailGeo.attributes.aOpacity.needsUpdate = true;
 
-            // --- Synapse network (throttled to every 2 frames) ---
-            synapseFrameCounter++;
-            if (synapseFrameCounter % 2 === 0) {
-                let lineCount = 0;
-                const maxDistSq = SYNAPSE_MAX_DIST * SYNAPSE_MAX_DIST;
+            // --- Synapse network ---
+            let lineCount = 0;
+            let pointCount = 0;
+            const maxDistSq = SYNAPSE_MAX_DIST * SYNAPSE_MAX_DIST;
 
-                for (let i = 0; i < FLOATER_COUNT && lineCount < synapseMaxLines; i++) {
-                    const udi = floaterData[i];
-                    if (!udi.history) continue;
-                    const px = udi.history[0]?.x;
-                    const py = udi.history[0]?.y;
-                    const pz = udi.history[0]?.z;
-                    if (px == null) continue;
+            for (let i = 0; i < FLOATER_COUNT && lineCount < synapseMaxLines; i++) {
+                const udi = floaterData[i];
+                if (!udi.history) continue;
+                const px = udi.history[0]?.x;
+                const py = udi.history[0]?.y;
+                const pz = udi.history[0]?.z;
+                if (px == null) continue;
 
-                    for (let j = i + 1; j < FLOATER_COUNT && lineCount < synapseMaxLines; j++) {
-                        const udj = floaterData[j];
-                        if (!udj.history) continue;
-                        const jx = udj.history[0].x;
-                        const jy = udj.history[0].y;
-                        const jz = udj.history[0].z;
+                for (let j = i + 1; j < FLOATER_COUNT && lineCount < synapseMaxLines; j++) {
+                    const udj = floaterData[j];
+                    if (!udj.history) continue;
+                    const jx = udj.history[0].x;
+                    const jy = udj.history[0].y;
+                    const jz = udj.history[0].z;
 
-                        const dx = px - jx, dy = py - jy, dz = pz - jz;
-                        if (dx * dx + dy * dy + dz * dz < maxDistSq) {
-                            const idx = lineCount * 6;
-                            synapsePositions[idx] = px;
-                            synapsePositions[idx + 1] = py;
-                            synapsePositions[idx + 2] = pz;
-                            synapsePositions[idx + 3] = jx;
-                            synapsePositions[idx + 4] = jy;
-                            synapsePositions[idx + 5] = jz;
-
-                            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                            const fade = 1 - dist / SYNAPSE_MAX_DIST;
-                            const firePulse = Math.sin(effectiveTime * 5 + i * 0.5 + j * 0.3) * 0.5 + 0.5;
-                            const brightness = fade * (0.3 + firePulse * 0.7);
-
-                            _tempColor.setHSL(h1, 0.9, brightness);
-                            synapseColors[idx] = _tempColor.r;
-                            synapseColors[idx + 1] = _tempColor.g;
-                            synapseColors[idx + 2] = _tempColor.b;
-                            _tempColor.setHSL(h2, 0.9, brightness);
-                            synapseColors[idx + 3] = _tempColor.r;
-                            synapseColors[idx + 4] = _tempColor.g;
-                            synapseColors[idx + 5] = _tempColor.b;
-
-                            lineCount++;
+                    const dx = px - jx, dy = py - jy, dz = pz - jz;
+                    if (dx * dx + dy * dy + dz * dz < maxDistSq) {
+                        for (let k = 0; k < synapsePointsPerLine; k++) {
+                            const t = k / (synapsePointsPerLine - 1);
+                            const pidx = pointCount * 3;
+                            synapsePositions[pidx] = px + (jx - px) * t;
+                            synapsePositions[pidx + 1] = py + (jy - py) * t;
+                            synapsePositions[pidx + 2] = pz + (jz - pz) * t;
+                            synapseColors[pidx] = 1;
+                            synapseColors[pidx + 1] = 1;
+                            synapseColors[pidx + 2] = 1;
+                            pointCount++;
                         }
+                        lineCount++;
                     }
                 }
-                synapseGeo.setDrawRange(0, lineCount * 2);
-                synapseGeo.attributes.position.needsUpdate = true;
-                synapseGeo.attributes.color.needsUpdate = true;
             }
+            synapseGeo.setDrawRange(0, pointCount);
+            synapseGeo.attributes.position.needsUpdate = true;
+            synapseGeo.attributes.color.needsUpdate = true;
             const synapsePulse = Math.sin(effectiveTime * 2) * 0.5 + 0.5;
-            synapseMat.opacity = 0.3 + synapsePulse * 0.4;
 
             // Aurora curtains
             auroraPlanes.forEach((plane, i) => {
@@ -817,7 +825,7 @@ export async function createSparseScreen() {
                 }
             }
             rainParticles.geometry.attributes.position.needsUpdate = true;
-            rainMat.color.setHSL(h1 + 0.3, 0.6, 0.5 + synapsePulse * 0.2);
+            rainMat.color.setHSL(h1 + 0.3, 0.6, 0.5 + synapsePulse * 0.02);
 
             // Floating rings
             floatingRings.forEach((ring) => {
