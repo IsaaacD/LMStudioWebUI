@@ -8,18 +8,748 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="Ket" />
     <link rel="manifest" href="/site.webmanifest" />
-    <title>Ketamine Dreams</title>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Redirecting...</title>
-    <script>
-        window.location.href = "https://" + window.location.hostname + (window.location.port ? ":" + window.location.port : "") + "/ket";
-    </script>
+    <title>Ketamine Dreams</title>
+    <style>
+        :root {
+            --pink: #ff0055;
+            --cyan: #00ccff;
+            --green: #2cfa98;
+            --purple: #b400ff;
+            --bg: #050508;
+            --text: #c8c8d0;
+            --dim: #5a5a6a;
+            --mono: 'Courier New', monospace;
+        }
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scanline overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.08) 2px,
+                rgba(0, 0, 0, 0.08) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Noise grain layer */
+        .grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 128px 128px;
+            animation: grainShift 0.5s steps(3) infinite;
+        }
+
+        @keyframes grainShift {
+            0% { transform: translate(0, 0); }
+            33% { transform: translate(-3px, 2px); }
+            66% { transform: translate(2px, -1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* ── HERO ── */
+        .hero {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 0, 85, 0.12) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: heroPulse 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes heroPulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+        }
+
+        .hero-title {
+            position: relative;
+            font-size: clamp(2rem, 7vw, 5rem);
+            font-weight: bold;
+            letter-spacing: 0.25em;
+            color: #fff;
+            text-shadow:
+                0 0 8px var(--pink),
+                0 0 30px var(--pink),
+                0 0 60px var(--cyan),
+                0 0 100px var(--cyan);
+            animation: titleGlitch 6s infinite;
+            text-align: center;
+            user-select: none;
+        }
+
+        @keyframes titleGlitch {
+            0%, 92%, 100% { transform: translate(0); }
+            93% { transform: translate(-3px, 1px); text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan); }
+            94% { transform: translate(2px, -1px); }
+            95% { transform: translate(-1px, 2px); text-shadow: -2px 0 var(--pink), 2px 0 var(--cyan); }
+            96% { transform: translate(0); }
+        }
+
+        .hero-sub {
+            margin-top: 1.5rem;
+            font-size: clamp(0.7rem, 1.8vw, 1rem);
+            color: var(--dim);
+            letter-spacing: 0.6em;
+            text-transform: uppercase;
+            animation: breathe 3s ease-in-out infinite;
+            text-align: center;
+            user-select: none;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 2rem;
+            font-size: 0.7rem;
+            color: var(--dim);
+            letter-spacing: 0.3em;
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        .hero-scroll::after {
+            content: '';
+            display: block;
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--cyan), transparent);
+            margin: 0.5rem auto 0;
+        }
+
+        /* ── OVERVIEW ── */
+        .overview {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .overview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--cyan), transparent);
+        }
+
+        .overview h2 {
+            font-size: 0.75rem;
+            letter-spacing: 0.5em;
+            color: var(--cyan);
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .overview p {
+            font-size: 0.95rem;
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        .overview em {
+            color: var(--pink);
+            font-style: normal;
+        }
+
+        /* ── RALPH FLOATING IMAGE ── */
+        .ralph-container {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .ralph-img {
+            width: 180px;
+            height: auto;
+            border: 1px solid rgba(0, 204, 255, 0.25);
+            border-radius: 4px;
+            animation: float 6s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(0, 204, 255, 0.2));
+            transition: filter 0.3s;
+        }
+
+        .ralph-img:hover {
+            filter: drop-shadow(0 0 35px rgba(255, 0, 85, 0.4));
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-12px) rotate(1deg); }
+            50% { transform: translateY(-6px) rotate(-0.5deg); }
+            75% { transform: translateY(-15px) rotate(0.5deg); }
+        }
+
+        /* ── SCENE SECTIONS ── */
+        .scenes {
+            padding: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .scenes-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .scenes-header h2 {
+            font-size: 0.75rem;
+            letter-spacing: 0.5em;
+            color: var(--green);
+            text-transform: uppercase;
+        }
+
+        .scene-card {
+            position: relative;
+            margin-bottom: 6rem;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.015);
+            backdrop-filter: blur(2px);
+            transition: border-color 0.4s, box-shadow 0.4s;
+            overflow: hidden;
+        }
+
+        .scene-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--accent);
+            opacity: 0.6;
+        }
+
+        .scene-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 15%, transparent);
+        }
+
+        .scene-card:nth-child(1) { --accent: var(--pink); transform: rotate(-0.5deg); }
+        .scene-card:nth-child(2) { --accent: var(--cyan); transform: rotate(0.8deg); }
+        .scene-card:nth-child(3) { --accent: var(--green); transform: rotate(-0.3deg); }
+        .scene-card:nth-child(4) { --accent: var(--purple); transform: rotate(0.6deg); }
+
+        .scene-card:hover {
+            transform: rotate(0deg) scale(1.005);
+        }
+
+        .scene-number {
+            position: absolute;
+            top: -0.6rem;
+            right: 1.5rem;
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            opacity: 0.08;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .scene-title {
+            font-size: 1.4rem;
+            color: #fff;
+            letter-spacing: 0.15em;
+            margin-bottom: 0.3rem;
+            text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+
+        .scene-id {
+            font-size: 0.65rem;
+            color: var(--accent);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+        }
+
+        .scene-tech {
+            margin-bottom: 1.2rem;
+            padding-left: 1rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .scene-tech-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.4em;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .scene-tech p {
+            font-size: 0.85rem;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .scene-narrative {
+            margin-bottom: 1.5rem;
+            padding-left: 1rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .scene-narrative-label {
+            font-size: 0.6rem;
+            letter-spacing: 0.4em;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .scene-narrative p {
+            font-size: 0.85rem;
+            color: var(--text);
+            line-height: 1.7;
+            font-style: italic;
+        }
+
+        .scene-enter {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1.4rem;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #fff;
+            background: transparent;
+            border: 1px solid var(--accent);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scene-enter::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scene-enter:hover::before {
+            opacity: 0.12;
+        }
+
+        .scene-enter:hover {
+            box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+
+        .scene-enter span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .scene-enter .arrow {
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        .scene-enter:hover .arrow {
+            transform: translateX(4px);
+        }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 5, 8, 0.92);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            position: relative;
+            width: 90vw;
+            max-width: 1000px;
+            height: 80vh;
+            max-height: 700px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            background: var(--bg);
+            overflow: hidden;
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.35s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 0.8rem;
+            right: 1rem;
+            z-index: 10;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            color: var(--text);
+            background: rgba(5, 5, 8, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--pink);
+            border-color: var(--pink);
+        }
+
+        .modal-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        .modal-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem 1rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.3em;
+            color: var(--dim);
+            text-transform: uppercase;
+            background: linear-gradient(to top, rgba(5, 5, 8, 0.9), transparent);
+            pointer-events: none;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            text-align: center;
+            padding: 4rem 2rem;
+            font-size: 0.65rem;
+            color: var(--dim);
+            letter-spacing: 0.3em;
+        }
+
+        .footer a {
+            color: var(--cyan);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: var(--pink);
+        }
+
+        /* ── DIVIDER ── */
+        .divider {
+            width: 1px;
+            height: 60px;
+            margin: 0 auto;
+            background: linear-gradient(to bottom, transparent, var(--dim), transparent);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .hero-title {
+                letter-spacing: 0.12em;
+            }
+            .scene-card {
+                margin-bottom: 3rem;
+                padding: 1.5rem;
+            }
+            .modal-box {
+                width: 96vw;
+                height: 75vh;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <p>Redirecting to <a href="/ket">/ket</a>...</p>
+    <div class="grain"></div>
+
+    <!-- HERO -->
+    <section class="hero">
+        <h1 class="hero-title">KETAMINE<br>DREAMS</h1>
+        <p class="hero-sub">An immersive psychedelic experience</p>
+        <span class="hero-scroll">SCROLL</span>
+    </section>
+
+    <!-- OVERVIEW -->
+    <section class="overview">
+        <h2>System Overview</h2>
+        <p>
+            Ketamine Dreams is a real-time, browser-based <em>immersive environment</em>
+            built on Three.js. It generates procedurally driven dreamscapes that shift
+            between distinct visual regimes, each with its own geometry, material
+            behavior, and post-processing stack. The experience runs entirely client-side
+            with peer-to-peer multi-user support, daily-seeded parameters, and a
+            post-processing pipeline that includes bloom, edge detection, chromatic
+            aberration, scanlines, and melt transitions.
+        </p>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- RALPH -->
+    <div class="ralph-container">
+        <img class="ralph-img" src="/ket/images/ralph.png" alt="Ralph" />
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SCENES -->
+    <section class="scenes">
+        <div class="scenes-header">
+            <h2>Scene Registry</h2>
+        </div>
+
+        <div class="scene-card" data-scene="nexus">
+            <span class="scene-number">01</span>
+            <h3 class="scene-title">THE NEXUS</h3>
+            <div class="scene-id">// nexus</div>
+            <div class="scene-tech">
+                <div class="scene-tech-label">Technical Description</div>
+                <p>
+                    Procedural cityscape constructed from instanced wall primitives with
+                    dynamic material assignment. Features a heart-spawning system layered
+                    atop the geometry grid, with bloom-driven emissive channels and
+                    edge-contrast post-processing. Wall materials shift hue based on the
+                    daily seed, creating a unique palette each rotation cycle.
+                </p>
+            </div>
+            <div class="scene-narrative">
+                <div class="scene-narrative-label">Personal Narrative</div>
+                <p>
+                    The first corridor I ever walked felt like stepping through a membrane.
+                    Walls rose from the floor like grown things, not built. The light had
+                    weight to it. I remember thinking: this is what a dream engine looks
+                    like from the inside.
+                </p>
+            </div>
+            <button class="scene-enter" onclick="openScene('nexus')">
+                <span>Enter Nexus</span>
+                <span class="arrow">&#8594;</span>
+            </button>
+        </div>
+
+        <div class="scene-card" data-scene="space">
+            <span class="scene-number">02</span>
+            <h3 class="scene-title">SPARSE SPACE</h3>
+            <div class="scene-id">// space</div>
+            <div class="scene-tech">
+                <div class="scene-tech-label">Technical Description</div>
+                <p>
+                    Minimalist volumetric field with sparse geometric primitives distributed
+                    across a wide coordinate space. Relies heavily on the post-processing
+                    pipeline for visual density — chromatic aberration and scanline passes
+                    create texture where geometry is absent. Camera velocity is uncapped,
+                    encouraging high-speed traversal.
+                </p>
+            </div>
+            <div class="scene-narrative">
+                <div class="scene-narrative-label">Personal Narrative</div>
+                <p>
+                    There is a quality to emptiness when it is rendered in real time. The
+                    few shapes that appear feel intentional, placed by something watching.
+                    I moved faster here than any other place. Speed became the only thing
+                    that felt real.
+                </p>
+            </div>
+            <button class="scene-enter" onclick="openScene('space')">
+                <span>Enter Space</span>
+                <span class="arrow">&#8594;</span>
+            </button>
+        </div>
+
+        <div class="scene-card" data-scene="lumber">
+            <span class="scene-number">03</span>
+            <h3 class="scene-title">LUMBER</h3>
+            <div class="scene-id">// lumber</div>
+            <div class="scene-tech">
+                <div class="scene-tech-label">Technical Description</div>
+                <p>
+                    Dense forest-like arrangement of columnar geometry with bark-textured
+                    materials. The scene uses a custom shader for organic surface variation,
+                    with fold-intensity parameters controlling the degree of geometric
+                    warping. Vein-speed uniforms drive a secondary displacement map that
+                    creates a breathing effect across vertical surfaces.
+                </p>
+            </div>
+            <div class="scene-narrative">
+                <div class="scene-narrative-label">Personal Narrative</div>
+                <p>
+                    The trees here are not trees. They are columns of compressed memory,
+                    each one a record of something that almost happened. The air moves
+                    through them like a slow exhalation. I stood still for what felt like
+                    hours and the light changed color once.
+                </p>
+            </div>
+            <button class="scene-enter" onclick="openScene('lumber')">
+                <span>Enter Lumber</span>
+                <span class="arrow">&#8594;</span>
+            </button>
+        </div>
+
+        <div class="scene-card" data-scene="liminal">
+            <span class="scene-number">04</span>
+            <h3 class="scene-title">LIMINAL</h3>
+            <div class="scene-id">// liminal</div>
+            <div class="scene-tech">
+                <div class="scene-tech-label">Technical Description</div>
+                <p>
+                    Transitional space defined by low-frequency geometry and muted color
+                    channels. The scene overrides the normal bloom radius and reduces
+                    edge contrast to produce a soft, indistinct visual field. Transition
+                    melt effects are most pronounced here, as the scene is designed to
+                    blur the boundary between dream states.
+                </p>
+            </div>
+            <div class="scene-narrative">
+                <div class="scene-narrative-label">Personal Narrative</div>
+                <p>
+                    This is the space between. Not a place you arrive at, but a place you
+                    pass through without noticing. The walls are close enough to touch but
+                    never quite there. I have woken up here more times than I care to
+                    count.
+                </p>
+            </div>
+            <button class="scene-enter" onclick="openScene('liminal')">
+                <span>Enter Liminal</span>
+                <span class="arrow">&#8594;</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>
+            <a href="/ket">LAUNCH FULL EXPERIENCE</a>
+        </p>
+        <p style="margin-top: 0.8rem;">v 0.0.1</p>
+    </footer>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="sceneModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeScene()">&#10005;</button>
+            <iframe class="modal-iframe" id="sceneIframe" src="about:blank" allowfullscreen></iframe>
+            <div class="modal-label" id="modalLabel"></div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('sceneModal');
+        const iframe = document.getElementById('sceneIframe');
+        const label = document.getElementById('modalLabel');
+
+        const sceneNames = {
+            nexus: 'THE NEXUS',
+            space: 'SPARSE SPACE',
+            lumber: 'LUMBER',
+            liminal: 'LIMINAL'
+        };
+
+        function openScene(sceneId) {
+            label.textContent = sceneNames[sceneId] || sceneId;
+            iframe.src = '/ket?scene=' + sceneId;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeScene() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                iframe.src = 'about:blank';
+            }, 350);
+        }
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeScene();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeScene();
+            }
+        });
+    </script>
 </body>
 
 </html>
