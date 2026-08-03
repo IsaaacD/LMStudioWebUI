@@ -23,7 +23,9 @@
             --mono: 'Courier New', monospace;
         }
 
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -48,13 +50,11 @@
             content: '';
             position: fixed;
             inset: 0;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.08) 2px,
-                rgba(0, 0, 0, 0.08) 4px
-            );
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.08) 2px,
+                    rgba(0, 0, 0, 0.08) 4px);
             pointer-events: none;
             z-index: 9999;
         }
@@ -72,10 +72,21 @@
         }
 
         @keyframes grainShift {
-            0% { transform: translate(0, 0); }
-            33% { transform: translate(-3px, 2px); }
-            66% { transform: translate(2px, -1px); }
-            100% { transform: translate(0, 0); }
+            0% {
+                transform: translate(0, 0);
+            }
+
+            33% {
+                transform: translate(-3px, 2px);
+            }
+
+            66% {
+                transform: translate(2px, -1px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
         }
 
         /* ── HERO ── */
@@ -104,8 +115,15 @@
         }
 
         @keyframes heroPulse {
-            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
-            100% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
         }
 
         .hero-title {
@@ -125,11 +143,30 @@
         }
 
         @keyframes titleGlitch {
-            0%, 92%, 100% { transform: translate(0); }
-            93% { transform: translate(-3px, 1px); text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan); }
-            94% { transform: translate(2px, -1px); }
-            95% { transform: translate(-1px, 2px); text-shadow: -2px 0 var(--pink), 2px 0 var(--cyan); }
-            96% { transform: translate(0); }
+
+            0%,
+            92%,
+            100% {
+                transform: translate(0);
+            }
+
+            93% {
+                transform: translate(-3px, 1px);
+                text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan);
+            }
+
+            94% {
+                transform: translate(2px, -1px);
+            }
+
+            95% {
+                transform: translate(-1px, 2px);
+                text-shadow: -2px 0 var(--pink), 2px 0 var(--cyan);
+            }
+
+            96% {
+                transform: translate(0);
+            }
         }
 
         .hero-sub {
@@ -144,8 +181,15 @@
         }
 
         @keyframes breathe {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 1;
+            }
         }
 
         .hero-scroll {
@@ -227,10 +271,23 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-12px) rotate(1deg); }
-            50% { transform: translateY(-6px) rotate(-0.5deg); }
-            75% { transform: translateY(-15px) rotate(0.5deg); }
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            25% {
+                transform: translateY(-12px) rotate(1deg);
+            }
+
+            50% {
+                transform: translateY(-6px) rotate(-0.5deg);
+            }
+
+            75% {
+                transform: translateY(-15px) rotate(0.5deg);
+            }
         }
 
         /* ── SCENE SECTIONS ── */
@@ -280,10 +337,25 @@
             box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 15%, transparent);
         }
 
-        .scene-card:nth-child(1) { --accent: var(--pink); transform: rotate(-0.5deg); }
-        .scene-card:nth-child(2) { --accent: var(--cyan); transform: rotate(0.8deg); }
-        .scene-card:nth-child(3) { --accent: var(--green); transform: rotate(-0.3deg); }
-        .scene-card:nth-child(4) { --accent: var(--purple); transform: rotate(0.6deg); }
+        .scene-card:nth-child(1) {
+            --accent: var(--pink);
+            transform: rotate(-0.5deg);
+        }
+
+        .scene-card:nth-child(2) {
+            --accent: var(--cyan);
+            transform: rotate(0.8deg);
+        }
+
+        .scene-card:nth-child(3) {
+            --accent: var(--green);
+            transform: rotate(-0.3deg);
+        }
+
+        .scene-card:nth-child(4) {
+            --accent: var(--purple);
+            transform: rotate(0.6deg);
+        }
 
         .scene-card:hover {
             transform: rotate(0deg) scale(1.005);
@@ -494,6 +566,308 @@
             pointer-events: none;
         }
 
+        /* ── TIMELINE MODAL ── */
+        .timeline-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 5, 8, 0.94);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+
+        .timeline-modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .timeline-modal-box {
+            position: relative;
+            width: 90vw;
+            max-width: 800px;
+            height: 85vh;
+            max-height: 750px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            background: var(--bg);
+            overflow: hidden;
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.35s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timeline-modal-overlay.active .timeline-modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .timeline-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .timeline-header h2 {
+            font-size: 0.7rem;
+            letter-spacing: 0.5em;
+            color: var(--green);
+            text-transform: uppercase;
+        }
+
+        .timeline-header .commit-count {
+            font-size: 0.6rem;
+            color: var(--dim);
+            letter-spacing: 0.2em;
+            margin-right: 4em
+        }
+
+        .timeline-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+        }
+
+        .timeline-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .timeline-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--cyan), var(--green), var(--pink), transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding: 0.8rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.01);
+            transition: border-color 0.3s, background 0.3s, transform 0.3s;
+        }
+
+        .timeline-item:hover {
+            border-color: rgba(0, 204, 255, 0.2);
+            background: rgba(0, 204, 255, 0.03);
+            transform: translateX(4px);
+        }
+
+        .timeline-item.expanded {
+            border-color: rgba(0, 204, 255, 0.15);
+            background: rgba(0, 204, 255, 0.02);
+        }
+
+        .timeline-item-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .timeline-item-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, margin-top 0.35s ease, opacity 0.25s ease;
+            opacity: 0;
+        }
+
+        .timeline-item.expanded .timeline-item-body {
+            max-height: 300px;
+            margin-top: 0.5rem;
+            opacity: 1;
+        }
+
+        .timeline-item-full-msg {
+            font-size: 0.75rem;
+            color: var(--text);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 0.6rem 0.8rem;
+            border-left: 1px solid rgba(0, 204, 255, 0.2);
+            background: rgba(0, 204, 255, 0.02);
+            border-radius: 0 2px 2px 0;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-item-files-list {
+            font-size: 0.6rem;
+            color: var(--dim);
+            padding: 0.4rem 0.8rem;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 2px;
+        }
+
+        .timeline-item-files-list span {
+            display: inline-block;
+            margin: 0.15rem 0.4rem 0.15rem 0;
+            padding: 0.1rem 0.4rem;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .timeline-item-files-list .f-added {
+            color: var(--green);
+            border-color: rgba(44, 250, 152, 0.15);
+        }
+
+        .timeline-item-files-list .f-modified {
+            color: var(--cyan);
+            border-color: rgba(0, 204, 255, 0.15);
+        }
+
+        .timeline-item-files-list .f-deleted {
+            color: var(--pink);
+            border-color: rgba(255, 0, 85, 0.15);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 1rem;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 2px solid var(--cyan);
+            background: var(--bg);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .timeline-item:hover::before {
+            background: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan);
+        }
+
+        .timeline-item.merge::before {
+            border-color: var(--purple);
+        }
+
+        .timeline-item.merge:hover::before {
+            background: var(--purple);
+            box-shadow: 0 0 12px var(--purple);
+        }
+
+        .timeline-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+            gap: 0.5rem;
+        }
+
+        .timeline-item-msg {
+            font-size: 0.8rem;
+            color: #fff;
+            flex: 1;
+            line-height: 1.4;
+        }
+
+        .timeline-item-date {
+            font-size: 0.6rem;
+            color: var(--dim);
+            white-space: nowrap;
+            letter-spacing: 0.1em;
+        }
+
+        .timeline-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.6rem;
+            color: var(--dim);
+        }
+
+        .timeline-item-hash {
+            font-family: var(--mono);
+            color: var(--cyan);
+            opacity: 0.6;
+        }
+
+        .timeline-item-author {
+            color: var(--green);
+        }
+
+        .timeline-item-files {
+            margin-top: 0.4rem;
+            font-size: 0.6rem;
+            color: var(--dim);
+            opacity: 0.6;
+        }
+
+        .timeline-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--dim);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+        }
+
+        .timeline-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--pink);
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .timeline-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--green);
+            background: transparent;
+            border: 1px solid rgba(44, 250, 152, 0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+
+        .timeline-trigger:hover {
+            background: rgba(44, 250, 152, 0.06);
+            border-color: var(--green);
+            box-shadow: 0 0 20px rgba(44, 250, 152, 0.15);
+        }
+
         /* ── FOOTER ── */
         .footer {
             text-align: center;
@@ -526,10 +900,12 @@
             .hero-title {
                 letter-spacing: 0.12em;
             }
+
             .scene-card {
                 margin-bottom: 3rem;
                 padding: 1.5rem;
             }
+
             .modal-box {
                 width: 96vw;
                 height: 75vh;
@@ -700,7 +1076,25 @@
             <a href="/ket">LAUNCH FULL EXPERIENCE</a>
         </p>
         <p style="margin-top: 0.8rem;">v 0.0.1</p>
+        <button class="timeline-trigger" onclick="openTimeline()" style="margin-top: 1.5rem;">
+            <span>Commit History</span>
+            <span>&#8595;</span>
+        </button>
     </footer>
+
+    <!-- TIMELINE MODAL -->
+    <div class="timeline-modal-overlay" id="timelineModal">
+        <div class="timeline-modal-box">
+            <button class="modal-close" onclick="closeTimeline()">&#10005;</button>
+            <div class="timeline-header">
+                <h2>Commit Timeline</h2>
+                <span class="commit-count" id="commitCount"></span>
+            </div>
+            <div class="timeline-scroll" id="timelineScroll">
+                <div class="timeline-loading" id="timelineLoading">LOADING COMMITS</div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL -->
     <div class="modal-overlay" id="sceneModal">
@@ -725,7 +1119,7 @@
 
         function openScene(sceneId) {
             label.textContent = sceneNames[sceneId] || sceneId;
-            iframe.src = '/ket?scene=' + sceneId;
+            iframe.src = window.location.protocol + '//' + window.location.host + '/ket?scene=' + sceneId;
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -748,7 +1142,132 @@
             if (e.key === 'Escape' && modal.classList.contains('active')) {
                 closeScene();
             }
+            if (e.key === 'Escape' && timelineModal.classList.contains('active')) {
+                closeTimeline();
+            }
         });
+
+        // ── TIMELINE ──
+        const timelineModal = document.getElementById('timelineModal');
+        const timelineScroll = document.getElementById('timelineScroll');
+        const timelineLoading = document.getElementById('timelineLoading');
+        const commitCountEl = document.getElementById('commitCount');
+
+        function openTimeline() {
+            timelineModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            timelineScroll.innerHTML = '<div class="timeline-loading" id="timelineLoading">LOADING COMMITS</div>';
+            fetchCommits();
+        }
+
+        function closeTimeline() {
+            timelineModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        timelineModal.addEventListener('click', function (e) {
+            if (e.target === timelineModal) {
+                closeTimeline();
+            }
+        });
+
+        async function fetchCommits() {
+            try {
+                const res = await fetch('https://api.github.com/repos/Tsolete/LMStudioWebUI/compare/main...IsaaacD:LMStudioWebUI:main', {
+                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                renderTimeline(data.commits || []);
+            } catch (err) {
+                timelineScroll.innerHTML = `<div class="timeline-error">FAILED TO LOAD COMMITS<br>${err.message}</div>`;
+            }
+        }
+
+        function renderTimeline(commits) {
+            if (!commits.length) {
+                timelineScroll.innerHTML = '<div class="timeline-error">NO COMMITS FOUND</div>';
+                commitCountEl.textContent = '';
+                return;
+            }
+
+            commitCountEl.textContent = commits.length + ' COMMITS';
+
+            const sorted = commits.slice().reverse();
+
+            let html = '<div class="timeline">';
+            for (const c of sorted) {
+                const commit = c.commit || {};
+                const isMerge = (c.parents || []).length > 1;
+                const fullMsg = (commit.message || '').trim();
+                const firstLine = fullMsg.split('\n')[0];
+                const hasMore = fullMsg.split('\n').length > 1 || (c.files && c.files.length);
+                const msg = escapeHtml(firstLine);
+                const date = new Date(commit.author?.date || c.commitDate || Date.now()).toLocaleString('en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                const hash = c.sha.slice(0, 7);
+                const author = commit.author.name || 'unknown';
+
+                const toggleArrow = hasMore ? '<span class="timeline-toggle-arrow">&#9654;</span>' : '';
+
+                let bodyHtml = '';
+                const msgLines = fullMsg.split('\n');
+                if (msgLines.length > 1) {
+                    const restMsg = msgLines.slice(1).join('\n').trim();
+                    if (restMsg) {
+                        bodyHtml += `<div class="timeline-item-full-msg">${escapeHtml(restMsg)}</div>`;
+                    }
+                }
+                if (c.files && c.files.length) {
+                    let fileSpans = '';
+                    for (const f of c.files.slice(0, 30)) {
+                        const cls = f.status === 'added' ? 'f-added' : f.status === 'deleted' ? 'f-deleted' : 'f-modified';
+                        const icon = f.status === 'added' ? '+' : f.status === 'deleted' ? '-' : '~';
+                        fileSpans += `<span class="${cls}">${icon} ${escapeHtml(f.filename)}</span>`;
+                    }
+                    if (c.files.length > 30) {
+                        fileSpans += `<span>+${c.files.length - 30} more</span>`;
+                    }
+                    bodyHtml += `<div class="timeline-item-files-list">${fileSpans}</div>`;
+                }
+
+                html += `
+                    <div class="timeline-item${isMerge ? ' merge' : ''}" data-has-expand="${hasMore}">
+                        <div class="timeline-item-header timeline-item-toggle">
+                            <span class="timeline-item-msg">${msg} ${toggleArrow}</span>
+                            <span class="timeline-item-date">${date}</span>
+                        </div>
+                        <div class="timeline-item-meta">
+                            <span class="timeline-item-hash">${hash}</span>
+                            <span class="timeline-item-author">${escapeHtml(author)}</span>
+                        </div>
+                        <div class="timeline-item-body">${bodyHtml}</div>
+                    </div>`;
+            }
+            html += '</div>';
+            timelineScroll.innerHTML = html;
+
+            timelineScroll.querySelectorAll('.timeline-item-toggle').forEach(function (toggle) {
+                toggle.addEventListener('click', function () {
+                    const item = this.closest('.timeline-item');
+                    if (item.dataset.hasExpand === 'true') {
+                        item.classList.toggle('expanded');
+                        const arrow = item.querySelector('.timeline-toggle-arrow');
+                        if (arrow) {
+                            arrow.innerHTML = item.classList.contains('expanded') ? '&#9660;' : '&#9654;';
+                        }
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
     </script>
 </body>
 
