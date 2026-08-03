@@ -1119,7 +1119,7 @@
 
         function openScene(sceneId) {
             label.textContent = sceneNames[sceneId] || sceneId;
-            iframe.src = window.location.protocol + '//' + window.location.host + '/ket?scene=' + sceneId;
+            iframe.src = 'https://' + window.location.host + '/ket?scene=' + sceneId;
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
