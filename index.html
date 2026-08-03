@@ -1100,7 +1100,7 @@
     <div class="modal-overlay" id="sceneModal">
         <div class="modal-box">
             <button class="modal-close" onclick="closeScene()">&#10005;</button>
-            <iframe class="modal-iframe" id="sceneIframe" src="about:blank" allowfullscreen></iframe>
+            <iframe class="modal-iframe" id="sceneIframe" src="about:blank" allowfullscreen allow="webgl; fullscreen; encrypted-media; xr-spatial-tracking; accelerometer; gyroscope; device-orientation"></iframe>
             <div class="modal-label" id="modalLabel"></div>
         </div>
     </div>
@@ -1119,7 +1119,7 @@
 
         function openScene(sceneId) {
             label.textContent = sceneNames[sceneId] || sceneId;
-            iframe.src = 'https://' + window.location.host + '/ket?scene=' + sceneId;
+            iframe.src = 'https://' + window.location.host + '/ket/?scene=' + sceneId;
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
