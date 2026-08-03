@@ -89,11 +89,11 @@ export class KeyMouseControls {
             yawInput += joystickState.right.yaw;
             pitchInput += joystickState.right.pitch;
         }
-
-        if (this.keys.arrowleft) yawInput += 0.1;
-        if (this.keys.arrowright) yawInput -= 0.1;
-        if (this.keys.arrowup) pitchInput += 0.1;
-        if (this.keys.arrowdown) pitchInput -= 0.1;
+        const yawSensitivity = 0.05;
+        if (this.keys.arrowleft) yawInput += yawSensitivity;
+        if (this.keys.arrowright) yawInput -= yawSensitivity;
+        if (this.keys.arrowup) pitchInput += yawSensitivity;
+        if (this.keys.arrowdown) pitchInput -= yawSensitivity;
 
         yawInput -= this.mouseYawDelta;
         pitchInput -= this.mousePitchDelta;

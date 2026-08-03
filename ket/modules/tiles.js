@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 const TILE_SIZE = 200;
-const TILE_SEGMENTS = 8;
+const TILE_SEGMENTS = 32;
 const RENDER_DIST = 240;
 const RECYCLE_DIST = 200;
 const GRID = Math.ceil(RENDER_DIST / TILE_SIZE) * 2 + 1;

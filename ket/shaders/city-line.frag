@@ -35,7 +35,7 @@ void main() {
     veins = smoothstep(0.6, 0.8, veins);
     finalColor = mix(finalColor, col1, veins * 0.5);
 
-    float gridLine = step(0.98, fract(vUv.x * 20.0)) + step(0.98, fract(vUv.y * 20.0));
+    float gridLine = step(0.98, fract(vWorldPosition.x * 0.05)) + step(0.98, fract(vWorldPosition.z * 0.05));
     finalColor += col2 * gridLine * 0.5;
 
     float dist = length(vWorldPosition.xz - cameraPosition.xz);

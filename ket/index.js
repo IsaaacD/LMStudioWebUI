@@ -47,6 +47,7 @@ if (new URLSearchParams(window.location.search).has('fps')) {
 
     stats = new Stats();
     stats.dom.classList.add('stats');
+    stats.dom.classList.add('gui');
     stats.dom.style.cssText = `
         position: fixed;
         top: 0;

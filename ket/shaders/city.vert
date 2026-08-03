@@ -57,10 +57,10 @@ void main() {
     vec3 worldPos = (modelMatrix * vec4(position, 1.0)).xyz;
     vec2 worldXZ = worldPos.xz;
 
-    float noiseVal = snoise(vec3(worldXZ.x * 0.1, worldXZ.y * 0.1, worldPos.z * 0.1 + uTime * 0.15));
+    float noiseVal = snoise(vec3(worldXZ.x * 0.1, worldXZ.y * 0.1, uTime * 0.15));
     float elevation = sin(worldXZ.x * 0.5 + worldPos.z * 0.3 + uTime) * 2.0 + noiseVal * 5.0;
     elevation *= uFoldIntensity;
-    elevation = max(0.0, elevation);
+    elevation = smoothstep(-2.0, 2.0, elevation);
 
     float gridX = fract(worldXZ.x * 0.5);
     float gridZ = fract(worldXZ.y * 0.5);
