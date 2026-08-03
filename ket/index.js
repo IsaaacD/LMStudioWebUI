@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import Stats from 'three/addons/libs/stats.module.js';
 import { initTouchControls } from './modules/touchControls.js';
 import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
 import { FEATURES, setGlobalSeed, getGlobalSeed } from './modules/utils.js';
@@ -11,7 +12,8 @@ if (urlSeed !== null) {
 }
 import { initScene, getCamera, getRenderer, getClock, onResize, getViewportSize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
-import { createHeartMaterial } from './modules/heartSpawner.js';
+import { createHeartMaterial, HeartSpawner } from './modules/heartSpawner.js';
+import { ImageSpawner } from './modules/imageSpawner.js';
 import { initAudio, setSceneReadyCallback } from './modules/audio.js';
 import { PostProcessor } from './modules/postprocessing.js';
 import { RaveEngine } from './modules/raveMode.js';
@@ -33,14 +35,32 @@ let postProcessor = null;
 let animationLoop = null;
 let params = null;
 let fpsCounter = null;
+let stats = null;
 let webrtcManager = null;
 
 // Expose seed for cross-client sync
 window.__globalSeed = getGlobalSeed();
 
 if (new URLSearchParams(window.location.search).has('fps')) {
-    fpsCounter = new FPSCounter();
-    fpsCounter.init();
+    //    fpsCounter = new FPSCounter();
+    //   fpsCounter.init();
+
+    stats = new Stats();
+    stats.dom.classList.add('stats');
+    stats.dom.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 99999;
+        pointer-events: auto;
+    `;
+    let statsMode = 0;
+    stats.dom.addEventListener('click', () => {
+        statsMode += 1;
+        if (statsMode > 1) statsMode = 0;
+        stats.showPanel(statsMode);
+    });
+    document.body.appendChild(stats.dom);
 }
 
 async function bootstrap() {
@@ -87,6 +107,9 @@ async function bootstrap() {
     sceneManager.registerScene(liminalScene);
 
     const initialScene = sceneManager.resolveInitialScene();
+
+    const imageSpawner = new ImageSpawner(initialScene.threeScene, 'images/ralph.png');
+    const heartSpawner = new HeartSpawner(initialScene.threeScene, heartMaterial);
 
     const camera = getCamera();
     const renderer = getRenderer();
@@ -172,7 +195,10 @@ async function bootstrap() {
         transitionEffect,
         raveEngine,
         fpsCounter,
-        webrtcManager
+        stats,
+        webrtcManager,
+        imageSpawner,
+        heartSpawner
     });
 
     animationLoop.onTimerUpdate = (elapsed, maxDuration) => {

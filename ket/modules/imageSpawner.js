@@ -81,6 +81,23 @@ export class ImageSpawner {
         return null;
     }
 
+    setScene(newScene) {
+        for (const mesh of this.pool) {
+            this.scene.remove(mesh);
+            newScene.add(mesh);
+        }
+        this.scene = newScene;
+    }
+
+    reset() {
+        for (const mesh of this.pool) {
+            mesh.visible = false;
+        }
+        this.nextFree = 0;
+        this.nextSpawnTime = minMaxRange(2, 4);
+        this.spawnCounter = 0;
+    }
+
     update(camera, effectiveTime, dt) {
         if (!this.loaded) return;
 

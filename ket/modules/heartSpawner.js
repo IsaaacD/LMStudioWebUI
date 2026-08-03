@@ -76,6 +76,23 @@ export class HeartSpawner {
         return null;
     }
 
+    setScene(newScene) {
+        for (const mesh of this.pool) {
+            this.scene.remove(mesh);
+            newScene.add(mesh);
+        }
+        this.scene = newScene;
+    }
+
+    reset() {
+        for (const mesh of this.pool) {
+            mesh.visible = false;
+        }
+        this.nextFree = 0;
+        this.nextSpawnTime = minMaxRange(1, 3);
+        this.spawnCounter = 0;
+    }
+
     update(camera, effectiveTime, dt, colorA, colorB) {
         if (!this.loaded) return;
 

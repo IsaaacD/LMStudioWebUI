@@ -9,7 +9,7 @@ const MAX_YAW_INCREMENT = Math.PI / 6;
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
 export class AnimationLoop {
-    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine, fpsCounter, webrtcManager }) {
+    constructor({ camera, composer, params, sceneManager, transitionEffect, raveEngine, fpsCounter, stats, webrtcManager, imageSpawner, heartSpawner }) {
         this.camera = camera;
         this.composer = composer;
         this.params = params;
@@ -17,7 +17,11 @@ export class AnimationLoop {
         this.transitionEffect = transitionEffect;
         this.raveEngine = raveEngine;
         this.fpsCounter = fpsCounter;
+        this.stats = stats;
         this.webrtcManager = webrtcManager;
+        this.imageSpawner = imageSpawner;
+        this.heartSpawner = heartSpawner;
+        this._lastSpawnerScene = null;
         this.controls = new KeyMouseControls();
         this.autoplayIdleTimer = 0;
         this.autoplayResumeDelay = 5;
@@ -90,6 +94,7 @@ export class AnimationLoop {
         if (!this.running) return;
         requestAnimationFrame(() => this.animate());
 
+        if (this.stats) this.stats.begin();
         if (this.fpsCounter) this.fpsCounter.update();
 
         if (this.params.paused) {
@@ -152,6 +157,19 @@ export class AnimationLoop {
 
         if (activeScene && activeScene.onUpdate && !this.transitionEffect.isFreezing()) {
             activeScene.onUpdate(this.camera, effectiveTime, dt, activeParams);
+        }
+
+        if (activeScene && this.imageSpawner && this.heartSpawner) {
+            if (this._lastSpawnerScene !== activeScene.threeScene) {
+                this.imageSpawner.reset();
+                this.imageSpawner.setScene(activeScene.threeScene);
+                this.heartSpawner.reset();
+                this.heartSpawner.setScene(activeScene.threeScene);
+                this._lastSpawnerScene = activeScene.threeScene;
+            }
+
+            this.imageSpawner.update(this.camera, effectiveTime, dt);
+            this.heartSpawner.update(this.camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);
         }
 
         this.composer.update(activeParams, effectiveTime);
@@ -236,6 +254,8 @@ export class AnimationLoop {
         if (this.onTimerUpdate) {
             this.onTimerUpdate(this.sceneManager.timer.elapsed, this.sceneManager.timer.maxDuration);
         }
+
+        if (this.stats) this.stats.end();
     }
 
     handleAutoControl(activeParams, dt, speedMult) {

@@ -1,8 +1,6 @@
 import * as THREE from 'three';
 import { TileManager } from '../modules/tiles.js';
 import { PrimitiveManager } from '../modules/primitives.js';
-import { HeartSpawner } from '../modules/heartSpawner.js';
-import { ImageSpawner } from '../modules/imageSpawner.js';
 import { normalizeColor } from '../modules/utils.js';
 
 const _tempColor = new THREE.Color();
@@ -23,8 +21,6 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
         threeScene, primitiveMaterial,
         TILE_SIZE, TILE_HEIGHT, 200, 140
     );
-    const imageSpawner = new ImageSpawner(threeScene, 'images/ralph.png');
-    const heartSpawner = new HeartSpawner(threeScene, heartMaterial);
 
     return {
         id: 'city',
@@ -33,7 +29,7 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
         maxDuration: MAX_DURATION,
         threeScene,
         defaultDuration: 45,
-        managers: { tileManager, primitiveManager, imageSpawner, heartSpawner },
+        managers: { tileManager, primitiveManager },
         constants: { TILE_SIZE, TILE_HEIGHT },
         sharedMaterials: { cityMaterial, wallMaterial, primitiveMaterial, heartMaterial },
         weight: WEIGHT,
@@ -58,8 +54,6 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
 
             tileManager.update(camera);
             primitiveManager.update(camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);
-            imageSpawner.update(camera, effectiveTime, dt);
-            heartSpawner.update(camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);
         }
     };
 }
