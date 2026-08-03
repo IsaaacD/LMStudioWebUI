@@ -911,6 +911,15 @@
                 height: 75vh;
             }
         }
+
+        .full-experience-link {
+            color: var(--cyan);
+            text-decoration: none;
+            transition: color 0.2s;
+            font-weight: bold;
+            font-size: 3em;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -935,6 +944,15 @@
             with peer-to-peer multi-user support, daily-seeded parameters, and a
             post-processing pipeline that includes bloom, edge detection, chromatic
             aberration, scanlines, and melt transitions.
+        </p>
+    </section>
+    <section style="text-align: center; margin: 2rem 0;">
+        <p>
+            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH FULL EXPERIENCE</a>
+        <p>
+            Continue scrolling to find out more.
+        </p>
+
         </p>
     </section>
 
@@ -1073,7 +1091,7 @@
     <!-- FOOTER -->
     <footer class="footer">
         <p>
-            <a href="/ket">LAUNCH FULL EXPERIENCE</a>
+            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH FULL EXPERIENCE</a>
         </p>
         <p style="margin-top: 0.8rem;">v 0.0.1</p>
         <button class="timeline-trigger" onclick="openTimeline()" style="margin-top: 1.5rem;">
@@ -1100,7 +1118,8 @@
     <div class="modal-overlay" id="sceneModal">
         <div class="modal-box">
             <button class="modal-close" onclick="closeScene()">&#10005;</button>
-            <iframe class="modal-iframe" id="sceneIframe" src="about:blank" allowfullscreen allow="webgl; fullscreen; encrypted-media; xr-spatial-tracking; accelerometer; gyroscope; device-orientation"></iframe>
+            <iframe class="modal-iframe" id="sceneIframe" src="about:blank" allowfullscreen
+                allow="webgl; fullscreen; encrypted-media; xr-spatial-tracking; accelerometer; gyroscope; device-orientation"></iframe>
             <div class="modal-label" id="modalLabel"></div>
         </div>
     </div>
