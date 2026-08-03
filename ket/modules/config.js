@@ -47,7 +47,7 @@ function dailyColor(offset) {
 }
 
 export function randomizeParams(params) {
-    const s = todayAnchor();
+    const s = Math.floor(Math.random() * 2**31);
     params.speed = hashRange(s + 1, GUI_SPEED_MIN, GUI_SPEED_MAX);
     params.foldIntensity = hashRange(s + 2, GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX);
     params.edgeContrast = hashRange(s + 3, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX);
