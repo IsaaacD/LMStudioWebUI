@@ -69,6 +69,12 @@ export class AnimationLoop {
 
     _buildActiveParams() {
         const p = this.params;
+        const ap = this._activeParamsCache;
+        if (ap && ap.timeScale === p.timeScale && ap.foldIntensity === p.foldIntensity &&
+            ap.edgeContrast === p.edgeContrast && ap.colorA === p.colorA && ap.colorB === p.colorB &&
+            ap.bloomStrength === p.bloomStrength && ap.bloomRadius === p.bloomRadius) {
+            return ap;
+        }
         return {
             timeScale: p.timeScale,
             bloomStrength: p.bloomStrength,
