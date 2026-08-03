@@ -59,7 +59,13 @@ export class SceneManager {
 
 
 
+    lockScene(sceneId) {
+        this.switchTo(sceneId);
+        this.timerPaused = true;
+    }
+
     resolveInitialScene() {
+        if (this.timerPaused) return this.getActiveScene();
         const count = this.getSwitchCount();
         this.lastSwitchCount = count;
         this.timer.elapsed = (Date.now() - this.switchTimes[count]) / 1000;

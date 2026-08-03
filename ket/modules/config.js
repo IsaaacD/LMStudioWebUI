@@ -31,8 +31,6 @@ export const defaultParams = {
     autoplay: true,
     controlMode: 'Auto',
     raveMode: false,
-    sceneDurationCity: 45,
-    sceneDurationTest: 10,
     forceNextScene: false,
     forceNextOrdered: false,
     //particles: false
@@ -47,7 +45,7 @@ function dailyColor(offset) {
 }
 
 export function randomizeParams(params) {
-    const s = Math.floor(Math.random() * 2**31);
+    const s = Math.floor(Math.random() * 2 ** 31);
     params.speed = hashRange(s + 1, GUI_SPEED_MIN, GUI_SPEED_MAX);
     params.foldIntensity = hashRange(s + 2, GUI_FOLD_INTENSITY_MIN, GUI_FOLD_INTENSITY_MAX);
     params.edgeContrast = hashRange(s + 3, GUI_EDGE_CONTRAST_MIN, GUI_EDGE_CONTRAST_MAX);

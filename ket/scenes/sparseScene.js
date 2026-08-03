@@ -515,7 +515,7 @@ export async function createSparseScreen() {
     let lastColorB = '';
 
     return {
-        id: 'sparse',
+        id: 'space',
         name: 'Supernova',
         minDuration: MIN_DURATION,
         maxDuration: MAX_DURATION,

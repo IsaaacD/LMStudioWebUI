@@ -23,7 +23,7 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
     );
 
     return {
-        id: 'city',
+        id: 'nexus',
         name: 'Nexus',
         minDuration: MIN_DURATION,
         maxDuration: MAX_DURATION,

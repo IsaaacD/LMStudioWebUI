@@ -85,10 +85,16 @@ async function bootstrap() {
 
     await loadAllAssets();
 
-    splashSub.textContent = 'CLICK TO ENTER';
-    splashSub.style.animation = 'breathe 3s ease-in-out infinite';
-    splashEl.classList.add('ready');
-    progressText.textContent = 'ALL ASSETS LOADED';
+    const urlSceneId = new URLSearchParams(window.location.search).get('scene');
+    const isDirectSceneLoad = urlSceneId !== null;
+    if (isDirectSceneLoad) {
+        splashEl.style.display = 'none';
+    } else {
+        splashSub.textContent = 'CLICK TO ENTER';
+        splashSub.style.animation = 'breathe 3s ease-in-out infinite';
+        splashEl.classList.add('ready');
+        progressText.textContent = 'ALL ASSETS LOADED';
+    }
 
     await initScene();
 
@@ -105,6 +111,11 @@ async function bootstrap() {
     sceneManager.registerScene(sparseScene);
     sceneManager.registerScene(lumberScene);
     sceneManager.registerScene(liminalScene);
+
+    if (isDirectSceneLoad && sceneManager.scenes.has(urlSceneId)) {
+        sceneManager.lockScene(urlSceneId);
+        console.log(`[scene] Locked to scene: ${urlSceneId}`);
+    }
 
     const initialScene = sceneManager.resolveInitialScene();
 
@@ -132,6 +143,10 @@ async function bootstrap() {
     const transitionEffect = new TransitionMelt();
 
     params = { ...defaultParams };
+    if (isDirectSceneLoad && sceneManager.scenes.has(urlSceneId)) {
+        params.autoplay = true;
+        params.controlMode = 'Auto';
+    }
 
     const isDebug = new URLSearchParams(window.location.search).has('debug');
 
@@ -171,9 +186,9 @@ async function bootstrap() {
     const raveEngine = new RaveEngine(params);
 
     const guiControllers = {};
-    //if (isDebug) {
-    initGUI(params, guiControllers, sceneManager, raveEngine);
-    //}
+    if (!isDirectSceneLoad) {
+        initGUI(params, guiControllers, sceneManager, raveEngine);
+    }
 
     initTouchControls(params);
 
@@ -228,6 +243,10 @@ async function bootstrap() {
     setSceneReadyCallback(() => {
         animationLoop.start(clock);
     });
+
+    if (isDirectSceneLoad) {
+        animationLoop.start(clock);
+    }
 }
 
 bootstrap();
