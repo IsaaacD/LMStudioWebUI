@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { normalizeColor, loadShader, hashNumber } from '../modules/utils.js';
 
-const POOL_SIZE = 110;
-const SPAWN_DISTANCE = 80;
+const POOL_SIZE = 90;
+const SPAWN_DISTANCE = 22;
 const PASS_DISTANCE = 15;
 const X_SPREAD = 35;
 const Y_SPREAD = 22;
@@ -11,7 +11,6 @@ const SPEED_VARIANCE = 3;
 const LUMBER_SEED = 777;
 const EMBER_COUNT = 100;
 const SAWDUST_COUNT = 200;
-const WALL_PLANK_COUNT = 24;
 const DEBRIS_COUNT = 60;
 
 const MIN_DURATION = 2;
@@ -195,62 +194,6 @@ export async function createLumberScene() {
     const sawdust = new THREE.Points(sawdustGeo, sawdustMat);
     threeScene.add(sawdust);
 
-    // --- Per-instance data for wall planks ---
-    const wallPlankData = [];
-    for (let i = 0; i < WALL_PLANK_COUNT; i++) {
-        const side = i % 2 === 0 ? -1 : 1;
-        const yLevel = Math.floor(i / 2) * 12 - 20;
-        wallPlankData.push({
-            zOffset: hr(WALL_PLANK_COUNT * 10 + 100) * SPAWN_DISTANCE,
-            speed: BASE_SPEED * 0.8,
-            side,
-            yLevel,
-            colorA: new THREE.Color().setHSL(hr(WALL_PLANK_COUNT * 10 + i * 5), 0.2, 0.15),
-            colorB: new THREE.Color().setHSL(hr(WALL_PLANK_COUNT * 10 + i * 5 + 1), 0.15, 0.08),
-            grainIntensity: 0.6 + hr(WALL_PLANK_COUNT * 10 + i * 5 + 2) * 0.5,
-            knotIntensity: 0.2 + hr(WALL_PLANK_COUNT * 10 + i * 5 + 3) * 0.3,
-            crackGlow: 0.1 + hr(WALL_PLANK_COUNT * 10 + i * 5 + 4) * 0.3,
-        });
-    }
-
-    const plankGeo = new THREE.BoxGeometry(1.5, 12, 40, 1, 2, 4);
-    const plankMat = new THREE.ShaderMaterial({
-        uniforms: { uTime: { value: 0 } },
-        vertexShader: vsSource,
-        fragmentShader: fsSource,
-    });
-
-    const wallPlankMesh = new THREE.InstancedMesh(plankGeo, plankMat, WALL_PLANK_COUNT);
-
-    const plankColorA = new Float32Array(WALL_PLANK_COUNT * 3);
-    const plankColorB = new Float32Array(WALL_PLANK_COUNT * 3);
-    const plankGrainIntensity = new Float32Array(WALL_PLANK_COUNT);
-    const plankKnotIntensity = new Float32Array(WALL_PLANK_COUNT);
-    const plankCrackGlow = new Float32Array(WALL_PLANK_COUNT);
-    const plankUseCrack = new Float32Array(WALL_PLANK_COUNT);
-
-    for (let i = 0; i < WALL_PLANK_COUNT; i++) {
-        plankColorA[i * 3] = wallPlankData[i].colorA.r;
-        plankColorA[i * 3 + 1] = wallPlankData[i].colorA.g;
-        plankColorA[i * 3 + 2] = wallPlankData[i].colorA.b;
-        plankColorB[i * 3] = wallPlankData[i].colorB.r;
-        plankColorB[i * 3 + 1] = wallPlankData[i].colorB.g;
-        plankColorB[i * 3 + 2] = wallPlankData[i].colorB.b;
-        plankGrainIntensity[i] = wallPlankData[i].grainIntensity;
-        plankKnotIntensity[i] = wallPlankData[i].knotIntensity;
-        plankCrackGlow[i] = wallPlankData[i].crackGlow;
-        plankUseCrack[i] = 1.0;
-    }
-
-    wallPlankMesh.geometry.setAttribute('instColorA', new THREE.InstancedBufferAttribute(plankColorA, 3));
-    wallPlankMesh.geometry.setAttribute('instColorB', new THREE.InstancedBufferAttribute(plankColorB, 3));
-    wallPlankMesh.geometry.setAttribute('instGrainIntensity', new THREE.InstancedBufferAttribute(plankGrainIntensity, 1));
-    wallPlankMesh.geometry.setAttribute('instKnotIntensity', new THREE.InstancedBufferAttribute(plankKnotIntensity, 1));
-    wallPlankMesh.geometry.setAttribute('instCrackGlow', new THREE.InstancedBufferAttribute(plankCrackGlow, 1));
-    wallPlankMesh.geometry.setAttribute('instUseCrack', new THREE.InstancedBufferAttribute(plankUseCrack, 1));
-
-    threeScene.add(wallPlankMesh);
-
     // --- Debris as InstancedMesh (single draw call, batched matrix updates) ---
     const debrisData = [];
     for (let i = 0; i < DEBRIS_COUNT; i++) {
@@ -334,30 +277,53 @@ export async function createLumberScene() {
         sawdustData,
 
         onEnter() {
+            // Stagger pieces from frontEdge to backEdge so first lumber
+            // reaches camera after ~2 seconds at average speed (~5.5 u/s).
+            // frontEdge = 10 + 2*5.5 = 21.
+            const frontEdge = 21;
+            const backEdge = SPAWN_DISTANCE + 40;
+            const depthRange = backEdge - frontEdge;
+
             for (let i = 0; i < POOL_SIZE; i++) {
                 const ld = lumberData[i];
                 ld.active = true;
                 ld.xOffset = (hr(i * 16 + 7) - 0.5) * 2 * X_SPREAD;
                 ld.yOffset = (hr(i * 16 + 8) - 0.5) * 2 * Y_SPREAD;
-                ld.zOffset = 5 + hr(i * 16 + 9) * (SPAWN_DISTANCE - 5);
-                ld.quat.identity();
+                ld.zOffset = frontEdge + (i / POOL_SIZE) * depthRange + (hr(i * 16 + 9) - 0.5) * 2;
+                // Pre-rotate as if piece had been tumbling for a random duration,
+                // so initial orientations are as varied as pieces that have cycled through onUpdate
+                const preTime = hr(i * 16 + 30) * 20;
+                ld.quat.setFromEuler(0, 0, 0);
+                {
+                    _tempQuat.setFromAxisAngle(_axisX, ld.rotSpeedX * preTime);
+                    ld.quat.premultiply(_tempQuat);
+                    _tempQuat.setFromAxisAngle(_axisY, ld.rotSpeedY * preTime);
+                    ld.quat.premultiply(_tempQuat);
+                    _tempQuat.setFromAxisAngle(_axisZ, ld.rotSpeedZ * preTime);
+                    ld.quat.premultiply(_tempQuat);
+                }
                 ld.recycleCount = 0;
             }
 
             for (let i = 0; i < DEBRIS_COUNT; i++) {
                 const ud = debrisData[i];
                 ud.active = true;
-                ud.zOffset = hr(DEBRIS_COUNT * 10 + 500 + i) * SPAWN_DISTANCE;
-                ud.quat.identity();
-            }
-
-            for (let i = 0; i < WALL_PLANK_COUNT; i++) {
-                wallPlankData[i].zOffset = hr(WALL_PLANK_COUNT * 10 + 200) * SPAWN_DISTANCE;
+                ud.zOffset = frontEdge + (i / DEBRIS_COUNT) * depthRange + (hr(DEBRIS_COUNT * 10 + 500 + i) - 0.5) * 2;
+                const dPreTime = hr(DEBRIS_COUNT * 10 + 700 + i) * 20;
+                ud.quat.setFromEuler(0, 0, 0);
+                {
+                    _tempQuat.setFromAxisAngle(_axisX, ud.rotSpeedX * dPreTime);
+                    ud.quat.premultiply(_tempQuat);
+                    _tempQuat.setFromAxisAngle(_axisY, ud.rotSpeedY * dPreTime);
+                    ud.quat.premultiply(_tempQuat);
+                    _tempQuat.setFromAxisAngle(_axisZ, ud.rotSpeedZ * dPreTime);
+                    ud.quat.premultiply(_tempQuat);
+                }
             }
 
             for (let i = 0; i < EMBER_COUNT; i++) {
                 const ed = emberData[i];
-                ed.zOffset = PASS_DISTANCE + hr(EMBER_COUNT * 16 + i * 10 + 200) * (SPAWN_DISTANCE - PASS_DISTANCE);
+                ed.zOffset = frontEdge + (i / EMBER_COUNT) * depthRange + (hr(EMBER_COUNT * 16 + i * 10 + 200) - 0.5) * 2;
             }
 
             for (let i = 0; i < SAWDUST_COUNT; i++) {
@@ -599,50 +565,6 @@ export async function createLumberScene() {
             }
             sawdust.geometry.attributes.position.needsUpdate = true;
             sawdust.geometry.attributes.color.needsUpdate = true;
-
-            // Update tunnel wall planks
-            plankMat.uniforms.uTime.value = effectiveTime;
-
-            if (paramsChanged && activeParams) {
-                const colA = activeParams.colorA ? _tempColor.set(normalizeColor(activeParams.colorA)) : null;
-                const colB = activeParams.colorB ? _tempColor.set(normalizeColor(activeParams.colorB)) : null;
-                const needsPA = !!colA;
-                const needsPB = !!colB;
-                for (let i = 0; i < WALL_PLANK_COUNT; i++) {
-                    const off = i * 3;
-                    if (needsPA) {
-                        plankColorA[off] = colA.r;
-                        plankColorA[off + 1] = colA.g;
-                        plankColorA[off + 2] = colA.b;
-                    }
-                    if (needsPB) {
-                        plankColorB[off] = colB.r;
-                        plankColorB[off + 1] = colB.g;
-                        plankColorB[off + 2] = colB.b;
-                    }
-                }
-                wallPlankMesh.geometry.attributes.instColorA.needsUpdate = true;
-                wallPlankMesh.geometry.attributes.instColorB.needsUpdate = true;
-            }
-
-            const wallXOffset = X_SPREAD + 5;
-            for (let i = 0; i < WALL_PLANK_COUNT; i++) {
-                const wpd = wallPlankData[i];
-                wpd.zOffset -= wpd.speed * dt;
-
-                if (wpd.zOffset < -50) {
-                    wpd.zOffset = SPAWN_DISTANCE + hr(WALL_PLANK_COUNT * 10 + 300) * 20;
-                }
-
-                const sx = wpd.side * wallXOffset;
-                _tempMatrix.makeTranslation(
-                    camX + rX * sx + fX * wpd.zOffset,
-                    camY + wpd.yLevel + fY * wpd.zOffset * 0.1,
-                    camZ + rZ * sx + fZ * wpd.zOffset
-                );
-                wallPlankMesh.setMatrixAt(i, _tempMatrix);
-            }
-            wallPlankMesh.instanceMatrix.needsUpdate = true;
 
             // Update debris instanced mesh
             for (let i = 0; i < DEBRIS_COUNT; i++) {
