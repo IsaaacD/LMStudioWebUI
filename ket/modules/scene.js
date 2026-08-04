@@ -27,7 +27,7 @@ export function initScene() {
 
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
     renderer.setSize(innerWidth, innerHeight);
-    setPixelRatio(localStorage.getItem('fidelity') || (isMobile ? 'low' : 'high'));
+    //setPixelRatio(localStorage.getItem('fidelity') || (isMobile ? 'low' : 'high'));
     document.body.appendChild(renderer.domElement);
 
     clock = new THREE.Clock();

@@ -377,7 +377,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     });
 
     fidelityGroup.appendChild(fidelityButtonsContainer);
-    visFolder.body.appendChild(fidelityGroup);
+    //visFolder.body.appendChild(fidelityGroup);
 
     const randBtnResult = createButton('Randomize', () => {
         params.randomize();
