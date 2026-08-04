@@ -32,9 +32,12 @@ const _tempMatrix = new THREE.Matrix4();
 const _tempQuat = new THREE.Quaternion();
 const _tempVec3 = new THREE.Vector3();
 const _tempScale = new THREE.Vector3();
-const _tempEuler = new THREE.Euler();
 const _bgColor = new THREE.Color(0x000000);
 const _fogColorTemp = new THREE.Color();
+const _camQuat = new THREE.Quaternion();
+const _axisX = new THREE.Vector3(1, 0, 0);
+const _axisY = new THREE.Vector3(0, 1, 0);
+const _axisZ = new THREE.Vector3(0, 0, 1);
 
 export async function createLumberScene() {
     const vsSource = await loadShader('./shaders/wood-instanced.vert');
@@ -56,9 +59,7 @@ export async function createLumberScene() {
             yOffset: (hr(i * 16 + 8) - 0.5) * 2 * Y_SPREAD,
             zOffset: SPAWN_DISTANCE,
             speed: BASE_SPEED + hr(i * 16 + 9) * SPEED_VARIANCE,
-            rotX: 0,
-            rotY: 0,
-            rotZ: 0,
+            quat: new THREE.Quaternion(),
             rotSpeedX: (hr(i * 16 + 10) - 0.5) * 2,
             rotSpeedY: (hr(i * 16 + 11) - 0.5) * 2,
             rotSpeedZ: (hr(i * 16 + 12) - 0.5) * 2,
@@ -116,7 +117,7 @@ export async function createLumberScene() {
 
     threeScene.add(lumberMesh);
 
-    // Ember particles — glowing sparks flying past
+    // Ember particles
     const emberGeo = new THREE.BufferGeometry();
     const emberPositions = new Float32Array(EMBER_COUNT * 3);
     const emberColors = new Float32Array(EMBER_COUNT * 3);
@@ -156,7 +157,7 @@ export async function createLumberScene() {
     const embers = new THREE.Points(emberGeo, emberMat);
     threeScene.add(embers);
 
-    // Sawdust trails behind lumber pieces
+    // Sawdust trails
     const sawdustGeo = new THREE.BufferGeometry();
     const sawdustPositions = new Float32Array(SAWDUST_COUNT * 3);
     const sawdustColors = new Float32Array(SAWDUST_COUNT * 3);
@@ -250,36 +251,40 @@ export async function createLumberScene() {
 
     threeScene.add(wallPlankMesh);
 
-    // Ground and ceiling debris
-    const debrisPieces = [];
+    // --- Debris as InstancedMesh (single draw call, batched matrix updates) ---
+    const debrisData = [];
     for (let i = 0; i < DEBRIS_COUNT; i++) {
         const size = 0.3 + hr(DEBRIS_COUNT * 10 + i * 8) * 1.2;
-        const dGeo = new THREE.BoxGeometry(
-            size * (0.5 + hr(DEBRIS_COUNT * 10 + i * 8 + 1)),
-            size * 0.3,
-            size * (0.5 + hr(DEBRIS_COUNT * 10 + i * 8 + 2))
-        );
-        const dMat = new THREE.MeshBasicMaterial({
-            color: new THREE.Color().setHSL(0.07 + hr(DEBRIS_COUNT * 10 + i * 8 + 3) * 0.05, 0.3, 0.12),
-            transparent: true,
-            opacity: 0.7,
-        });
-        const debris = new THREE.Mesh(dGeo, dMat);
-        debris.visible = false;
-        debris.userData = {
+        debrisData.push({
             active: false,
             xOffset: (hr(DEBRIS_COUNT * 10 + i * 8 + 4) - 0.5) * 2 * X_SPREAD * 1.5,
             yOffset: (hr(DEBRIS_COUNT * 10 + i * 8 + 5) > 0.5 ? 1 : -1) * (Y_SPREAD + 3 + hr(DEBRIS_COUNT * 10 + i * 8 + 5) * 5),
             zOffset: SPAWN_DISTANCE,
             speed: BASE_SPEED + hr(DEBRIS_COUNT * 10 + i * 8 + 6) * SPEED_VARIANCE * 0.8,
+            quat: new THREE.Quaternion(),
             rotSpeedX: (hr(DEBRIS_COUNT * 10 + i * 8 + 7) - 0.5) * 4,
             rotSpeedY: (hr(DEBRIS_COUNT * 10 + i * 8) - 0.5) * 4,
             rotSpeedZ: (hr(DEBRIS_COUNT * 10 + i * 8 + 1) - 0.5) * 4,
+            scaleX: size * (0.5 + hr(DEBRIS_COUNT * 10 + i * 8 + 1)),
+            scaleY: size * 0.3,
+            scaleZ: size * (0.5 + hr(DEBRIS_COUNT * 10 + i * 8 + 2)),
             recycleCount: 0,
-        };
-        threeScene.add(debris);
-        debrisPieces.push(debris);
+        });
     }
+
+    const debrisGeo = new THREE.BoxGeometry(1, 1, 1);
+    const debrisMat = new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0.7,
+    });
+    const debrisMesh = new THREE.InstancedMesh(debrisGeo, debrisMat, DEBRIS_COUNT);
+    debrisMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    for (let i = 0; i < DEBRIS_COUNT; i++) {
+        _tempColor.setHSL(0.07 + hr(DEBRIS_COUNT * 10 + i * 8 + 3) * 0.05, 0.3, 0.12);
+        debrisMesh.setColorAt(i, _tempColor);
+    }
+    debrisMesh.instanceColor.needsUpdate = true;
+    threeScene.add(debrisMesh);
 
     // Lighting
     const light1 = new THREE.PointLight(0xff6633, 1.5, 200);
@@ -304,6 +309,15 @@ export async function createLumberScene() {
     let lastColorA = null;
     let lastColorB = null;
 
+    // Cached camera basis vectors to avoid recomputing when camera hasn't rotated
+    let cachedRightX = 0, cachedRightY = 0, cachedRightZ = 0;
+    let cachedUpX = 0, cachedUpY = 0, cachedUpZ = 0;
+    let cachedForwardX = 0, cachedForwardY = 0, cachedForwardZ = 0;
+    let camQuatW = 0, camQuatX = 0, camQuatY = 0, camQuatZ = 0;
+
+    // Running nearby count for fog density
+    let nearbyCount = 0;
+
     return {
         id: 'lumber',
         name: 'Lumber',
@@ -326,17 +340,15 @@ export async function createLumberScene() {
                 ld.xOffset = (hr(i * 16 + 7) - 0.5) * 2 * X_SPREAD;
                 ld.yOffset = (hr(i * 16 + 8) - 0.5) * 2 * Y_SPREAD;
                 ld.zOffset = 5 + hr(i * 16 + 9) * (SPAWN_DISTANCE - 5);
-                ld.rotX = 0;
-                ld.rotY = 0;
-                ld.rotZ = 0;
+                ld.quat.identity();
                 ld.recycleCount = 0;
             }
 
             for (let i = 0; i < DEBRIS_COUNT; i++) {
-                const ud = debrisPieces[i].userData;
+                const ud = debrisData[i];
                 ud.active = true;
                 ud.zOffset = hr(DEBRIS_COUNT * 10 + 500 + i) * SPAWN_DISTANCE;
-                debrisPieces[i].visible = true;
+                ud.quat.identity();
             }
 
             for (let i = 0; i < WALL_PLANK_COUNT; i++) {
@@ -352,6 +364,8 @@ export async function createLumberScene() {
                 sawdustData[i].active = false;
                 sawdustData[i].life = 0;
             }
+
+            nearbyCount = 0;
         },
 
         onExit() { },
@@ -375,19 +389,41 @@ export async function createLumberScene() {
             light2.position.x = Math.cos(effectiveTime * 0.25) * 18;
             light2.position.z = Math.sin(effectiveTime * 0.25) * 18;
 
-            camera.getWorldDirection(_forward);
-            _right.crossVectors(_forward, _worldUp).normalize();
-            _up.crossVectors(_right, _forward).normalize();
+            // Cache camera basis vectors, skip recomputation if quaternion unchanged
+            const cqW = camera.quaternion.w;
+            const cqX = camera.quaternion.x;
+            const cqY = camera.quaternion.y;
+            const cqZ = camera.quaternion.z;
+            if (cqW !== camQuatW || cqX !== camQuatX || cqY !== camQuatY || cqZ !== camQuatZ) {
+                camQuatW = cqW; camQuatX = cqX; camQuatY = cqY; camQuatZ = cqZ;
+                _camQuat.copy(camera.quaternion);
+                _forward.set(0, 0, -1).applyQuaternion(_camQuat);
+                _right.crossVectors(_forward, _worldUp).normalize();
+                _up.crossVectors(_right, _forward).normalize();
+                cachedForwardX = _forward.x; cachedForwardY = _forward.y; cachedForwardZ = _forward.z;
+                cachedRightX = _right.x; cachedRightY = _right.y; cachedRightZ = _right.z;
+                cachedUpX = _up.x; cachedUpY = _up.y; cachedUpZ = _up.z;
+            }
 
-            // Dynamic fog based on nearby lumber density
-            let nearbyCount = 0;
+            // Update running nearby count
             for (let i = 0; i < POOL_SIZE; i++) {
                 const ld = lumberData[i];
                 if (!ld.active) continue;
-                if (ld.zOffset > 0 && ld.zOffset < 30) {
-                    nearbyCount++;
+                const wasNearby = ld.zOffset > 0 && ld.zOffset < 30;
+                ld.zOffset -= ld.speed * dt;
+                const isNearby = ld.zOffset > 0 && ld.zOffset < 30;
+                if (wasNearby && !isNearby) nearbyCount--;
+                else if (!wasNearby && isNearby) nearbyCount++;
+
+                if (ld.zOffset < -PASS_DISTANCE) {
+                    ld.zOffset = SPAWN_DISTANCE + hr(i * 16 + 200 + ld.recycleCount) * 15;
+                    ld.xOffset = (hr(i * 16 + 201 + ld.recycleCount) - 0.5) * 2 * X_SPREAD;
+                    ld.yOffset = (hr(i * 16 + 202 + ld.recycleCount) - 0.5) * 2 * Y_SPREAD;
+                    ld.recycleCount++;
+                    if (ld.zOffset > 0 && ld.zOffset < 30) nearbyCount++;
                 }
             }
+            nearbyCount = Math.max(0, Math.min(POOL_SIZE, nearbyCount));
             const targetFogDensity = 0.008 + (nearbyCount / POOL_SIZE) * 0.015;
             threeScene.fog.density += (targetFogDensity - threeScene.fog.density) * 0.05;
 
@@ -458,35 +494,34 @@ export async function createLumberScene() {
             const camY = camera.position.y;
             const camZ = camera.position.z;
 
+            // Use cached basis vector components
+            const rX = cachedRightX, rY = cachedRightY, rZ = cachedRightZ;
+            const uX = cachedUpX, uY = cachedUpY, uZ = cachedUpZ;
+            const fX = cachedForwardX, fY = cachedForwardY, fZ = cachedForwardZ;
+
             for (let i = 0; i < POOL_SIZE; i++) {
                 const ld = lumberData[i];
                 if (!ld.active) continue;
 
-                ld.zOffset -= ld.speed * dt;
-
-                if (ld.zOffset < -PASS_DISTANCE) {
-                    ld.zOffset = SPAWN_DISTANCE + hr(i * 16 + 200 + ld.recycleCount) * 15;
-                    ld.xOffset = (hr(i * 16 + 201 + ld.recycleCount) - 0.5) * 2 * X_SPREAD;
-                    ld.yOffset = (hr(i * 16 + 202 + ld.recycleCount) - 0.5) * 2 * Y_SPREAD;
-                    ld.recycleCount++;
+                // Incremental quaternion rotation (skip Euler conversion)
+                {
+                    _tempQuat.setFromAxisAngle(_axisX, ld.rotSpeedX * dt);
+                    ld.quat.premultiply(_tempQuat);
+                    _tempQuat.setFromAxisAngle(_axisY, ld.rotSpeedY * dt);
+                    ld.quat.premultiply(_tempQuat);
+                    _tempQuat.setFromAxisAngle(_axisZ, ld.rotSpeedZ * dt);
+                    ld.quat.premultiply(_tempQuat);
                 }
 
-                ld.rotX += ld.rotSpeedX * dt;
-                ld.rotY += ld.rotSpeedY * dt;
-                ld.rotZ += ld.rotSpeedZ * dt;
-
-                _tempEuler.set(ld.rotX, ld.rotY, ld.rotZ);
-                _tempQuat.setFromEuler(_tempEuler);
                 _tempVec3.set(
-                    camX + _right.x * ld.xOffset + _forward.x * ld.zOffset,
-                    camY + _up.y * ld.yOffset + _forward.y * ld.zOffset,
-                    camZ + _right.z * ld.xOffset + _forward.z * ld.zOffset
+                    camX + rX * ld.xOffset + fX * ld.zOffset,
+                    camY + uY * ld.yOffset + fY * ld.zOffset,
+                    camZ + rZ * ld.xOffset + fZ * ld.zOffset
                 );
                 _tempScale.set(ld.scaleX, ld.scaleY, ld.scaleZ);
-                _tempMatrix.compose(_tempVec3, _tempQuat, _tempScale);
+                _tempMatrix.compose(_tempVec3, ld.quat, _tempScale);
                 lumberMesh.setMatrixAt(i, _tempMatrix);
 
-                // Track closest approach using squared distance (avoids sqrt)
                 if (ld.zOffset > -5 && ld.zOffset < 15) {
                     const distSq = ld.xOffset * ld.xOffset + ld.yOffset * ld.yOffset;
                     if (distSq < closestApproachSq) {
@@ -496,7 +531,7 @@ export async function createLumberScene() {
             }
             lumberMesh.instanceMatrix.needsUpdate = true;
 
-            // Camera shake on near miss (compare squared: 10*10=100)
+            // Camera shake on near miss
             if (closestApproachSq < 100 && shakeDuration <= 0) {
                 const closestApproach = Math.sqrt(closestApproachSq);
                 shakeIntensity = Math.max(0, (10 - closestApproach) * 0.05);
@@ -519,9 +554,9 @@ export async function createLumberScene() {
                 }
 
                 const off = i * 3;
-                emberPosArr[off] = camX + _right.x * ed.xOffset + _forward.x * ed.zOffset;
-                emberPosArr[off + 1] = camY + _up.y * ed.yOffset + _forward.y * ed.zOffset;
-                emberPosArr[off + 2] = camZ + _right.z * ed.xOffset + _forward.z * ed.zOffset;
+                emberPosArr[off] = camX + rX * ed.xOffset + fX * ed.zOffset;
+                emberPosArr[off + 1] = camY + uY * ed.yOffset + fY * ed.zOffset;
+                emberPosArr[off + 2] = camZ + rZ * ed.xOffset + fZ * ed.zOffset;
             }
             embers.geometry.attributes.position.needsUpdate = true;
 
@@ -542,9 +577,9 @@ export async function createLumberScene() {
                         const fade = 1 - sd.life / sd.maxLife;
                         const off = i * 3;
                         const sx = sd.spreadX * sd.trailOffset * 0.1;
-                        sdPosArr[off] = camX + _right.x * (parent.xOffset + sx) + _forward.x * trailZ;
-                        sdPosArr[off + 1] = camY + _up.y * (parent.yOffset + sd.spreadY * sd.trailOffset * 0.1) + _forward.y * trailZ;
-                        sdPosArr[off + 2] = camZ + _right.z * (parent.xOffset + sx) + _forward.z * trailZ;
+                        sdPosArr[off] = camX + rX * (parent.xOffset + sx) + fX * trailZ;
+                        sdPosArr[off + 1] = camY + uY * (parent.yOffset + sd.spreadY * sd.trailOffset * 0.1) + fY * trailZ;
+                        sdPosArr[off + 2] = camZ + rZ * (parent.xOffset + sx) + fZ * trailZ;
                         _tempColor.setHSL(0.07, 0.5, 0.3 * fade);
                         sawdustColors[off] = _tempColor.r;
                         sawdustColors[off + 1] = _tempColor.g;
@@ -568,7 +603,6 @@ export async function createLumberScene() {
             // Update tunnel wall planks
             plankMat.uniforms.uTime.value = effectiveTime;
 
-            // Reuse paramsChanged flag from lumber update above
             if (paramsChanged && activeParams) {
                 const colA = activeParams.colorA ? _tempColor.set(normalizeColor(activeParams.colorA)) : null;
                 const colB = activeParams.colorB ? _tempColor.set(normalizeColor(activeParams.colorB)) : null;
@@ -602,18 +636,17 @@ export async function createLumberScene() {
 
                 const sx = wpd.side * wallXOffset;
                 _tempMatrix.makeTranslation(
-                    camX + _right.x * sx + _forward.x * wpd.zOffset,
-                    camY + wpd.yLevel + _forward.y * wpd.zOffset * 0.1,
-                    camZ + _right.z * sx + _forward.z * wpd.zOffset
+                    camX + rX * sx + fX * wpd.zOffset,
+                    camY + wpd.yLevel + fY * wpd.zOffset * 0.1,
+                    camZ + rZ * sx + fZ * wpd.zOffset
                 );
                 wallPlankMesh.setMatrixAt(i, _tempMatrix);
             }
             wallPlankMesh.instanceMatrix.needsUpdate = true;
 
-            // Update debris
-            for (let i = 0; i < debrisPieces.length; i++) {
-                const mesh = debrisPieces[i];
-                const ud = mesh.userData;
+            // Update debris instanced mesh
+            for (let i = 0; i < DEBRIS_COUNT; i++) {
+                const ud = debrisData[i];
                 if (!ud.active) continue;
 
                 ud.zOffset -= ud.speed * dt;
@@ -624,14 +657,24 @@ export async function createLumberScene() {
                     ud.recycleCount++;
                 }
 
-                mesh.rotation.x += ud.rotSpeedX * dt;
-                mesh.rotation.y += ud.rotSpeedY * dt;
-                mesh.rotation.z += ud.rotSpeedZ * dt;
+                // Incremental quaternion rotation
+                _tempQuat.setFromAxisAngle(_axisX, ud.rotSpeedX * dt);
+                ud.quat.premultiply(_tempQuat);
+                _tempQuat.setFromAxisAngle(_axisY, ud.rotSpeedY * dt);
+                ud.quat.premultiply(_tempQuat);
+                _tempQuat.setFromAxisAngle(_axisZ, ud.rotSpeedZ * dt);
+                ud.quat.premultiply(_tempQuat);
 
-                mesh.position.x = camX + _right.x * ud.xOffset + _forward.x * ud.zOffset;
-                mesh.position.y = camY + ud.yOffset + _forward.y * ud.zOffset;
-                mesh.position.z = camZ + _right.z * ud.xOffset + _forward.z * ud.zOffset;
+                _tempVec3.set(
+                    camX + rX * ud.xOffset + fX * ud.zOffset,
+                    camY + ud.yOffset + fY * ud.zOffset,
+                    camZ + rZ * ud.xOffset + fZ * ud.zOffset
+                );
+                _tempScale.set(ud.scaleX, ud.scaleY, ud.scaleZ);
+                _tempMatrix.compose(_tempVec3, ud.quat, _tempScale);
+                debrisMesh.setMatrixAt(i, _tempMatrix);
             }
+            debrisMesh.instanceMatrix.needsUpdate = true;
         }
     };
 }

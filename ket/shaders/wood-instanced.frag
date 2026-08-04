@@ -69,32 +69,28 @@ vec3 noiseSeed(vec3 p, float t) {
 float woodGrain(vec2 uv, float time, vec3 shared) {
     float scale = 8.0;
     vec2 p = uv * scale;
-    // Reuse shared noise as base distortion (was 2 separate snoise calls)
     float n1 = shared.x * 2.0;
     float grain = snoise(vec3(p.x + n1 * 0.5, p.y * 2.0, time * 0.03));
     grain += 0.5 * snoise(vec3(p.x + n1 * 0.3, p.y * 4.0 + time * 0.02, 0.0));
-    grain += 0.25 * snoise(vec3(p.x, p.y * 8.0 - time * 0.04, 3.0));
     return grain;
 }
 
 float woodKnots(vec3 pos, float time, vec3 shared) {
     float knotScale = 0.15;
     vec3 kPos = pos * knotScale;
-    // Reuse shared noise instead of 2 independent snoise calls
     float k1 = snoise(vec3(kPos.x + shared.z, kPos.y*0.5, kPos.z + 10.0));
     float knots = smoothstep(0.3, 0.8, k1);
     float angle = atan(pos.z - 0.5, pos.x - 0.5);
-    float swirl = snoise(vec3(angle * 2.0 + time * 0.1, pos.y * 2.0, 0.0));
+    float swirl = sin(angle * 3.0 + time * 0.1) * 0.5 + 0.5;
     knots *= (0.7 + 0.3 * swirl);
     return knots;
 }
 
 float crackPattern(vec3 pos, float time, vec3 shared) {
-    // Reuse shared.x as base offset, drop 2 of 3 detail layers
     float crack = snoise(vec3(pos.xz * 0.8 + shared.x, time * 0.04 + 50.0));
     crack += 0.5 * snoise(vec3(pos.xz * 1.5 + shared.y + 10.0, time * 0.03));
     crack = smoothstep(0.4, 0.7, crack * 0.5 + 0.5);
-    float branch = snoise(vec3(pos.y * 2.0 + time * 0.02, pos.x * 0.5, 30.0));
+    float branch = sin(pos.y * 2.0 + time * 0.02) * 0.5 + 0.5;
     crack *= (0.6 + 0.4 * smoothstep(0.2, 0.6, branch * 0.5 + 0.5));
     return crack;
 }
@@ -123,8 +119,9 @@ void main() {
     float edgeFadeY = smoothstep(0.0, 0.05, vUv.y) * smoothstep(1.0, 0.95, vUv.y);
     float edge = edgeFade * edgeFadeY;
 
-    // End grain: drop to 1 snoise call (was 1, kept as-is)
-    vec3 endGrain = mix(darkColor, lightColor, 0.5 + 0.3 * snoise(vec3(vUv * 20.0, t * 0.01)));
+    // End grain: hash-based PRNG replaces snoise for cheaper computation
+    float endHash = fract(sin(dot(vUv, vec2(12.9898, 78.233))) * 43758.5453);
+    vec3 endGrain = mix(darkColor, lightColor, 0.5 + 0.3 * endHash);
     float endFactor = 1.0 - edge;
     woodBase = mix(woodBase, endGrain, endFactor * 0.5);
 

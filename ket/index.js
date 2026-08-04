@@ -133,9 +133,7 @@ async function bootstrap() {
         postProcessor.initEdgePass(),
         postProcessor.initPixelationPass(),
         postProcessor.initChromaticAberrationPass(),
-        postProcessor.initGrainPass(),
-        postProcessor.initScanlinePass(),
-        postProcessor.initVignettePass(),
+        postProcessor.initMergedEffectsPass(),
         postProcessor.initMeltPass()
     ]);
 

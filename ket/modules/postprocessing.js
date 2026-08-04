@@ -71,39 +71,25 @@ export class PostProcessor {
         this.composer.addPass(this.pixelationPass);
     }
 
-    async initGrainPass() {
-        if (this.grainPass) return;
+    async initMergedEffectsPass() {
+        if (this.mergedEffectsPass) return;
         const [vert, frag] = await Promise.all([
-            loadShader('./shaders/liminal-grain.vert'),
-            loadShader('./shaders/liminal-grain.frag')
+            loadShader('./shaders/merged-effects.vert'),
+            loadShader('./shaders/merged-effects.frag')
         ]);
-        this.grainPass = new ShaderPass({
+        this.mergedEffectsPass = new ShaderPass({
             uniforms: {
                 "tDiffuse": { value: null },
-                "uIntensity": { value: 0.04 },
-                "uTime": { value: 0 }
+                "uDarkness": { value: 0.7 },
+                "uGrainIntensity": { value: 0.04 },
+                "uTime": { value: 0 },
+                "uScanlineIntensity": { value: 0.03 },
+                "uResolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) }
             },
             vertexShader: vert,
             fragmentShader: frag
         });
-        this.composer.addPass(this.grainPass);
-    }
-
-    async initVignettePass() {
-        if (this.vignettePass) return;
-        const [vert, frag] = await Promise.all([
-            loadShader('./shaders/liminal-vignette.vert'),
-            loadShader('./shaders/liminal-vignette.frag')
-        ]);
-        this.vignettePass = new ShaderPass({
-            uniforms: {
-                "tDiffuse": { value: null },
-                "uDarkness": { value: 0.7 }
-            },
-            vertexShader: vert,
-            fragmentShader: frag
-        });
-        this.composer.addPass(this.vignettePass);
+        this.composer.addPass(this.mergedEffectsPass);
     }
 
     async initChromaticAberrationPass() {
@@ -121,24 +107,6 @@ export class PostProcessor {
             fragmentShader: frag
         });
         this.composer.addPass(this.chromaPass);
-    }
-
-    async initScanlinePass() {
-        if (this.scanlinePass) return;
-        const [vert, frag] = await Promise.all([
-            loadShader('./shaders/liminal-scanline.vert'),
-            loadShader('./shaders/liminal-scanline.frag')
-        ]);
-        this.scanlinePass = new ShaderPass({
-            uniforms: {
-                "tDiffuse": { value: null },
-                "uIntensity": { value: 0.03 },
-                "uResolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) }
-            },
-            vertexShader: vert,
-            fragmentShader: frag
-        });
-        this.composer.addPass(this.scanlinePass);
     }
 
     async initMeltPass() {
@@ -183,29 +151,25 @@ export class PostProcessor {
         this.bloomPass.radius = activeParams.bloomRadius;
         const ep = this._edgeU;
         if (ep) ep.edgeStrength.value = activeParams.edgeContrast;
-        const gp = this._grainU;
-        if (gp) {
-            gp.uTime.value = effectiveTime;
-            gp.uIntensity.value = 0.03 + activeParams.foldIntensity * 0.02;
+        const mu = this._mergedU;
+        if (mu) {
+            mu.uTime.value = effectiveTime;
+            mu.uGrainIntensity.value = 0.03 + activeParams.foldIntensity * 0.02;
+            const pulse = Math.sin(effectiveTime * 2.3) * 0.5 + 0.5;
+            mu.uScanlineIntensity.value = 0.02 + activeParams.foldIntensity * 0.015 * (0.5 + pulse * 0.5);
         }
         const cp = this._chromaU;
         if (cp) {
             const glitch = Math.sin(effectiveTime * 1.7) * 0.5 + Math.sin(effectiveTime * 3.3) * 0.3 + Math.sin(effectiveTime * 7.1) * 0.2;
             cp.uAmount.value = 0.002 + activeParams.foldIntensity * 0.003 * (0.5 + glitch * 0.5);
         }
-        const sp = this._scanlineU;
-        if (sp) {
-            const pulse = Math.sin(effectiveTime * 2.3) * 0.5 + 0.5;
-            sp.uIntensity.value = 0.02 + activeParams.foldIntensity * 0.015 * (0.5 + pulse * 0.5);
-        }
     }
 
     _cacheUniforms() {
         if (this.edgePass) this._edgeU = this.edgePass.uniforms;
         if (this.pixelationPass) this._pixelationU = this.pixelationPass.uniforms;
-        if (this.grainPass) this._grainU = this.grainPass.uniforms;
+        if (this.mergedEffectsPass) this._mergedU = this.mergedEffectsPass.uniforms;
         if (this.chromaPass) this._chromaU = this.chromaPass.uniforms;
-        if (this.scanlinePass) this._scanlineU = this.scanlinePass.uniforms;
         if (this.meltPass) this._meltU = this.meltPass.uniforms;
     }
 
@@ -230,10 +194,10 @@ export class PostProcessor {
         if (eu) eu.resolution.value.set(halfW, halfH);
         const pu = this._pixelationU;
         if (pu) pu.uResolution.value.set(halfW, halfH);
-        const su = this._scanlineU;
-        if (su) su.uResolution.value.set(halfW, halfH);
-        const mu = this._meltU;
+        const mu = this._mergedU;
         if (mu) mu.uResolution.value.set(halfW, halfH);
+        const mtu = this._meltU;
+        if (mtu) mtu.uResolution.value.set(halfW, halfH);
     }
 
     captureSnapshot() {
