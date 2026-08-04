@@ -5,7 +5,6 @@ const SEGMENT_COUNT = 150;
 const SEGMENT_DEPTH = 5;
 const CORRIDOR_WIDTH = 3.5;
 const CEILING_HEIGHT = 2.8;
-const FOG_DENSITY = 0.035;
 const LIGHT_INTERVAL = 2;
 const CAMERA_HEIGHT = 1.6;
 const BASE_FOV = 68;
@@ -14,7 +13,9 @@ const FOV_CYCLE = 35;
 const LIGHT_ACTIVE_RADIUS = 35;
 const LIGHT_ACTIVE_RADIUS_SQ = LIGHT_ACTIVE_RADIUS * LIGHT_ACTIVE_RADIUS;
 const EXIT_ACTIVE_RADIUS_SQ = (LIGHT_ACTIVE_RADIUS * 1.5) * (LIGHT_ACTIVE_RADIUS * 1.5);
-const LIGHT_POOL_SIZE = 6;
+const LIGHT_CHECK_RANGE = Math.ceil(LIGHT_ACTIVE_RADIUS / SEGMENT_DEPTH) + 1;
+const EXIT_CHECK_RANGE = Math.ceil(LIGHT_ACTIVE_RADIUS * 1.5 / SEGMENT_DEPTH) + 2;
+const LIGHT_POOL_SIZE = 4;
 const OPACITY_EPSILON = 0.03;
 const MIN_DURATION = 2;
 const MAX_DURATION = 20;
@@ -207,15 +208,14 @@ function sampleCurveCache(cache, t) {
     const frac = f - i;
     const a = cache[Math.min(i, SEGMENT_COUNT)];
     const b = cache[Math.min(i + 1, SEGMENT_COUNT)];
-    const pos = _p3.clone();
-    pos.x = a.pos.x + (b.pos.x - a.pos.x) * frac;
-    pos.y = a.pos.y + (b.pos.y - a.pos.y) * frac;
-    pos.z = a.pos.z + (b.pos.z - a.pos.z) * frac;
-    const tangent = pos.clone().sub(a.pos).normalize();
+    _p3.x = a.pos.x + (b.pos.x - a.pos.x) * frac;
+    _p3.y = a.pos.y + (b.pos.y - a.pos.y) * frac;
+    _p3.z = a.pos.z + (b.pos.z - a.pos.z) * frac;
+    const tangent = _p3.clone().sub(a.pos).normalize();
     if (tangent.lengthSq() < 0.0001) {
         tangent.copy(a.tangent);
     }
-    return { pos, tangent };
+    return { pos: _p3.clone(), tangent };
 }
 
 function setInstanceMatrix(instancedMesh, index, position, quaternion, offset, scale) {
@@ -230,7 +230,8 @@ function setInstanceMatrix(instancedMesh, index, position, quaternion, offset, s
 export async function createLiminalScene() {
     const threeScene = new THREE.Scene();
     threeScene.background = new THREE.Color(0x080808);
-    threeScene.fog = new THREE.FogExp2(0x1a1816, FOG_DENSITY);
+    const fogFar = SEGMENT_COUNT * SEGMENT_DEPTH * 0.15;
+    threeScene.fog = new THREE.Fog(0x1a1816, 2, fogFar);
 
     const curve = buildCurve();
     const curveCache = buildCurveCache(curve);
@@ -242,21 +243,21 @@ export async function createLiminalScene() {
 
     const wallTextures = [];
     const wallRng = mulberry32(999);
-    for (let i = 0; i < 6; i++) {
-        wallTextures.push(createWallTexture(20 + i * 8, 0.6 + wallRng() * 0.8));
+    for (let i = 0; i < 3; i++) {
+        wallTextures.push(createWallTexture(20 + i * 10, 0.6 + wallRng() * 0.8));
     }
 
-    const floorMat = new THREE.MeshStandardMaterial({
-        map: floorTex, roughness: 0.7, metalness: 0.02,
+    const floorMat = new THREE.MeshPhongMaterial({
+        map: floorTex,
     });
-    const ceilingMat = new THREE.MeshStandardMaterial({
-        map: ceilingTex, roughness: 0.9, metalness: 0.0,
+    const ceilingMat = new THREE.MeshPhongMaterial({
+        map: ceilingTex,
     });
-    const wallMats = wallTextures.map(tex => new THREE.MeshStandardMaterial({
-        map: tex, roughness: 0.85, metalness: 0.0,
+    const wallMats = wallTextures.map(tex => new THREE.MeshPhongMaterial({
+        map: tex,
     }));
-    const solidWallMat = new THREE.MeshStandardMaterial({
-        color: 0x9a9590, roughness: 0.95, metalness: 0.0,
+    const solidWallMat = new THREE.MeshPhongMaterial({
+        color: 0x9a9590,
     });
 
     const corridorGroup = new THREE.Group();
@@ -384,15 +385,10 @@ export async function createLiminalScene() {
             sign.rotation.y = side * Math.PI / 2;
             threeScene.add(sign);
 
-            const signLight = new THREE.PointLight(0xff2000, 0, 8, 2.0);
-            signLight.position.copy(sign.position);
-            threeScene.add(signLight);
-
             exitData.push({
-                sign, signMat, signLight, segIdx: i,
+                sign, signMat, segIdx: i,
                 wx: pos.x, wy: pos.y, wz: pos.z,
                 _prevOpacity: 0,
-                _prevIntensity: 0,
             });
         }
     }
@@ -445,10 +441,38 @@ export async function createLiminalScene() {
         onEnter() {
         },
 
-        onExit() {
-            for (const pl of this.lightPool) pl.intensity = 0;
-            for (const ed of this.exitData) ed.signLight.intensity = 0;
-        },
+    onExit() {
+        for (const pl of this.lightPool) pl.intensity = 0;
+        for (const ld of this.lightData) {
+            ld.fixtureMat.dispose();
+            ld.fixture.geometry.dispose();
+            ld.fixture.parent.remove(ld.fixture);
+        }
+        for (const ed of this.exitData) {
+            ed.signMat.dispose();
+            ed.sign.geometry.dispose();
+            ed.sign.parent.remove(ed.sign);
+        }
+        corridorGroup.clear();
+        cameraLight.parent.remove(cameraLight);
+        cameraFillLight.parent.remove(cameraFillLight);
+        for (const pl of this.lightPool) pl.parent.remove(pl);
+        dimAmbient.parent.remove(dimAmbient);
+        floorTex.dispose();
+        ceilingTex.dispose();
+        flLightTex.dispose();
+        exitSignTex.dispose();
+        wallTextures.forEach((t) => t.dispose());
+        floorMat.dispose();
+        ceilingMat.dispose();
+        wallMats.forEach((m) => m.dispose());
+        solidWallMat.dispose();
+        wallGeoLeft.dispose();
+        wallGeoRight.dispose();
+        ceilingGeo.dispose();
+        floorGeo.dispose();
+        endWallGeo.dispose();
+    },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
             const speed = (activeParams && activeParams.speed !== undefined ? activeParams.speed : 1.5) * 0.0015;
@@ -473,11 +497,9 @@ export async function createLiminalScene() {
             const lFrac = lT - lI;
             const la = curveCache[Math.min(lI, SEGMENT_COUNT)];
             const lb = curveCache[Math.min(lI + 1, SEGMENT_COUNT)];
-            _lookTarget.set(
-                la.pos.x + (lb.pos.x - la.pos.x) * lFrac,
-                la.pos.y + (lb.pos.y - la.pos.y) * lFrac + CAMERA_HEIGHT * 0.7,
-                la.pos.z + (lb.pos.z - la.pos.z) * lFrac
-            );
+            _lookTarget.x = la.pos.x + (lb.pos.x - la.pos.x) * lFrac;
+            _lookTarget.y = la.pos.y + (lb.pos.y - la.pos.y) * lFrac + CAMERA_HEIGHT * 0.7;
+            _lookTarget.z = la.pos.z + (lb.pos.z - la.pos.z) * lFrac;
 
             const swayX = Math.sin(effectiveTime * 0.7) * 0.2;
             const swayY = Math.sin(effectiveTime * 0.5) * 0.1;
@@ -490,8 +512,11 @@ export async function createLiminalScene() {
             );
 
             const fovOsc = Math.sin(effectiveTime / FOV_CYCLE * Math.PI * 2) * FOV_SWING;
-            camera.fov = BASE_FOV + fovOsc;
-            camera.updateProjectionMatrix();
+            const newFov = BASE_FOV + fovOsc;
+            if (Math.abs(camera.fov - newFov) > 0.15) {
+                camera.fov = newFov;
+                camera.updateProjectionMatrix();
+            }
 
             cameraLight.position.x = camera.position.x;
             cameraLight.position.y = camera.position.y + 0.5;
@@ -510,6 +535,8 @@ export async function createLiminalScene() {
             const cx = camera.position.x;
             const cy = camera.position.y;
             const cz = camera.position.z;
+            const camSegIdx = tI;
+            const invLightRadius = 1 / LIGHT_ACTIVE_RADIUS;
 
             const activeIndices = this._activeIndices;
             const activeDistSq = this._activeDistSq;
@@ -520,6 +547,16 @@ export async function createLiminalScene() {
 
             for (let i = 0; i < lightData.length; i++) {
                 const ld = lightData[i];
+                if (Math.abs(ld.segIdx - camSegIdx) > LIGHT_CHECK_RANGE) {
+                    if (ld.fixture.visible) {
+                        ld.fixture.visible = false;
+                        if (Math.abs(ld._prevOpacity) > OPACITY_EPSILON) {
+                            ld.fixtureMat.opacity = 0;
+                            ld._prevOpacity = 0;
+                        }
+                    }
+                    continue;
+                }
                 const dx = ld.wx - cx;
                 const dy = ld.wy - cy;
                 const dz = ld.wz - cz;
@@ -527,14 +564,10 @@ export async function createLiminalScene() {
 
                 if (distSq < LIGHT_ACTIVE_RADIUS_SQ) {
                     const dist = Math.sqrt(distSq);
-                    const proximity = 1.0 - (dist / LIGHT_ACTIVE_RADIUS);
+                    const proximity = 1.0 - dist * invLightRadius;
                     const baseIntensity = 6 * proximity;
-                    const flickerFast = Math.sin(effectiveTime * ld.freq + ld.phase) * 0.2;
-                    const flickerSlow = Math.sin(effectiveTime * 0.37 + ld.phase * 2.3) * 0.15;
-                    const randomDrop = ld.flickerChance > 0.8
-                        ? (Math.sin(effectiveTime * 11.3 + ld.segIdx * 7) > 0.92 ? -0.5 : 0)
-                        : 0;
-                    const intensity = Math.max(0.2, baseIntensity + flickerFast + flickerSlow + randomDrop);
+                    const flicker = Math.sin(effectiveTime * ld.freq + ld.phase) * 0.25;
+                    const intensity = Math.max(0.2, baseIntensity + flicker);
                     ld._intensity = intensity;
                     const targetOpacity = Math.min(1, 0.4 + intensity / 6 * 0.7);
 
@@ -579,22 +612,28 @@ export async function createLiminalScene() {
                 }
             }
 
+            const exitCheckRange = EXIT_CHECK_RANGE;
             for (let i = 0; i < exitData.length; i++) {
                 const ed = exitData[i];
+                if (Math.abs(ed.segIdx - camSegIdx) > exitCheckRange) {
+                    if (ed.sign.visible) {
+                        ed.sign.visible = false;
+                        if (Math.abs(ed._prevOpacity) > OPACITY_EPSILON) {
+                            ed.signMat.opacity = 0;
+                            ed._prevOpacity = 0;
+                        }
+                    }
+                    continue;
+                }
                 const dx = ed.wx - cx;
                 const dy = ed.wy - cy;
                 const dz = ed.wz - cz;
                 if (dx * dx + dy * dy + dz * dz < EXIT_ACTIVE_RADIUS_SQ) {
                     const pulse = Math.sin(effectiveTime * 1.2 + ed.segIdx) * 0.15 + 0.85;
                     const targetOpacity = pulse;
-                    const targetIntensity = 1.5 * pulse;
                     if (Math.abs(targetOpacity - ed._prevOpacity) > OPACITY_EPSILON) {
                         ed.signMat.opacity = targetOpacity;
                         ed._prevOpacity = targetOpacity;
-                    }
-                    if (Math.abs(targetIntensity - ed._prevIntensity) > OPACITY_EPSILON) {
-                        ed.signLight.intensity = targetIntensity;
-                        ed._prevIntensity = targetIntensity;
                     }
                     ed.sign.visible = true;
                 } else {
@@ -602,10 +641,6 @@ export async function createLiminalScene() {
                     if (Math.abs(ed._prevOpacity) > OPACITY_EPSILON) {
                         ed.signMat.opacity = 0;
                         ed._prevOpacity = 0;
-                    }
-                    if (ed._prevIntensity > OPACITY_EPSILON) {
-                        ed.signLight.intensity = 0;
-                        ed._prevIntensity = 0;
                     }
                 }
             }
