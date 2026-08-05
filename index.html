@@ -112,6 +112,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             animation: heroPulse 4s ease-in-out infinite alternate;
+            z-index: -1;
         }
 
         @keyframes heroPulse {
@@ -175,7 +176,7 @@
             color: var(--dim);
             letter-spacing: 0.6em;
             text-transform: uppercase;
-            animation: breathe 3s ease-in-out infinite;
+            /* animation: breathe 3s ease-in-out infinite; */
             text-align: center;
             user-select: none;
         }
@@ -193,15 +194,13 @@
         }
 
         .hero-scroll {
-            position: absolute;
-            bottom: 2rem;
-            font-size: 0.7rem;
+            font-size: 1rem;
             color: var(--dim);
             letter-spacing: 0.3em;
-            animation: breathe 2s ease-in-out infinite;
+            /* animation: breathe 2s ease-in-out infinite; */
         }
 
-        .hero-scroll::after {
+        .hero-scroll::before {
             content: '';
             display: block;
             width: 1px;
@@ -309,16 +308,92 @@
             text-transform: uppercase;
         }
 
+        /* ── CAROUSEL ── */
+        .carousel-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .carousel-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 1.2rem;
+            color: var(--cyan);
+            background: transparent;
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s, border-color 0.3s;
+        }
+
+        .carousel-btn:hover {
+            background: rgba(0, 204, 255, 0.08);
+            border-color: var(--cyan);
+            box-shadow: 0 0 16px rgba(0, 204, 255, 0.2);
+        }
+
+        .carousel-btn:active {
+            transform: scale(0.95);
+        }
+
+        .carousel-indicators {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s, transform 0.3s;
+            padding: 0;
+        }
+
+        .carousel-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+            transform: scale(1.3);
+        }
+
+        .carousel-viewport {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: transform;
+        }
+
         .scene-card {
             position: relative;
-            margin-bottom: 6rem;
+            flex: 0 0 100%;
+            max-width: 100%;
             padding: 2rem;
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 2px;
             background: rgba(255, 255, 255, 0.015);
             backdrop-filter: blur(2px);
-            transition: border-color 0.4s, box-shadow 0.4s;
+            transition: border-color 0.4s, box-shadow 0.4s, opacity 0.4s;
             overflow: hidden;
+            opacity: 0.35;
+            transform: scale(0.95);
+        }
+
+        .scene-card.active {
+            opacity: 1;
+            transform: scale(1);
         }
 
         .scene-card::before {
@@ -339,26 +414,18 @@
 
         .scene-card:nth-child(1) {
             --accent: var(--pink);
-            transform: rotate(-0.5deg);
         }
 
         .scene-card:nth-child(2) {
             --accent: var(--cyan);
-            transform: rotate(0.8deg);
         }
 
         .scene-card:nth-child(3) {
             --accent: var(--green);
-            transform: rotate(-0.3deg);
         }
 
         .scene-card:nth-child(4) {
             --accent: var(--purple);
-            transform: rotate(0.6deg);
-        }
-
-        .scene-card:hover {
-            transform: rotate(0deg) scale(1.005);
         }
 
         .scene-number {
@@ -398,7 +465,7 @@
         .scene-tech-label {
             font-size: 0.6rem;
             letter-spacing: 0.4em;
-            color: var(--dim);
+            color: var(--purple);
             text-transform: uppercase;
             margin-bottom: 0.4rem;
         }
@@ -418,7 +485,7 @@
         .scene-narrative-label {
             font-size: 0.6rem;
             letter-spacing: 0.4em;
-            color: var(--dim);
+            color: var(--green);
             text-transform: uppercase;
             margin-bottom: 0.4rem;
         }
@@ -917,24 +984,62 @@
             text-decoration: none;
             transition: color 0.2s;
             font-weight: bold;
-            font-size: 3em;
+            font-size: 1.5em;
             text-align: center;
+        }
+
+        h2 {
+            margin-top: 2rem;
+        }
+
+        p {
+            margin-top: 1rem;
         }
     </style>
 </head>
 
 <body>
     <div class="grain"></div>
-
     <!-- HERO -->
     <section class="hero">
         <h1 class="hero-title">KETAMINE<br>DREAMS</h1>
         <p class="hero-sub">An immersive psychedelic experience</p>
-        <span class="hero-scroll">SCROLL</span>
+        <span class="hero-scroll">SCROLL to learn more</span>
+        <p> or </p>
+        <p style="text-align: center; margin: 1rem;">
+            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH EXPERIENCE</a>
+        </p>
+
     </section>
 
     <!-- OVERVIEW -->
     <section class="overview">
+        <h2>From the Author</h2>
+        <p>
+            Ketamine Dreams is what it's like to be locked inside of a ketamine trip without the need for any
+            adulterents. With the help of a computer,
+            some simple maths and the include song by Ellie Goulding, you can experience a dreamlike state that is
+            terrifyingly beautiful.
+        </p>
+        <p>
+            Like many psychedelics, it's hard to describe the experience of other worlds experienced when one enters a
+            "K-hole." This project is an attempt to capture the essence of that
+            experience in a way that is accessible to anyone with a web browser. If you've got this link directly, you
+            might know who I am. If you have a sense of what I can do to make this experience more pure to the
+            substance,
+            share your experiences with me. I want to tease out the essence of the experience and make it more
+            accessible to those who are curious about the substance.
+
+        </p>
+        <p>
+            There are 4 scenes showcasing different degress of freedom and confinement. Ketamine being an anestetic, the
+            experience is often not driven by oneself but sorta floating on a rail. I've felt trapped in a small cubby
+            space that appears to be a train luggage storage to being blasted off to outer space with experiencing the
+            cosmos with full intention. The main nexus scene is sort of a 4th dimensional experience that has been
+            common in every trip. I hope you find some interest in the art and display of what might be a new take on
+            the drug ketamine.
+
+        </p>
         <h2>System Overview</h2>
         <p>
             Ketamine Dreams is a real-time, browser-based <em>immersive environment</em>
@@ -945,14 +1050,21 @@
             post-processing pipeline that includes bloom, edge detection, chromatic
             aberration, scanlines, and melt transitions.
         </p>
+        <p>
+            Included is a simple UI to make subtle changes to the experience. By default the process is deterministic,
+            meaning that the same seed will produce the same experience for all users. It takes the current day and
+            shows the same scene on the same timer so each device you connect should experience things in a similar
+            vein. The movement is still unique to each user, but the environment is shared. This will allow for multiple
+            users to join the same instance and spam emoji at at the screen. This could be useful for a shared
+            interactive hallucination that could be the visuals for a venue or background for a DJ show.
+        </p>
     </section>
     <section style="text-align: center; margin: 2rem 0;">
         <p>
-            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH FULL EXPERIENCE</a>
+            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH EXPERIENCE</a>
+        </p>
         <p>
             Continue scrolling to find out more.
-        </p>
-
         </p>
     </section>
 
@@ -971,130 +1083,167 @@
             <h2>Scene Registry</h2>
         </div>
 
-        <div class="scene-card" data-scene="nexus">
-            <span class="scene-number">01</span>
-            <h3 class="scene-title">THE NEXUS</h3>
-            <div class="scene-id">// nexus</div>
-            <div class="scene-tech">
-                <div class="scene-tech-label">Technical Description</div>
-                <p>
-                    Procedural cityscape constructed from instanced wall primitives with
-                    dynamic material assignment. Features a heart-spawning system layered
-                    atop the geometry grid, with bloom-driven emissive channels and
-                    edge-contrast post-processing. Wall materials shift hue based on the
-                    daily seed, creating a unique palette each rotation cycle.
-                </p>
-            </div>
-            <div class="scene-narrative">
-                <div class="scene-narrative-label">Personal Narrative</div>
-                <p>
-                    The first corridor I ever walked felt like stepping through a membrane.
-                    Walls rose from the floor like grown things, not built. The light had
-                    weight to it. I remember thinking: this is what a dream engine looks
-                    like from the inside.
-                </p>
-            </div>
-            <button class="scene-enter" onclick="openScene('nexus')">
-                <span>Enter Nexus</span>
-                <span class="arrow">&#8594;</span>
-            </button>
+        <div class="carousel-controls" id="carouselControlsTop">
+            <button class="carousel-btn" id="carouselPrevTop" aria-label="Previous scene">&#9664;</button>
+            <div class="carousel-indicators" id="carouselIndicatorsTop"></div>
+            <button class="carousel-btn" id="carouselNextTop" aria-label="Next scene">&#9654;</button>
         </div>
 
-        <div class="scene-card" data-scene="space">
-            <span class="scene-number">02</span>
-            <h3 class="scene-title">SPARSE SPACE</h3>
-            <div class="scene-id">// space</div>
-            <div class="scene-tech">
-                <div class="scene-tech-label">Technical Description</div>
-                <p>
-                    Minimalist volumetric field with sparse geometric primitives distributed
-                    across a wide coordinate space. Relies heavily on the post-processing
-                    pipeline for visual density — chromatic aberration and scanline passes
-                    create texture where geometry is absent. Camera velocity is uncapped,
-                    encouraging high-speed traversal.
-                </p>
+        <div class="carousel-viewport" id="carouselViewport">
+            <div class="carousel-track" id="carouselTrack">
+
+                <div class="scene-card active" data-scene="nexus">
+                    <span class="scene-number">01</span>
+                    <h3 class="scene-title">THE NEXUS</h3>
+                    <div class="scene-id">// nexus</div>
+                    <div class="scene-narrative">
+                        <div class="scene-narrative-label">Personal Narrative</div>
+                        <p>
+                            This is how many interludes to the unfolding scenes of my ketamine experience feels like.
+                            It's an
+                            eerie dissolution of ego and with a sense of familiarity, maybe akin to the Christopher
+                            Nolan film
+                            Interstellar.
+                            The walls are infinite and the floor is infinite, yet the space feels confined. Images and
+                            patterns
+                            attract attention but the eeriness does not go unnoticed.
+                        </p>
+                    </div>
+                    <div class="scene-tech">
+                        <div class="scene-tech-label">Technical Description</div>
+                        <p>
+                            Procedural cityscape constructed from instanced wall primitives with
+                            dynamic material assignment using GLSL shaders to morph the static geometry.
+                            Features a heart-spawning system layered
+                            atop the geometry grid, with bloom-driven emissive channels and
+                            edge-contrast post-processing. Wall materials shift hue based on the
+                            daily seed, creating a unique palette each rotation cycle.
+                        </p>
+                    </div>
+
+                    <button class="scene-enter" onclick="openScene('nexus')">
+                        <span>Enter Nexus</span>
+                        <span class="arrow">&#8594;</span>
+                    </button>
+                </div>
+
+                <div class="scene-card" data-scene="space">
+                    <span class="scene-number">02</span>
+                    <h3 class="scene-title">SPARSE SPACE</h3>
+                    <div class="scene-id">// space</div>
+                    <div class="scene-narrative">
+                        <div class="scene-narrative-label">Personal Narrative</div>
+                        <p>
+                            At the height of ego death there is a sense of being in a void. The automatic behaviours of
+                            being a
+                            human is left behind and there is a sense of one with the universe. These types of trip
+                            scenes are
+                            often
+                            accompanied by a sense of awe and wonder, as if one is witnessing the birth of a new world.
+                            It feels
+                            very inhuman but also calming as being one with the universe at it's core is who all of us
+                            are.
+                        </p>
+                    </div>
+                    <div class="scene-tech">
+                        <div class="scene-tech-label">Technical Description</div>
+                        <p>
+                            Minimalist volumetric field with sparse geometric primitives distributed
+                            across a wide coordinate space. Relies heavily on the post-processing
+                            pipeline for visual density — chromatic aberration and scanline passes
+                            create texture where geometry is absent. Camera velocity is uncapped,
+                            encouraging high-speed traversal.
+                        </p>
+                    </div>
+                    <button class="scene-enter" onclick="openScene('space')">
+                        <span>Enter Space</span>
+                        <span class="arrow">&#8594;</span>
+                    </button>
+                </div>
+
+                <div class="scene-card" data-scene="lumber">
+                    <span class="scene-number">03</span>
+                    <h3 class="scene-title">LUMBER</h3>
+                    <div class="scene-id">// lumber</div>
+                    <div class="scene-narrative">
+                        <div class="scene-narrative-label">Personal Narrative</div>
+                        <p>
+                            Sometimes the experience is a bit more intense and the things we see do not make sense
+                            anymore.
+                            Our world around us can sometimes be chaotic and a k-hole can manifest this in different
+                            ways. The
+                            lumber scene shows we don't always have full control, and even moving a bit causes the chaos
+                            to
+                            increase.
+                        </p>
+                    </div>
+                    <div class="scene-tech">
+                        <div class="scene-tech-label">Technical Description</div>
+                        <p>
+                            Dense forest-like arrangement of columnar geometry with bark-textured
+                            materials. The scene uses a custom shader for organic surface variation,
+                            with fold-intensity parameters controlling the degree of geometric
+                            warping. Vein-speed uniforms drive a secondary displacement map that
+                            creates a breathing effect across vertical surfaces.
+                        </p>
+                    </div>
+                    <button class="scene-enter" onclick="openScene('lumber')">
+                        <span>Enter Lumber</span>
+                        <span class="arrow">&#8594;</span>
+                    </button>
+                </div>
+
+                <div class="scene-card" data-scene="liminal">
+                    <span class="scene-number">04</span>
+                    <h3 class="scene-title">LIMINAL</h3>
+                    <div class="scene-id">// liminal</div>
+                    <div class="scene-narrative">
+                        <div class="scene-narrative-label">Personal Narrative</div>
+                        <p>
+                            Welcome to the cube, it's a small space that feels familiar but also strange. The ketamine
+                            is at
+                            full effect and movement is greatly contained. The scene seems to offer some respite from
+                            the other
+                            choatic scenes, but the eerie sense of being confined and not knowing what's beyond the next
+                            wall is
+                            ever present. The cube is a place of reflection and introspection, where the mind wanders if
+                            this is
+                            what reality is like.
+                        </p>
+                    </div>
+                    <div class="scene-tech">
+                        <div class="scene-tech-label">Technical Description</div>
+                        <p>
+                            Transitional space defined by low-frequency geometry and muted color
+                            channels. The scene overrides the normal bloom radius and reduces
+                            edge contrast to produce a soft, indistinct visual field. Transition
+                            melt effects are most pronounced here, as the scene is designed to
+                            blur the boundary between dream states.
+                        </p>
+                    </div>
+                    <button class="scene-enter" onclick="openScene('liminal')">
+                        <span>Enter Liminal</span>
+                        <span class="arrow">&#8594;</span>
+                    </button>
+                </div>
+
             </div>
-            <div class="scene-narrative">
-                <div class="scene-narrative-label">Personal Narrative</div>
-                <p>
-                    There is a quality to emptiness when it is rendered in real time. The
-                    few shapes that appear feel intentional, placed by something watching.
-                    I moved faster here than any other place. Speed became the only thing
-                    that felt real.
-                </p>
-            </div>
-            <button class="scene-enter" onclick="openScene('space')">
-                <span>Enter Space</span>
-                <span class="arrow">&#8594;</span>
-            </button>
         </div>
 
-        <div class="scene-card" data-scene="lumber">
-            <span class="scene-number">03</span>
-            <h3 class="scene-title">LUMBER</h3>
-            <div class="scene-id">// lumber</div>
-            <div class="scene-tech">
-                <div class="scene-tech-label">Technical Description</div>
-                <p>
-                    Dense forest-like arrangement of columnar geometry with bark-textured
-                    materials. The scene uses a custom shader for organic surface variation,
-                    with fold-intensity parameters controlling the degree of geometric
-                    warping. Vein-speed uniforms drive a secondary displacement map that
-                    creates a breathing effect across vertical surfaces.
-                </p>
-            </div>
-            <div class="scene-narrative">
-                <div class="scene-narrative-label">Personal Narrative</div>
-                <p>
-                    The trees here are not trees. They are columns of compressed memory,
-                    each one a record of something that almost happened. The air moves
-                    through them like a slow exhalation. I stood still for what felt like
-                    hours and the light changed color once.
-                </p>
-            </div>
-            <button class="scene-enter" onclick="openScene('lumber')">
-                <span>Enter Lumber</span>
-                <span class="arrow">&#8594;</span>
-            </button>
-        </div>
-
-        <div class="scene-card" data-scene="liminal">
-            <span class="scene-number">04</span>
-            <h3 class="scene-title">LIMINAL</h3>
-            <div class="scene-id">// liminal</div>
-            <div class="scene-tech">
-                <div class="scene-tech-label">Technical Description</div>
-                <p>
-                    Transitional space defined by low-frequency geometry and muted color
-                    channels. The scene overrides the normal bloom radius and reduces
-                    edge contrast to produce a soft, indistinct visual field. Transition
-                    melt effects are most pronounced here, as the scene is designed to
-                    blur the boundary between dream states.
-                </p>
-            </div>
-            <div class="scene-narrative">
-                <div class="scene-narrative-label">Personal Narrative</div>
-                <p>
-                    This is the space between. Not a place you arrive at, but a place you
-                    pass through without noticing. The walls are close enough to touch but
-                    never quite there. I have woken up here more times than I care to
-                    count.
-                </p>
-            </div>
-            <button class="scene-enter" onclick="openScene('liminal')">
-                <span>Enter Liminal</span>
-                <span class="arrow">&#8594;</span>
-            </button>
+        <div class="carousel-controls" id="carouselControlsBottom">
+            <button class="carousel-btn" id="carouselPrevBottom" aria-label="Previous scene">&#9664;</button>
+            <div class="carousel-indicators" id="carouselIndicatorsBottom"></div>
+            <button class="carousel-btn" id="carouselNextBottom" aria-label="Next scene">&#9654;</button>
         </div>
     </section>
 
     <!-- FOOTER -->
     <footer class="footer">
         <p>
-            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH FULL EXPERIENCE</a>
+            <a class="full-experience-link" href="https://sauceynchill.vip/ket">LAUNCH EXPERIENCE</a>
         </p>
         <p style="margin-top: 0.8rem;">v 0.0.1</p>
-        <button class="timeline-trigger" onclick="openTimeline()" style="margin-top: 1.5rem;">
+        <button class="timeline-trigger" onclick="openTimeline()" style="margin-top: 1.5rem; display:none;">
             <span>Commit History</span>
             <span>&#8595;</span>
         </button>
@@ -1287,6 +1436,114 @@
             div.textContent = str;
             return div.innerHTML;
         }
+
+        // ── CAROUSEL ──
+        (function () {
+            const track = document.getElementById('carouselTrack');
+            const viewport = document.getElementById('carouselViewport');
+            const cards = track.querySelectorAll('.scene-card');
+            const total = cards.length;
+            let current = 0;
+            let isTransitioning = false;
+
+            const indicatorsTop = document.getElementById('carouselIndicatorsTop');
+            const indicatorsBottom = document.getElementById('carouselIndicatorsBottom');
+
+            for (let i = 0; i < total; i++) {
+                const dotT = document.createElement('button');
+                dotT.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+                dotT.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+                dotT.addEventListener('click', function () { goTo(i); });
+                indicatorsTop.appendChild(dotT);
+
+                const dotB = document.createElement('button');
+                dotB.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+                dotB.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+                dotB.addEventListener('click', function () { goTo(i); });
+                indicatorsBottom.appendChild(dotB);
+            }
+
+            function updateIndicators() {
+                [indicatorsTop, indicatorsBottom].forEach(function (container) {
+                    container.querySelectorAll('.carousel-dot').forEach(function (dot, idx) {
+                        dot.classList.toggle('active', idx === current);
+                    });
+                });
+            }
+
+            function updateCards() {
+                cards.forEach(function (card, idx) {
+                    card.classList.toggle('active', idx === current);
+                });
+            }
+
+            function goTo(index) {
+                if (isTransitioning || index === current) return;
+                isTransitioning = true;
+                current = ((index % total) + total) % total;
+                track.style.transform = 'translateX(-' + (current * 100) + '%)';
+                updateIndicators();
+                updateCards();
+                setTimeout(function () {
+                    isTransitioning = false;
+                }, 500);
+            }
+
+            function next() { goTo(current + 1); }
+            function prev() { goTo(current - 1); }
+
+            document.getElementById('carouselNextTop').addEventListener('click', next);
+            document.getElementById('carouselPrevTop').addEventListener('click', prev);
+            document.getElementById('carouselNextBottom').addEventListener('click', next);
+            document.getElementById('carouselPrevBottom').addEventListener('click', prev);
+
+            // Touch swipe support
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchDeltaX = 0;
+            let isDragging = false;
+            const threshold = 50;
+
+            viewport.addEventListener('touchstart', function (e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchDeltaX = 0;
+                isDragging = true;
+                track.style.transition = 'none';
+            }, { passive: true });
+
+            viewport.addEventListener('touchmove', function (e) {
+                if (!isDragging) return;
+                touchDeltaX = e.touches[0].clientX - touchStartX;
+                const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+                if (Math.abs(touchDeltaX) > deltaY) {
+                    const offset = -(current * viewport.offsetWidth) + touchDeltaX;
+                    track.style.transform = 'translateX(' + offset + 'px)';
+                }
+            }, { passive: true });
+
+            viewport.addEventListener('touchend', function () {
+                if (!isDragging) return;
+                isDragging = false;
+                track.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                if (Math.abs(touchDeltaX) > threshold) {
+                    if (touchDeltaX < 0) {
+                        next();
+                    } else {
+                        prev();
+                    }
+                } else {
+                    track.style.transform = 'translateX(-' + (current * 100) + '%)';
+                }
+            }, { passive: true });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function (e) {
+                if (modal.classList.contains('active') || timelineModal.classList.contains('active')) return;
+                if (e.key === 'ArrowLeft') prev();
+                if (e.key === 'ArrowRight') next();
+            });
+        })();
     </script>
 </body>
 
