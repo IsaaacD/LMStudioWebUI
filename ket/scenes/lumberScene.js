@@ -293,7 +293,7 @@ export async function createLumberScene() {
                 // Pre-rotate as if piece had been tumbling for a random duration,
                 // so initial orientations are as varied as pieces that have cycled through onUpdate
                 const preTime = hr(i * 16 + 30) * 20;
-                ld.quat.setFromEuler(0, 0, 0);
+                ld.quat.setFromEuler(new THREE.Euler(0, 0, 0));
                 {
                     _tempQuat.setFromAxisAngle(_axisX, ld.rotSpeedX * preTime);
                     ld.quat.premultiply(_tempQuat);
@@ -310,7 +310,7 @@ export async function createLumberScene() {
                 ud.active = true;
                 ud.zOffset = frontEdge + (i / DEBRIS_COUNT) * depthRange + (hr(DEBRIS_COUNT * 10 + 500 + i) - 0.5) * 2;
                 const dPreTime = hr(DEBRIS_COUNT * 10 + 700 + i) * 20;
-                ud.quat.setFromEuler(0, 0, 0);
+                ud.quat.setFromEuler(new THREE.Euler(0, 0, 0));
                 {
                     _tempQuat.setFromAxisAngle(_axisX, ud.rotSpeedX * dPreTime);
                     ud.quat.premultiply(_tempQuat);

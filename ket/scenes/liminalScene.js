@@ -441,38 +441,38 @@ export async function createLiminalScene() {
         onEnter() {
         },
 
-    onExit() {
-        for (const pl of this.lightPool) pl.intensity = 0;
-        for (const ld of this.lightData) {
-            ld.fixtureMat.dispose();
-            ld.fixture.geometry.dispose();
-            if (ld.fixture.parent) ld.fixture.parent.remove(ld.fixture);
-        }
-        for (const ed of this.exitData) {
-            ed.signMat.dispose();
-            ed.sign.geometry.dispose();
-            if (ed.sign.parent) ed.sign.parent.remove(ed.sign);
-        }
-        corridorGroup.clear();
-        if (cameraLight.parent) cameraLight.parent.remove(cameraLight);
-        if (cameraFillLight.parent) cameraFillLight.parent.remove(cameraFillLight);
-        for (const pl of this.lightPool) { if (pl.parent) pl.parent.remove(pl); }
-        if (dimAmbient.parent) dimAmbient.parent.remove(dimAmbient);
-        floorTex.dispose();
-        ceilingTex.dispose();
-        flLightTex.dispose();
-        exitSignTex.dispose();
-        wallTextures.forEach((t) => t.dispose());
-        floorMat.dispose();
-        ceilingMat.dispose();
-        wallMats.forEach((m) => m.dispose());
-        solidWallMat.dispose();
-        wallGeoLeft.dispose();
-        wallGeoRight.dispose();
-        ceilingGeo.dispose();
-        floorGeo.dispose();
-        endWallGeo.dispose();
-    },
+        onExit() {
+            // for (const pl of this.lightPool) pl.intensity = 0;
+            // for (const ld of this.lightData) {
+            //     ld.fixtureMat.dispose();
+            //     ld.fixture.geometry.dispose();
+            //     if (ld.fixture.parent) ld.fixture.parent.remove(ld.fixture);
+            // }
+            // for (const ed of this.exitData) {
+            //     ed.signMat.dispose();
+            //     ed.sign.geometry.dispose();
+            //     if (ed.sign.parent) ed.sign.parent.remove(ed.sign);
+            // }
+            // corridorGroup.clear();
+            // if (cameraLight.parent) cameraLight.parent.remove(cameraLight);
+            // if (cameraFillLight.parent) cameraFillLight.parent.remove(cameraFillLight);
+            // for (const pl of this.lightPool) { if (pl.parent) pl.parent.remove(pl); }
+            // if (dimAmbient.parent) dimAmbient.parent.remove(dimAmbient);
+            // floorTex.dispose();
+            // ceilingTex.dispose();
+            // flLightTex.dispose();
+            // exitSignTex.dispose();
+            // wallTextures.forEach((t) => t.dispose());
+            // floorMat.dispose();
+            // ceilingMat.dispose();
+            // wallMats.forEach((m) => m.dispose());
+            // solidWallMat.dispose();
+            // wallGeoLeft.dispose();
+            // wallGeoRight.dispose();
+            // ceilingGeo.dispose();
+            // floorGeo.dispose();
+            // endWallGeo.dispose();
+        },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
             const speed = (activeParams && activeParams.speed !== undefined ? activeParams.speed : 1.5) * 0.0015;
