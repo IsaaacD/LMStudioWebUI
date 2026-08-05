@@ -254,7 +254,21 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     const raveBtnResult = createToggleButton(params.raveMode ? 'Rave: ON' : 'Rave: OFF', params.raveMode, () => {
         params.toggleRaveMode();
     }, 'Toggle rave mode — auto-randomizes visual parameters (works in any control mode)', tooltipEl);
-    settingsFolder.body.appendChild(raveBtnResult.element);
+    //settingsFolder.body.appendChild(raveBtnResult.element);
+
+    // --- Fullscreen button ---
+    const fullscreenBtnResult = createButton('Fullscreen', () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }, 'Toggle fullscreen mode', tooltipEl);
+    settingsFolder.body.appendChild(fullscreenBtnResult.element);
+
+    document.addEventListener('fullscreenchange', () => {
+        fullscreenBtnResult.btn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    });
 
     guiControllers.updateRaveToggle = () => {
         raveBtnResult.btn.textContent = params.raveMode ? 'Rave: ON' : 'Rave: OFF';
