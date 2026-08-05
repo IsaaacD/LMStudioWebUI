@@ -446,18 +446,18 @@ export async function createLiminalScene() {
         for (const ld of this.lightData) {
             ld.fixtureMat.dispose();
             ld.fixture.geometry.dispose();
-            ld.fixture.parent.remove(ld.fixture);
+            if (ld.fixture.parent) ld.fixture.parent.remove(ld.fixture);
         }
         for (const ed of this.exitData) {
             ed.signMat.dispose();
             ed.sign.geometry.dispose();
-            ed.sign.parent.remove(ed.sign);
+            if (ed.sign.parent) ed.sign.parent.remove(ed.sign);
         }
         corridorGroup.clear();
-        cameraLight.parent.remove(cameraLight);
-        cameraFillLight.parent.remove(cameraFillLight);
-        for (const pl of this.lightPool) pl.parent.remove(pl);
-        dimAmbient.parent.remove(dimAmbient);
+        if (cameraLight.parent) cameraLight.parent.remove(cameraLight);
+        if (cameraFillLight.parent) cameraFillLight.parent.remove(cameraFillLight);
+        for (const pl of this.lightPool) { if (pl.parent) pl.parent.remove(pl); }
+        if (dimAmbient.parent) dimAmbient.parent.remove(dimAmbient);
         floorTex.dispose();
         ceilingTex.dispose();
         flLightTex.dispose();
