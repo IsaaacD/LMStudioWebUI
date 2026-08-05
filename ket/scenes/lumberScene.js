@@ -337,12 +337,13 @@ export async function createLumberScene() {
         onExit() { },
 
         onUpdate(camera, effectiveTime, dt, activeParams) {
-            threeScene.background = _bgColor;
             if (activeParams && activeParams.colorB) {
                 _fogColorTemp.set(normalizeColor(activeParams.colorB));
                 threeScene.fog.color.copy(_fogColorTemp);
+                threeScene.background.copy(_fogColorTemp);
             } else {
                 threeScene.fog.color.set('#1a0a00');
+                threeScene.background.set('#1a0a00');
             }
 
             const h1 = (effectiveTime * 0.08) % 1;
