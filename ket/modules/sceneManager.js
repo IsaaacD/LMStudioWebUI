@@ -29,10 +29,11 @@ export class SceneManager {
         let t = anchor;
         const end = anchor + 86400000;
         const active = this.getActiveScene();
+        //console.log(active.minDuration, active.maxDuration);
         const minDur = active?.minDuration ?? MIN_DURATION;
         const maxDur = active?.maxDuration ?? MAX_DURATION;
         while (t < end) {
-            t += deriveDuration(t, minDur, maxDur, this.hashSeed) * 1000;
+            t += deriveDuration(t, minDur, maxDur) * 1000;
             this.switchTimes.push(t);
         }
     }
@@ -89,7 +90,7 @@ export class SceneManager {
         if (this.scenes.size === 1) {
             this.timer.maxDuration =
                 this.durationOverrides.get(definition.id) ??
-                deriveDuration(todayAnchor(), definition.minDuration, definition.maxDuration, this.hashSeed);
+                deriveDuration(todayAnchor(), definition.minDuration, definition.maxDuration);
         }
     }
 
@@ -103,9 +104,10 @@ export class SceneManager {
         if (candidates.length === 0) return null;
         const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
         let r = hashNumber(seed, this.hashSeed) * totalWeight;
+        let cumulative = 0;
         for (const c of candidates) {
-            r -= c.weight;
-            if (r <= 0) return c.id;
+            cumulative += c.weight;
+            if (r < cumulative) return c.id;
         }
         return candidates[candidates.length - 1].id;
     }
@@ -113,7 +115,9 @@ export class SceneManager {
     getActiveScene() {
         //const activeId = this.scenes.values().next().value;
         const activeId = this.rotation[this.activeIndex];
-        return this.scenes.get(activeId);
+        const activescene = this.scenes.get(activeId);
+        console.log("Active Scene:", activescene);
+        return activescene;
     }
 
     _applyDuration(next) {

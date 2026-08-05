@@ -646,10 +646,12 @@ export async function createLiminalScene() {
             }
 
             const fogWarm = Math.sin(effectiveTime * 0.04) * 0.5 + 0.5;
-            if (fogWarm > 0.55) {
-                threeScene.fog.color.lerp(_tempColor.set(0x1e1a16), 0.008);
+            if (fogWarm > 0.55 && activeParams && activeParams.colorA) {
+                threeScene.fog.color.lerp(_tempColor.set(normalizeColor(activeParams.colorA)), 0.008);
+            } else if (activeParams && activeParams.colorB) {
+                threeScene.fog.color.lerp(_tempColor.set(normalizeColor(activeParams.colorB)), 0.008);
             } else {
-                threeScene.fog.color.lerp(_tempColor.set(0x141618), 0.008);
+                console.log("No activeParams or colors provided for fog color lerp.");
             }
             threeScene.background.copy(threeScene.fog.color);
         }
