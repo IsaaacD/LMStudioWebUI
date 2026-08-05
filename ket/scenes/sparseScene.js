@@ -24,7 +24,7 @@ const _dummy = new THREE.Object3D();
 export async function createSparseScreen() {
     const threeScene = new THREE.Scene();
     threeScene.background = new THREE.Color(0x020208);
-    threeScene.fog = new THREE.FogExp2(0x020208, 0.002);
+    threeScene.fog = new THREE.FogExp2(0x020208, 0.0005);
 
     // Starfield
     const starGeo = new THREE.BufferGeometry();
@@ -67,14 +67,14 @@ export async function createSparseScreen() {
         transparent: true,
         opacity: 0.8,
         sizeAttenuation: false,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
         depthWrite: false,
     });
     const starfield = new THREE.Points(starGeo, starMat);
     threeScene.add(starfield);
 
     // Sun
-    const sunLight = new THREE.DirectionalLight(0xaaccff, 0.6);
+    const sunLight = new THREE.DirectionalLight(0xaaccff, 0.3);
     sunLight.position.set(100, 80, -200);
     threeScene.add(sunLight);
 
@@ -94,7 +94,7 @@ export async function createSparseScreen() {
     const sunSpriteMat = new THREE.SpriteMaterial({
         map: sunTexture,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.3,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
     });
@@ -131,8 +131,8 @@ export async function createSparseScreen() {
     const dimSpriteMat = new THREE.SpriteMaterial({
         map: dimTexture,
         transparent: true,
-        opacity: 0.3,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.15,
+        blending: THREE.NormalBlending,
         depthWrite: false,
     });
     const dimSprite = new THREE.Sprite(dimSpriteMat);
@@ -151,11 +151,11 @@ export async function createSparseScreen() {
     // Shared material for ALL floaters — glowing glass spheres
     const floaterMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        emissive: 0xffffff,
-        emissiveIntensity: 3,
+        emissive: 0x000000,
+        emissiveIntensity: 2,
         transparent: true,
-        opacity: 0.85,
-        depthWrite: false,
+        opacity: 0.9,
+        depthWrite: true,
         blending: THREE.AdditiveBlending,
     });
 
@@ -238,7 +238,7 @@ export async function createSparseScreen() {
         vertexShader: trailVert,
         fragmentShader: trailFrag,
         transparent: true,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
         depthWrite: false,
     });
     const trailPoints = new THREE.Points(trailGeo, trailMat);
@@ -270,7 +270,7 @@ export async function createSparseScreen() {
             void main() {
                 float d = length(gl_PointCoord - vec2(0.5));
                 if (d > 0.5) discard;
-                gl_FragColor = vec4(vColor, 0.2);
+                gl_FragColor = vec4(vColor, 0.5);
             }
         `,
         transparent: true,
@@ -298,7 +298,8 @@ export async function createSparseScreen() {
             transparent: true,
             side: THREE.DoubleSide,
             depthWrite: false,
-            blending: THREE.AdditiveBlending,
+            blending: THREE.NormalBlending,
+            depthWrite: false,
         });
         const width = 60 + Math.random() * 40;
         const height = 15 + Math.random() * 10;
@@ -359,8 +360,8 @@ export async function createSparseScreen() {
         color: 0x8888ff,
         size: 0.3,
         transparent: true,
-        opacity: 0.4,
-        blending: THREE.AdditiveBlending,
+        opacity: 0.3,
+        blending: THREE.NormalBlending,
         depthWrite: false,
         sizeAttenuation: true,
     });
@@ -379,8 +380,9 @@ export async function createSparseScreen() {
         const ringMat = new THREE.MeshBasicMaterial({
             color: new THREE.Color().setHSL(Math.random(), 0.9, 0.6),
             transparent: true,
-            opacity: 0.5,
+            opacity: 0.9,
             blending: THREE.AdditiveBlending,
+            depthWrite: false,
         });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.position.set(
@@ -407,15 +409,15 @@ export async function createSparseScreen() {
     }
 
     // Lighting
-    const light1 = new THREE.PointLight(0xff0055, 3, 200);
+    const light1 = new THREE.PointLight(0xff0055, 1.5, 200);
     light1.position.set(0, 10, 0);
     threeScene.add(light1);
 
-    const light2 = new THREE.PointLight(0x00ccff, 3, 200);
+    const light2 = new THREE.PointLight(0x00ccff, 1.5, 200);
     light2.position.set(0, -10, 0);
     threeScene.add(light2);
 
-    const ambientLight = new THREE.AmbientLight(0x222222);
+    const ambientLight = new THREE.AmbientLight(0x111111);
     threeScene.add(ambientLight);
 
     // Supernova
@@ -442,7 +444,7 @@ export async function createSparseScreen() {
         const m = new THREE.MeshBasicMaterial({
             color: col,
             transparent: true,
-            opacity: 0.25 - i * 0.03,
+            opacity: 0.15 - i * 0.02,
             side: THREE.BackSide,
             fog: false,
         });
@@ -491,7 +493,7 @@ export async function createSparseScreen() {
         color: 0xff8844,
         size: 3,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.4,
         sizeAttenuation: false,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
@@ -571,8 +573,9 @@ export async function createSparseScreen() {
             }
             threeScene.background = _tempColor2;
             const fogColor = activeParams && activeParams.colorB ? normalizeColor(activeParams.colorB) : '#020208';
-            threeScene.fog.color.set(fogColor);
-            threeScene.fog.near = 200;
+            _tempColor2.set(fogColor);
+            _tempColor2.lerp(new THREE.Color(0x020208), 0.7);
+            threeScene.fog.color.copy(_tempColor2);
 
             // Starfield twinkle
             const starSizeArr = starGeo.attributes.size.array;
@@ -593,7 +596,7 @@ export async function createSparseScreen() {
             sunSprite.position.copy(sunLight.position);
             sunCore.position.copy(sunLight.position);
             const sunPulse = Math.sin(effectiveTime * 0.4) * 0.5 + 0.5;
-            sunSpriteMat.opacity = 0.4 + sunPulse * 0.3;
+            sunSpriteMat.opacity = 0.2 + sunPulse * 0.15;
             sunSprite.scale.setScalar(70 + sunPulse * 20);
             sunCore.scale.setScalar(0.8 + sunPulse * 0.4);
             dimLight.position.set(
@@ -622,20 +625,20 @@ export async function createSparseScreen() {
             const intensity = (pulse * 0.6 + 0.4 + jitter) * buildUp;
 
             core.scale.setScalar(0.8 + intensity * 0.8);
-            coreMat.opacity = 0.7 + intensity * 0.3;
-            coreMat.color.setHSL(0.06 + pulse * 0.04, 1, 0.5 + intensity * 0.5);
+            coreMat.opacity = 0.5 + intensity * 0.3;
+            coreMat.color.setHSL(0.06 + pulse * 0.04, 1, 0.4 + intensity * 0.4);
 
             glowLayers.forEach((layer, i) => {
                 const s = 1 + Math.sin(t * (2 + i) + h(10 + i) * Math.PI * 2) * 0.3 * intensity;
                 layer.scale.setScalar(s);
-                layer.material.opacity = (0.2 + intensity * 0.25) * (1 - i * 0.15);
+                layer.material.opacity = (0.1 + intensity * 0.15) * (1 - i * 0.15);
             });
 
             rings.forEach((ring, i) => {
                 const p = (Math.sin(t * 1.5 + h(20 + i) * Math.PI * 2) * 0.5 + 0.5);
                 ring.scale.setScalar(1 + p * 2);
-                ring.material.opacity = (1 - p) * 0.9 * buildUp;
-                ring.material.color.setHSL(0.08 - p * 0.05, 1, 0.5 + p * 0.3);
+                ring.material.opacity = (1 - p) * 0.5 * buildUp;
+                ring.material.color.setHSL(0.08 - p * 0.05, 1, 0.4 + p * 0.2);
             });
 
             const posArr = particles.geometry.attributes.position.array;
@@ -648,10 +651,10 @@ export async function createSparseScreen() {
                 posArr[i * 3 + 2] = Math.cos(pd.phi) * dist;
             }
             particles.geometry.attributes.position.needsUpdate = true;
-            particleMat.opacity = 0.7 * buildUp;
+            particleMat.opacity = 0.5 * buildUp;
             particleMat.color.setHSL(0.07 + pulse * 0.03, 1, 0.5 + intensity * 0.5);
 
-            supernovaLight.intensity = intensity * 15 * buildUp;
+            supernovaLight.intensity = intensity * 10 * buildUp;
             supernovaLight.color.setHSL(0.06 + pulse * 0.04, 1, 0.5);
             supernovaGroup.position.x = camera.position.x;
             supernovaGroup.position.y = camera.position.y - 8;
@@ -738,7 +741,7 @@ export async function createSparseScreen() {
                         tPosArr[ti * 3] = hp.x;
                         tPosArr[ti * 3 + 1] = hp.y;
                         tPosArr[ti * 3 + 2] = hp.z;
-                        tOpArr[ti] = 0.15 * (1 - j / TRAIL_COUNT_PER_FLOATER);
+                        tOpArr[ti] = 0.35 * (1 - j / TRAIL_COUNT_PER_FLOATER);
                     } else {
                         tOpArr[ti] = 0;
                     }
@@ -829,7 +832,7 @@ export async function createSparseScreen() {
                 }
             }
             rainParticles.geometry.attributes.position.needsUpdate = true;
-            rainMat.color.setHSL(h1 + 0.3, 0.6, 0.5 + synapsePulse * 0.02);
+            rainMat.color.setHSL(h1 + 0.3, 0.6, 0.3 + synapsePulse * 0.02);
 
             // Floating rings
             floatingRings.forEach((ring) => {
@@ -848,11 +851,11 @@ export async function createSparseScreen() {
                 ring.rotation.z = ud.rz;
 
                 const ringPulse = Math.sin(effectiveTime * 1.5 + ud.pulsePhase) * 0.5 + 0.5;
-                ring.material.opacity = 0.2 + ringPulse * 0.5;
+                ring.material.opacity = 0.2 + ringPulse * 0.3;
                 ring.material.color.setHSL(
                     (h1 + ringPulse * 0.2) % 1,
                     0.9,
-                    0.4 + ringPulse * 0.3
+                    0.3 + ringPulse * 0.2
                 );
                 ring.scale.setScalar(0.8 + ringPulse * 0.4);
             });

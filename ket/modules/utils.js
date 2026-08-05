@@ -61,7 +61,7 @@ export const FEATURES = {
 
 /* ── Deterministic hash PRNG (MurmurHash3 finalizer + IMUL mix) ── */
 /* prefer this to Math.random() for deterministic behavior across sessions */
-export function hashNumber(n, seed = 42) {
+export function hashNumber(n, seed = _seed) {
     let h = (n + 0x9e3779b9) | 0;
     h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) | 0;
     h = Math.imul(h ^ (h >>> 13), 0x45d9f3b) | 0;
@@ -73,15 +73,15 @@ export function todayAnchor() {
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
-export function deriveDuration(n, minDur, maxDur, seed = 42) {
+export function deriveDuration(n, minDur, maxDur, seed = _seed) {
     return hashRange(n, minDur, maxDur, seed);
 }
 
-export function minMaxRange(min, max, seed = 42) {
+export function minMaxRange(min, max, seed = _seed) {
     return deriveDuration(todayAnchor(), min, max, seed);
 }
 
-export function hashRange(n, min, max, seed = 42) {
+export function hashRange(n, min, max, seed = _seed) {
     return min + hashNumber(n, seed) * (max - min);
 }
 

@@ -11,7 +11,7 @@ void main() {
     // Vignette
     vec2 uv = vUv * (1.0 - vUv);
     float vig = uv.x * uv.y * 15.0;
-    vig = pow(vig, uDarkness * 0.3);
+    vig = pow(vig, uDarkness * 0.5);
     color.rgb *= vig;
 
     // Grain

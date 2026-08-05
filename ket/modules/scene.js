@@ -26,6 +26,9 @@ export function initScene() {
     camera.position.z = 5;
 
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    //renderer.toneMappingExposure = 0.5;
+    //renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setSize(innerWidth, innerHeight);
     //setPixelRatio(localStorage.getItem('fidelity') || (isMobile ? 'low' : 'high'));
     document.body.appendChild(renderer.domElement);
