@@ -467,6 +467,7 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
         }
     };
 
+    container.addEventListener('dblclick', (e) => e.preventDefault());
     container.appendChild(tab);
     container.appendChild(content);
     document.body.appendChild(container);

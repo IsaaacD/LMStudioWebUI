@@ -136,6 +136,7 @@
     overflow: hidden;
     transition: max-height 0.35s ease, max-width 0.35s ease;
     max-height: 40px;
+    touch-action: manipulation;
 }
 
 /* ── Debug Panel Container ── */
