@@ -273,7 +273,8 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
             }
         }
     }, 'Toggle fullscreen mode', tooltipEl);
-    settingsFolder.body.appendChild(fullscreenBtnResult.element);
+    if (!isIOS)
+        settingsFolder.body.appendChild(fullscreenBtnResult.element);
 
     const updateFullscreenBtn = () => {
         const isFS = document.fullscreenElement || document.webkitFullscreenElement;
