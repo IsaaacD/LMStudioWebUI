@@ -3,13 +3,6 @@ import Stats from 'three/addons/libs/stats.module.js';
 import { initTouchControls } from './modules/touchControls.js';
 import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
 import { FEATURES, setGlobalSeed, getGlobalSeed } from './modules/utils.js';
-
-// Seed from URL param `?seed=123` so all clients stay in sync
-const urlSeed = new URLSearchParams(window.location.search).get('seed');
-if (urlSeed !== null) {
-    setGlobalSeed(parseInt(urlSeed, 10));
-    console.log('[seed] Math.random seeded with', getGlobalSeed());
-}
 import { initScene, getCamera, getRenderer, getClock, onResize, getViewportSize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
 import { createHeartMaterial, HeartSpawner } from './modules/heartSpawner.js';
@@ -28,8 +21,18 @@ import { createCityScene } from './scenes/cityScene.js';
 import { createSparseScreen } from './scenes/sparseScene.js';
 import { createLumberScene } from './scenes/lumberScene.js'
 import { createLiminalScene } from './scenes/liminalScene.js'
-
+import { overrideMathRandomWithSeed } from './modules/utils.js';
 import { loadAllAssets, setProgressCallback } from './modules/loader.js';
+
+
+// Seed from URL param `?seed=123` so all clients stay in sync
+const urlSeed = new URLSearchParams(window.location.search).get('seed');
+if (urlSeed !== null) {
+    setGlobalSeed(parseInt(urlSeed, 10));
+    console.log('[seed] Math.random seeded with', getGlobalSeed());
+    overrideMathRandomWithSeed()
+}
+overrideMathRandomWithSeed();
 
 let postProcessor = null;
 let animationLoop = null;

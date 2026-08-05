@@ -58,14 +58,15 @@ export const FEATURES = {
     webrtc: true,
     onlineMode: new URLSearchParams(window.location.search).has('online')
 };
-
+/* ── Seeded PRNG (mulberry32) ── */
+let _seed = 42;
 /* ── Deterministic hash PRNG (MurmurHash3 finalizer + IMUL mix) ── */
 /* prefer this to Math.random() for deterministic behavior across sessions */
-export function hashNumber(n, seed = _seed) {
+export function hashNumber(n) {
     let h = (n + 0x9e3779b9) | 0;
     h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) | 0;
     h = Math.imul(h ^ (h >>> 13), 0x45d9f3b) | 0;
-    h = Math.imul(h ^ (h >>> (seed & 0x1f)), 0x45d9f3b) | 0;
+    h = Math.imul(h ^ (h >>> (_seed & 0x1f)), 0x45d9f3b) | 0;
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 export function todayAnchor() {
@@ -73,20 +74,19 @@ export function todayAnchor() {
     return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
-export function deriveDuration(n, minDur, maxDur, seed = _seed) {
-    return hashRange(n, minDur, maxDur, seed);
+export function deriveDuration(n, minDur, maxDur) {
+    return hashRange(n, minDur, maxDur);
 }
 
-export function minMaxRange(min, max, seed = _seed) {
-    return deriveDuration(todayAnchor(), min, max, seed);
+export function minMaxRange(min, max) {
+    return deriveDuration(todayAnchor(), min, max);
 }
 
-export function hashRange(n, min, max, seed = _seed) {
-    return min + hashNumber(n, seed) * (max - min);
+export function hashRange(n, min, max) {
+    return min + hashNumber(n) * (max - min);
 }
 
-/* ── Seeded PRNG (mulberry32) ── */
-let _seed = 42;
+
 
 export function setGlobalSeed(value) {
     _seed = value | 0;
@@ -105,16 +105,15 @@ function mulberry32(a) {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
 }
-
-const _seededRandom = mulberry32(_seed);
-
-export function seededRandom() {
-    return _seededRandom();
+export function overrideMathRandomWithSeed() {
+    //setGlobalSeed(seed);
+    const seededRandom = mulberry32(getGlobalSeed());
+    Math.random = seededRandom;
 }
 
 // Monkey-patch Math.random with our seeded PRNG
 const _originalRandom = Math.random;
-Math.random = _seededRandom;
+
 
 export function restoreOriginalRandom() {
     Math.random = _originalRandom;

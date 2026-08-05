@@ -5,8 +5,9 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { loadShader } from './utils.js';
 import { defaultParams } from './config.js';
-
+let gActiveParams = defaultParams;
 export class PostProcessor {
+
     constructor(renderer, scene, camera) {
         this.renderer = renderer;
         this.composer = new EffectComposer(renderer);
@@ -120,8 +121,8 @@ export class PostProcessor {
                 "uFrozenTexture": { value: null },
                 "uMeltProgress": { value: 0 },
                 "uRevealBlend": { value: 0 },
-                "uColorA": { value: new THREE.Color(defaultParams.colorA) },
-                "uColorB": { value: new THREE.Color(defaultParams.colorB) },
+                "uColorA": { value: new THREE.Color(gActiveParams.colorA) },
+                "uColorB": { value: new THREE.Color(gActiveParams.colorB) },
                 "uTime": { value: 0 },
                 "uResolution": { value: new THREE.Vector2(innerWidth / 2, innerHeight / 2) }
             },
@@ -147,6 +148,7 @@ export class PostProcessor {
     }
 
     update(activeParams, effectiveTime) {
+        gActiveParams = activeParams;
         this.bloomPass.strength = activeParams.bloomStrength;
         this.bloomPass.radius = activeParams.bloomRadius;
         const ep = this._edgeU;
