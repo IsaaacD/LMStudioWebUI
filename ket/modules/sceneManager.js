@@ -116,7 +116,7 @@ export class SceneManager {
         //const activeId = this.scenes.values().next().value;
         const activeId = this.rotation[this.activeIndex];
         const activescene = this.scenes.get(activeId);
-        console.log("Active Scene:", activescene);
+        //console.log("Active Scene:", activescene);
         return activescene;
     }
 
