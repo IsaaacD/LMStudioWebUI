@@ -257,18 +257,30 @@ export function initGUI(params, guiControllers, sceneManager, raveEngine) {
     //settingsFolder.body.appendChild(raveBtnResult.element);
 
     // --- Fullscreen button ---
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const fullscreenBtnResult = createButton('Fullscreen', () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
+        if (isIOS) {
+            if (document.webkitFullscreenElement) {
+                document.webkitExitFullscreen();
+            } else {
+                document.documentElement.webkitRequestFullscreen();
+            }
         } else {
-            document.exitFullscreen();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
         }
     }, 'Toggle fullscreen mode', tooltipEl);
     settingsFolder.body.appendChild(fullscreenBtnResult.element);
 
-    document.addEventListener('fullscreenchange', () => {
-        fullscreenBtnResult.btn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
-    });
+    const updateFullscreenBtn = () => {
+        const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+        fullscreenBtnResult.btn.textContent = isFS ? 'Exit Fullscreen' : 'Fullscreen';
+    };
+    document.addEventListener('fullscreenchange', updateFullscreenBtn);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
 
     guiControllers.updateRaveToggle = () => {
         raveBtnResult.btn.textContent = params.raveMode ? 'Rave: ON' : 'Rave: OFF';
