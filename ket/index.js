@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import Stats from 'three/addons/libs/stats.module.js';
 import { initTouchControls } from './modules/touchControls.js';
-import { defaultParams, randomizeParams, updateStatusText } from './modules/config.js';
+import { getDefaultParams, randomizeParams, updateStatusText } from './modules/config.js';
 import { FEATURES, setGlobalSeed, getGlobalSeed } from './modules/utils.js';
 import { initScene, getCamera, getRenderer, getClock, onResize, getViewportSize } from './modules/scene.js';
 import { createCityMaterial, createWallMaterial, createPrimitiveMaterial } from './modules/materials.js';
@@ -144,7 +144,7 @@ async function bootstrap() {
 
     const transitionEffect = new TransitionMelt();
 
-    params = { ...defaultParams };
+    params = { ...getDefaultParams() };
     if (isDirectSceneLoad && sceneManager.scenes.has(urlSceneId)) {
         params.autoplay = true;
         params.controlMode = 'Auto';
