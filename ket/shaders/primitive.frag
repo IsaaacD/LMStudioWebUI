@@ -2,6 +2,7 @@ uniform float uTime;
 uniform vec3 uColor1;
 uniform vec3 uColor2;
 uniform float uAlpha;
+uniform vec3 uFogColor;
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 vWorldPosition;
@@ -28,7 +29,7 @@ void main() {
     float edge = smoothstep(0.0, 0.3, vDisplacement + 1.0) * smoothstep(1.0, 0.3, vDisplacement + 1.0);
     baseColor += edge * uColor2 * 0.3;
 
-    vec3 fogged = mix(baseColor, vec3(0.05, 0.0, 0.1), fogFactor);
+    vec3 fogged = mix(baseColor, uFogColor, fogFactor);
 
     gl_FragColor = vec4(fogged, uAlpha);
 }

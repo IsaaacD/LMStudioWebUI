@@ -11,7 +11,7 @@ const WEIGHT = 3;
 export async function createCityScene(cityMaterial, wallMaterial, primitiveMaterial, heartMaterial) {
     const threeScene = new THREE.Scene();
     threeScene.background = new THREE.Color(0x050011);
-    threeScene.fog = new THREE.FogExp2(0x050011, 0.0003);
+    threeScene.fog = new THREE.FogExp2(0x050011, 0.003);
 
     const TILE_SIZE = 200;
     const TILE_HEIGHT = 25;
@@ -51,6 +51,12 @@ export async function createCityScene(cityMaterial, wallMaterial, primitiveMater
             wallMaterial.uniforms.uColor1.value.copy(_tempColor);
             _tempColor.set(normalizeColor(activeParams.colorB, 'cityScene:52'));
             wallMaterial.uniforms.uColor2.value.copy(_tempColor);
+
+            cityMaterial.uniforms.uFogColor.value.copy(_tempColor);
+            _tempColor.set(normalizeColor(activeParams.colorA, 'cityScene:42'));
+
+            wallMaterial.uniforms.uFogColor.value.copy(_tempColor);
+            primitiveManager.sharedMaterial.uniforms.uFogColor.value.copy(_tempColor);
 
             tileManager.update(camera);
             primitiveManager.update(camera, effectiveTime, dt, activeParams.colorA, activeParams.colorB);

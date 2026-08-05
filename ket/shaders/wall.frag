@@ -2,6 +2,7 @@ uniform float uTime;
 uniform vec3 uColor1;
 uniform vec3 uColor2;
 uniform vec3 uColor3;
+uniform vec3 uFogColor;
 varying float vElevation;
 varying vec2 vUv;
 varying vec3 vWorldPosition;
@@ -40,7 +41,7 @@ void main() {
 
     float dist = length(vWorldPosition.xz - cameraPosition.xz);
     float fogFactor = smoothstep(0.0, 80.0, dist);
-    finalColor = mix(finalColor, vec3(0.05, 0.0, 0.1), fogFactor);
+    finalColor = mix(finalColor, uFogColor, fogFactor);
 
     gl_FragColor = vec4(finalColor, 0.55);
 }

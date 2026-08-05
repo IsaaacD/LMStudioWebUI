@@ -8,6 +8,7 @@ export async function createCityMaterial() {
             uColor1: { value: new THREE.Color(0xff0055) },
             uColor2: { value: new THREE.Color(0x00ccff) },
             uColor3: { value: new THREE.Color(0x110022) },
+            uFogColor: { value: new THREE.Color(0x050011) },
             uFoldIntensity: { value: 1.0 }
         },
         vertexShader: await loadShader('./shaders/city.vert'),
@@ -24,6 +25,7 @@ export async function createWallMaterial() {
             uColor1: { value: new THREE.Color(0xff0055) },
             uColor2: { value: new THREE.Color(0x00ccff) },
             uColor3: { value: new THREE.Color(0x110022) },
+            uFogColor: { value: new THREE.Color(0x050011) },
             uFoldIntensity: { value: 1.0 }
         },
         vertexShader: await loadShader('./shaders/wall.vert'),
@@ -42,7 +44,8 @@ export async function createPrimitiveMaterial() {
             uColor1: { value: new THREE.Color(0xff0055) },
             uColor2: { value: new THREE.Color(0x00ccff) },
             uAlpha: { value: 0.8 },
-            uWaveAmp: { value: 0.4 }
+            uWaveAmp: { value: 0.4 },
+            uFogColor: { value: new THREE.Color(0x050011) }
         },
         vertexShader: await loadShader('./shaders/primitive.vert'),
         fragmentShader: await loadShader('./shaders/primitive.frag'),
