@@ -4,7 +4,7 @@ const userInput = document.getElementById('user-input');
 const serverUrlInput = document.getElementById('server-url');
 const serverPortInput = document.getElementById('server-port');
 const connectButton = document.getElementById('connect-button');
-const connectionStatus = document.getElementById('connection-status');
+const connectionStatus = document.getElementById('status-text');
 const sendButton = document.getElementById('send-button');
 const newChatButton = document.getElementById('new-chat-button');
 const toggleSidebarButton = document.getElementById('toggle-sidebar');
@@ -15,6 +15,7 @@ const modelSelect = document.getElementById('model-select');
 const uploadButton = document.getElementById('upload-button');
 const imageUpload = document.getElementById('image-upload');
 const imagePreview = document.getElementById('image-preview');
+const toggleHeaderButton = document.getElementById('toggle-header');
 
 let isConnected = false;
 let currentModel = '';
@@ -23,9 +24,7 @@ let pendingImage = null;
 // Chat management: each chat has an id, name, and messages array.
 let chats = [];
 let currentChat = null;
-const serverUrl = serverUrlInput.value.trim();
-const serverPort = serverPortInput.value.trim();
-const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
+
 // Load saved chats on startup
 async function loadSavedChats() {
   try {
@@ -269,6 +268,10 @@ function deleteChat(chatId) {
 
 // Ejects the currently loaded model.
 async function ejectCurrentModel(oldModel) {
+  const serverUrl = serverUrlInput.value.trim();
+  const serverPort = serverPortInput.value.trim();
+  const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
+
   try {
     await fetch(`${endPoint}/v1/model/eject`, {
       method: 'POST',
@@ -319,9 +322,10 @@ modelSelect.addEventListener('change', async (e) => {
 
 // Connect to server and populate model dropdown.
 async function connectToServer() {
-  // const serverUrl = serverUrlInput.value.trim();
-  // const serverPort = serverPortInput.value.trim();
-  // const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
+  const serverUrl = serverUrlInput.value.trim();
+  const serverPort = serverPortInput.value.trim();
+  const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
+
   console.log('endpoint:', endPoint);
   if (!serverUrl) {
     updateConnectionStatus('Please enter a valid address', false);
@@ -433,6 +437,10 @@ async function sendMessage() {
   let isUserScrolledUp = false;
   let previousScrollTop = chatContainer.scrollTop;
   let isAtBottom = true;
+
+  const serverUrl = serverUrlInput.value.trim();
+  const serverPort = serverPortInput.value.trim();
+  const endPoint = serverPort ? `http://${serverUrl}:${serverPort}` : serverUrl;
 
   try {
     abortController = new AbortController();
@@ -626,7 +634,34 @@ sendButton.addEventListener('click', () => {
   }
 });
 newChatButton.addEventListener('click', () => { createNewChat(); });
-toggleSidebarButton.addEventListener('click', () => { chatSidebar.classList.toggle('collapsed'); });
+toggleSidebarButton.addEventListener('click', () => {
+  if (window.innerWidth <= 480) {
+    chatSidebar.classList.toggle('mobile-open');
+  } else {
+    chatSidebar.classList.toggle('collapsed');
+  }
+});
+
+// Close mobile sidebar when clicking the overlay backdrop
+chatSidebar.addEventListener('click', (e) => {
+  if (window.innerWidth <= 480 && e.target === chatSidebar) {
+    chatSidebar.classList.remove('mobile-open');
+  }
+});
+
+// Toggle header collapse
+toggleHeaderButton.addEventListener('click', () => {
+  const container = document.getElementById('server-url-container');
+  container.classList.toggle('collapsed');
+  const icon = toggleHeaderButton.querySelector('i');
+  if (container.classList.contains('collapsed')) {
+    icon.classList.remove('fa-chevron-up');
+    icon.classList.add('fa-chevron-down');
+  } else {
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-up');
+  }
+});
 
 // Load saved chats when the page loads
 loadSavedChats().then(() => {

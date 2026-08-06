@@ -28,24 +28,30 @@
 <body>
   <div id="app">
     <div id="server-url-container">
-      <input type="text" id="server-url" value="192.168.68.61" placeholder="Enter LM Studio address:" value="IA" />
-      <input type="text" id="server-port" value="1234" placeholder="Enter LM Studio port:" value="1234" />
-      <select id="model-select" disabled>
-        <option value="">Select model</option>
-      </select>
-      <button id="connect-button"><i class="fas fa-plug"></i> Connect</button>
+      <div id="header-content">
+        <input type="text" id="server-url" value="192.168.68.55" placeholder="Enter LM Studio address:" />
+        <input type="text" id="server-port" value="1234" placeholder="Enter LM Studio port:" />
+        <select id="model-select" disabled>
+          <option value="">Select model</option>
+        </select>
+        <button id="connect-button"><i class="fas fa-plug"></i> Connect</button>
+      </div>
     </div>
-    <div id="connection-status">Disconnected</div>
+    <div id="connection-status">
+      <span id="status-text">Disconnected</span>
+      <button id="toggle-header" title="Toggle header"><i class="fas fa-chevron-up"></i></button>
+    </div>
     <div id="main-content">
       <!-- Chat Sidebar -->
       <div id="chat-sidebar">
-        <button id="toggle-sidebar"><i class="fas fa-bars"></i></button>
         <div class="sidebar-content">
           <div id="chat-sidebar-header"><span>Chats</span></div>
           <button id="new-chat-button"><i class="fas fa-plus"></i>New Chat</button>
           <ul id="chat-list"></ul>
         </div>
       </div>
+      <!-- Sidebar toggle button (outside sidebar so it's not hidden on mobile) -->
+      <button id="toggle-sidebar"><i class="fas fa-bars"></i></button>
       <!-- Chat Section -->
       <div id="chat-section">
         <div id="chat-container"></div>
