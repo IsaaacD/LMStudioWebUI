@@ -16,7 +16,8 @@ const uploadButton = document.getElementById('upload-button');
 const imageUpload = document.getElementById('image-upload');
 const imagePreview = document.getElementById('image-preview');
 const toggleHeaderButton = document.getElementById('toggle-header');
-const downloadChatButton = document.getElementById('download-chat-button');
+const downloadHTMLButton = document.getElementById('download-html-button');
+const downloadMDButton = document.getElementById('download-md-button');
 
 let isConnected = false;
 let currentModel = '';
@@ -745,7 +746,53 @@ body,html{font-family:'Inter',sans-serif;margin:0;padding:0;background:var(--bac
   URL.revokeObjectURL(url);
 }
 
-downloadChatButton.addEventListener('click', () => { downloadChatAsHTML(); });
+// Download the current chat as a Markdown file
+function downloadChatAsMarkdown() {
+  if (!currentChat || currentChat.messages.length === 0) {
+    alert('No conversation to download.');
+    return;
+  }
+
+  const lines = [`# ${currentChat.name}`, ''];
+
+  currentChat.messages.forEach(msg => {
+    const role = msg.isUser ? '**You**' : '**Assistant**';
+    lines.push(`---`);
+    lines.push(`${role}`);
+    if (currentModel) lines.push(`*Model: ${currentModel}*`);
+
+    if (msg.reasoning) {
+      lines.push('');
+      lines.push(`<details><summary>Reasoning</summary>`);
+      lines.push('');
+      lines.push(msg.reasoning);
+      lines.push('');
+      lines.push(`</details>`);
+    }
+
+    if (msg.isImage) {
+      if (msg.text) lines.push(msg.text);
+      lines.push(`![image](${msg.imageData})`);
+    } else {
+      lines.push(msg.content || '');
+    }
+    lines.push('');
+  });
+
+  const text = lines.join('\n');
+  const blob = new Blob([text], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentChat.name.replace(/[^a-z0-9]/gi, '_')}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+downloadHTMLButton.addEventListener('click', () => { downloadChatAsHTML(); });
+downloadMDButton.addEventListener('click', () => { downloadChatAsMarkdown(); });
 
 // Load saved chats when the page loads
 loadSavedChats().then(() => {
