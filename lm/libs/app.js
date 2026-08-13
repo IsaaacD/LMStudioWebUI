@@ -33,6 +33,12 @@ async function loadSavedChats() {
     const savedChats = await window.indexedDBHelper.loadChatsFromIndexedDB();
     if (savedChats && savedChats.length > 0) {
       chats = savedChats;
+      // Sort chats by most recent message timestamp, fallback to chat id
+      chats.sort((a, b) => {
+        const aTime = a.messages.length ? Math.max(...a.messages.map(m => m.timestamp || a.id)) : 0;
+        const bTime = b.messages.length ? Math.max(...b.messages.map(m => m.timestamp || b.id)) : 0;
+        return bTime - aTime;
+      });
       currentChat = chats[0];
       updateChatList();
       loadChat(currentChat);
@@ -140,13 +146,27 @@ function attachCopyButtons(container) {
 
 // Adds a message to the DOM and (optionally) stores it.
 // If store is false, the message is only displayed and not added to currentChat.messages.
-function addMessage(content, isUser, metrics = null, store = true, reasoning = null) {
+function addMessage(content, isUser, metrics = null, store = true, reasoning = null, timestamp = null) {
+  const msgTimestamp = timestamp || Date.now();
   const messageDiv = document.createElement('div');
   messageDiv.classList.add('message', isUser ? 'user-message' : 'assistant-message');
 
   const headerDiv = document.createElement('div');
   headerDiv.classList.add('message-header');
   headerDiv.textContent = isUser ? 'You' : 'Assistant';
+  if (msgTimestamp) {
+    const timeSpan = document.createElement('span');
+    timeSpan.classList.add('message-timestamp');
+    const shortTime = new Date(msgTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const fullDateTime = new Date(msgTimestamp).toLocaleString();
+    timeSpan.textContent = shortTime;
+    timeSpan.title = fullDateTime;
+    timeSpan.addEventListener('click', () => {
+      timeSpan.textContent = fullDateTime;
+      setTimeout(() => { timeSpan.textContent = shortTime; }, 2000);
+    });
+    headerDiv.appendChild(timeSpan);
+  }
   messageDiv.appendChild(headerDiv);
 
   if (!isUser && currentModel) {
@@ -187,7 +207,7 @@ function addMessage(content, isUser, metrics = null, store = true, reasoning = n
   attachCopyButtons(messageDiv);
 
   if (store && currentChat) {
-    currentChat.messages.push({ content, isUser, metrics, isImage: false, reasoning });
+    currentChat.messages.push({ content, isUser, metrics, isImage: false, reasoning, timestamp: msgTimestamp });
     saveChatsIfNotEmpty();
   }
 }
@@ -208,7 +228,7 @@ function addImageMessage(dataURL, promptText) {
 function createNewChat() {
   const chatId = Date.now();
   const newChat = { id: chatId, name: `Chat ${chats.length + 1}`, messages: [] };
-  chats.push(newChat);
+  chats.unshift(newChat);
   currentChat = newChat;
   updateChatList();
   chatContainer.innerHTML = '';
@@ -222,6 +242,8 @@ function updateChatList() {
     li.textContent = chat.name;
     li.dataset.chatId = chat.id;
     if (currentChat && chat.id === currentChat.id) li.classList.add('active');
+    const lastTs = chat.messages.length ? Math.max(...chat.messages.map(m => m.timestamp || 0)) : 0;
+    if (lastTs) li.title = `Last message: ${new Date(lastTs).toLocaleString()}`;
     li.addEventListener('click', () => {
       if (currentChat && chat.id === currentChat.id) return;
       currentChat = chat;
@@ -241,7 +263,7 @@ function loadChat(chat) {
   chatContainer.innerHTML = '';
   chat.messages.forEach(message => {
     // When loading, we display messages without storing them again.
-    addMessage(message.content, message.isUser, message.metrics, false, message.reasoning || null);
+    addMessage(message.content, message.isUser, message.metrics, false, message.reasoning || null, message.timestamp || null);
   });
 }
 
@@ -409,6 +431,17 @@ async function sendMessage() {
   const headerDiv = document.createElement('div');
   headerDiv.classList.add('message-header');
   headerDiv.textContent = 'Assistant';
+
+  const assistantTimestamp = Date.now();
+  const timeSpan = document.createElement('span');
+  timeSpan.classList.add('message-timestamp');
+  timeSpan.textContent = new Date(assistantTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  timeSpan.title = new Date(assistantTimestamp).toLocaleString();
+  timeSpan.addEventListener('click', () => {
+    timeSpan.textContent = new Date(assistantTimestamp).toLocaleString();
+    setTimeout(() => { timeSpan.textContent = new Date(assistantTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 2000);
+  });
+  headerDiv.appendChild(timeSpan);
   assistantMessageElement.appendChild(headerDiv);
 
   if (currentModel) {
@@ -564,7 +597,7 @@ async function sendMessage() {
     const timeElapsed = ((endTime - startTime) / 1000).toFixed(2);
     if (currentChat) {
       // Store the assistant message into the chat history
-      currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false, reasoning: accumulatedReasoning || null });
+      currentChat.messages.push({ content: accumulatedText, isUser: false, isImage: false, reasoning: accumulatedReasoning || null, timestamp: assistantTimestamp });
       saveChatsIfNotEmpty();
       if (currentChat.name.startsWith('Chat')) {
         const snippet = accumulatedText.split(' ').slice(0, 7).join(' ');
