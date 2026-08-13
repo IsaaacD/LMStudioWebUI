@@ -254,6 +254,16 @@ function updateChatList() {
       e.preventDefault();
       showContextMenu(e.pageX, e.pageY, chat.id);
     });
+    // Long-press support for mobile
+    let longPressTimer = null;
+    li.addEventListener('touchstart', (e) => {
+      longPressTimer = setTimeout(() => {
+        const touch = e.targetTouches[0];
+        showContextMenu(touch.clientX, touch.clientY, chat.id);
+      }, 600);
+    }, { passive: true });
+    li.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+    li.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
     chatList.appendChild(li);
   });
 }
