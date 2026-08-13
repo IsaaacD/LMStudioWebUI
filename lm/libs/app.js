@@ -16,6 +16,7 @@ const uploadButton = document.getElementById('upload-button');
 const imageUpload = document.getElementById('image-upload');
 const imagePreview = document.getElementById('image-preview');
 const toggleHeaderButton = document.getElementById('toggle-header');
+const downloadChatButton = document.getElementById('download-chat-button');
 
 let isConnected = false;
 let currentModel = '';
@@ -662,6 +663,89 @@ toggleHeaderButton.addEventListener('click', () => {
     icon.classList.add('fa-chevron-up');
   }
 });
+
+// Download the current chat as a self-contained HTML file
+function downloadChatAsHTML() {
+  if (!currentChat || currentChat.messages.length === 0) {
+    alert('No conversation to download.');
+    return;
+  }
+
+  const messagesHTML = currentChat.messages.map(msg => {
+    const role = msg.isUser ? 'You' : 'Assistant';
+    const cls = msg.isUser ? 'user-message' : 'assistant-message';
+
+    let contentHTML = '';
+    if (msg.isImage && msg.imageData) {
+      contentHTML = `<img src="${msg.imageData}" style="max-width:100%; border-radius:8px;" />`;
+      if (msg.text) contentHTML += `<p>${msg.text}</p>`;
+    } else {
+      contentHTML = marked.parse(msg.content || '');
+    }
+
+    let reasoningHTML = '';
+    if (msg.reasoning) {
+      reasoningHTML = `<details class="reasoning-details" open><summary class="reasoning-toggle">Reasoning</summary><div class="reasoning-content">${marked.parse(msg.reasoning)}</div></details>`;
+    }
+
+    return `<div class="message ${cls}">
+      <div class="message-header">${role}</div>${currentModel ? `<div class="message-model">${currentModel}</div>` : ''}
+      <div class="message-content">${reasoningHTML}${contentHTML}</div>
+    </div>`;
+  }).join('\n    ');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${currentChat.name}</title>
+<style>
+:root{--background-color:#000;--text-color:#fff;--input-background:#2d2d2d;--user-message-color:#2b5278;--assistant-message-color:#2d2d2d;--button-color:#8e44ad;--accent-color:green;--border-radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.3)}
+*{box-sizing:border-box}
+body,html{font-family:'Inter',sans-serif;margin:0;padding:0;background:var(--background-color);color:var(--text-color)}
+#chat-container{max-width:800px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:0.75rem}
+.message{max-width:85%;padding:0.75rem 1rem;border-radius:var(--border-radius);word-wrap:break-word;font-size:0.95rem;line-height:1.5;background:var(--assistant-message-color);box-shadow:var(--shadow)}
+.user-message{align-self:flex-end;background:var(--user-message-color)}
+.assistant-message{align-self:flex-start;background:var(--assistant-message-color)}
+.message-header{font-weight:600;margin-bottom:0.35rem;font-size:0.85rem}
+.message-model{font-size:0.75rem;color:#ccc;margin-bottom:0.35rem}
+.message-content{margin-bottom:0.5rem}
+.message-content h1,.message-content h2,.message-content h3,.message-content h4,.message-content h5,.message-content h6{margin:0.5rem 0;font-weight:600}
+.message-content p{margin:0.5rem 0;line-height:1.6}
+.message-content code{background:rgba(27,31,35,0.15);padding:0.2em 0.4em;border-radius:4px;font-family:Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace}
+.message-content pre{background:#282c34;color:#abb2bf;padding:0.8rem;overflow-x:auto;border-radius:6px;margin:0.5rem 0}
+.message-content blockquote{border-left:4px solid var(--button-color);margin:1rem 0;padding:0.5rem 1rem;color:#ccc;background:rgba(142,68,173,0.1)}
+.message-content ul,.message-content ol{margin:0.5rem 0;padding-left:1.5rem}
+.message-content a{color:var(--accent-color)}
+.message-content table{border-collapse:collapse;margin:0.5rem 0}
+.message-content th,.message-content td{border:1px solid #555;padding:0.4rem 0.6rem}
+.message-content img{max-width:100%;border-radius:8px}
+.reasoning-content{color:#888;font-style:italic;border:1px dashed;padding:0.5em}
+.reasoning-toggle{cursor:pointer;color:#888;font-style:italic;font-size:0.9rem;padding:4px 8px;border-radius:4px;background:rgba(136,136,136,0.1)}
+.reasoning-details{margin-bottom:0.5rem}
+@media(max-width:600px){.message{max-width:95%;font-size:0.9rem}}
+</style>
+</head>
+<body>
+<div id="chat-container">
+    ${messagesHTML}
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentChat.name.replace(/[^a-z0-9]/gi, '_')}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+downloadChatButton.addEventListener('click', () => { downloadChatAsHTML(); });
 
 // Load saved chats when the page loads
 loadSavedChats().then(() => {

@@ -217,6 +217,23 @@ html {
   background-color: var(--accent-color);
 }
 
+#download-chat-button {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background-color: var(--button-color);
+  color: var(--text-color);
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background-color var(--transition-speed);
+  font-size: 0.9rem;
+}
+
+#download-chat-button:hover {
+  background-color: var(--accent-color);
+}
+
 #chat-list {
   list-style: none;
   padding: 0;
