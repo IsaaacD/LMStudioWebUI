@@ -1,22 +1,23 @@
 ⚠️ This is an **unofficial** project and is **not affiliated with or endorsed by LM Studio**.
 
-# LM Studio Chat WebUI(unofficial)
+# LM Studio Chat WebUI (unofficial)
 
-This is a simple, browser-based chat interface for interacting with your LM Studio server. It allows you to connect to your locally hosted LM Studio model and chat with it from any device with a web browser, including mobile phones.
-This is a personal project - no pull requests are accepted at this time. All Pull Requests will be automatically closed and not accepted. 
+A browser-based chat interface for interacting with your LM Studio server. Connect to your locally hosted LM Studio model and chat with it from any device with a web browser, including mobile phones. The app uses no backend — all communication is direct between your browser and the LM Studio server. 
 
 ## Features
 
-- Dark mode interface
-- Connect to any LM Studio server
+- Dark mode interface with purple theme
+- Connect to any LM Studio server (custom address and port)
 - Chat with your LM Studio model
-- LaTeX Math Rendering and Markdown Rendering
+- LaTeX math rendering via MathJax
+- Markdown rendering with syntax-highlighted code blocks (Highlight.js)
 - Mobile-friendly design
-- Super Cool new Purple theme
-- Chats
-- Vision Model Support 
-- Choose your model 
-- Delete Chats 
+- Multiple chat sessions with IndexedDB persistence
+- Vision model support with image upload
+- Model selection dropdown
+- Export chats as HTML or Markdown
+- Debug console via `?debug` URL parameter (Eruda)
+- GitHub Pages deployment for zero-setup usage (https://isaaacd.github.io/LMStudioWebUI/)
 
 
 ## Screenshots 📸
@@ -29,32 +30,47 @@ This is a personal project - no pull requests are accepted at this time. All Pul
 
 
 
+## Project Structure
+
+```
+├── index.html          # Main entry point
+├── styles.css          # Stylesheet
+├── libs/               # JavaScript and library files
+│   ├── app.js          # Core application logic
+│   ├── cabecera.js     # Header functionality
+│   ├── cuerpo.js       # Body functionality
+│   ├── indexeddb.js    # IndexedDB chat persistence
+│   ├── eruda.js        # Mobile debug console
+│   ├── marked.min.js   # Markdown rendering
+│   ├── highlight.min.js # Code syntax highlighting
+│   └── mathjax-*       # LaTeX math rendering
+└── .github/workflows/  # GitHub Pages deployment
+```
+
 ## Setup Instructions
 
-### For Desktop Users
+### Option 1: Use the hosted version (Recommended)
+Open the GitHub Pages deployment in your browser. No setup required.
 
-1. Download the `index.html` file from this repository.
-2. Save it to a location on your computer that you can easily access.
+### Option 2: Self-host locally
+
+1. Clone or download this repository.
+2. Serve the entire directory using any static file server. The files must be served together — `index.html` references external CSS and JS files.
+
+**Quick start with Python:**
+```bash
+cd LMStudioWebUI
+python3 -m http.server 8080
+```
+Then open `http://localhost:8080` in your browser.
+
+**Quick start with Node.js:**
+```bash
+npx serve LMStudioWebUI
+```
 
 ### For Mobile Users
-This works out of the box on Android devices. For iOS you need to open the file in Microsoft Edge or another browser. Safari/Chrome do not work. 
-There are several ways to get the `index.html` file on your mobile device:
-
-1. **Direct Download**: 
-   - Open this repository on your mobile device's web browser.
-   - Find the `index.html` file and download it directly to your device.
-
-2. **Email to Yourself**:
-   - Download the `index.html` file on your computer.
-   - Email it to yourself as an attachment.
-   - Open the email on your mobile device and download the attachment.
-
-3. **Cloud Storage**:
-   - Upload the `index.html` file to a cloud storage service like Google Drive, Dropbox, or iCloud.
-   - Access the file from your mobile device using the respective cloud storage app.
-
-4. **File Transfer Apps**:
-   - Use apps like AirDrop (for iOS devices) or nearby sharing (for Android devices) to transfer the file from your computer to your mobile device.
+This works out of the box on Android devices. For iOS you need to open the page in Microsoft Edge or another browser. Safari/Chrome do not work when opening local files directly. The easiest approach is to use the hosted GitHub Pages version or self-host on a local server accessible from your mobile device.
 
 ## Usage Instructions
 
@@ -64,41 +80,39 @@ There are several ways to get the `index.html` file on your mobile device:
    - Ensure that CORS is enabled and Serve on Local Network is enabled.
    - Click "Start Server" and note down the server address.
 
-2. **Open the Chat Interface**:
-   - On desktop: Double-click the `index.html` file to open it in your default web browser.
-   - On mobile: Use a file manager app to locate the downloaded `index.html` file and open it with your web browser.
-
-3. **Connect to LM Studio Server**:
-   - In the chat interface, enter the LM Studio server address in the input field at the top. 
+2. **Connect to LM Studio Server**:
+   - In the chat interface, enter the LM Studio server address and port in the input fields at the top.
    - Click the "Connect" button.
 
-4. **Start Chatting**:
-   - Once connected, you can start typing messages in the input field at the bottom of the screen.
+3. **Start Chatting**:
+   - Once connected, select a model from the dropdown.
+   - Type messages in the input field at the bottom of the screen.
    - Press Enter or tap Send to send your message.
    - The model's responses will appear in the chat window.
 
+4. **Debug Mode** (Optional):
+   - Append `?debug` to the URL to enable the Eruda mobile debug console.
+
 ## Troubleshooting
 
-- **Can't connect to server**: 
+- **Can't connect to server**:
   - Ensure LM Studio Server is running on your computer.
-  - Check that you're using the correct server address.
+  - Check that you're using the correct server address and port.
   - If accessing from another device, make sure both devices are on the same network.
 
-- **Slow responses**: 
+- **Slow responses**:
   - LM Studio processing speed depends on your computer's capabilities. Larger models may take longer to respond.
 
-- **Interface not loading**: 
-  - Try opening the `index.html` file with a different web browser.
+- **Interface not loading or missing styles/scripts**:
+  - Make sure you're serving the entire directory, not just `index.html`. The HTML file references external CSS and JS files in `styles.css` and `libs/`.
+  - Do not open `index.html` directly via `file://` — use a local web server (`http://`).
+  - Try opening the page with a different web browser.
 
 ## Security Note
 
-This interface is designed for local use only. Do not expose your LM Studio server to the public internet without proper security measures in place.
+This interface is designed for local use only. Do not expose your LM Studio server to the public internet without proper security measures in place. All communication happens directly between your browser and the LM Studio server — no data is sent to third-party servers.
 
 ## Feedback and Contributions
 
-This is a personal project. While the code is public for anyone to use and learn from, I am **not accepting pull requests** for new features or bug fixes. If you find an issue or have a suggestion, please open an issue to discuss it.
-Pull Requests are automatically closed and not welcome. 
+See [contributing.md](contributing.md) for details. 
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=YorkieDev/LMStudioWebUI&type=Date)](https://star-history.com/#YorkieDev/LMStudioWebUI&Date)
