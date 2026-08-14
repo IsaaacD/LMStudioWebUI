@@ -8,20 +8,17 @@
   <link rel="stylesheet" type="text/css" href="styles.css" />
 
   <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="./libs/inter-font.css" rel="stylesheet" />
   <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="./libs/all.min.css" />
   <!-- Highlight.js CSS for code blocks -->
-  <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./libs/atom-one-dark.min.css" />
   <!-- Markdown rendering library -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="./libs/marked.min.js"></script>
   <!-- Highlight.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script src="./libs/highlight.min.js"></script>
   <!-- MathJax configuration for LaTeX support -->
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <script src="./libs/mathjax-tex-mml-chtml.js" async></script>
   <script src="./libs/cabecera.js"></script>
 </head>
 
@@ -79,7 +76,7 @@
   <script>
     if (location.search.includes('debug')) {
       const s = document.createElement('script');
-      s.src = '//cdn.jsdelivr.net/npm/eruda';
+      s.src = './libs/eruda.js';
       s.onload = () => eruda.init();
       document.head.appendChild(s);
     }
